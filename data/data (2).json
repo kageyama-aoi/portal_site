@@ -1,0 +1,126 @@
+[
+  {
+    "id": "cat_1769330300050_546",
+    "title": "総合サイト",
+    "isOpen": false,
+    "links": [
+      {
+        "id": "link_1769330332885_63",
+        "title": "Endel",
+        "url": "https://app.endel.io/",
+        "icon": "♫",
+        "badge": "doc",
+        "memo": ""
+      },
+      {
+        "id": "link_1769334592318_846",
+        "title": "TCC",
+        "url": "https://taskchute.cloud/taskchute",
+        "icon": "⏰",
+        "badge": "video",
+        "memo": "taskchute.cloud　時間記録用"
+      },
+      {
+        "id": "link_1769334683768_368",
+        "title": "学習ナレッジ集",
+        "url": "https://kageyama-aoi.github.io/knowledge-base/pages/",
+        "icon": "📝",
+        "badge": "doc",
+        "memo": "GitHubで公開しているナレッジ集"
+      }
+    ]
+  },
+  {
+    "id": "cat_1769328009642_28",
+    "title": "YMK学習サイト",
+    "isOpen": false,
+    "links": [
+      {
+        "id": "link_1769328111728_297",
+        "title": "Asonowa",
+        "url": "https://morning-glory-web.vercel.app/dashboard",
+        "icon": "🌅",
+        "badge": "portal",
+        "memo": "朝4～9時に立ち上げポータルサイト"
+      },
+      {
+        "id": "link_1769328185487_93",
+        "title": "IMC Q&A",
+        "url": "https://imc-qa-system.web.app/shared-questions",
+        "icon": "📊",
+        "badge": "portal",
+        "memo": "Q&A"
+      },
+      {
+        "id": "link_1769328301984_393",
+        "title": "chatwork",
+        "url": "https://www.chatwork.com/",
+        "icon": "💭",
+        "badge": "doc",
+        "memo": "YMKさんからのメッセージ"
+      },
+      {
+        "id": "link_1769334710204_462",
+        "title": "iPad学習ポータルサイト",
+        "url": "https://utage-system.com/members/JHV6T1KC9v29/login",
+        "icon": "🔗",
+        "badge": "doc",
+        "memo": ""
+      }
+    ]
+  },
+  {
+    "id": "cat_1769334811917_970",
+    "title": "n8n学習",
+    "isOpen": false,
+    "links": [
+      {
+        "id": "link_1769334893984_445",
+        "title": "ローカルサーバー内のサイト",
+        "url": "https://computational-nonhyperbolically-irena.ngrok-free.dev/workflow/tu09zXAmuQWYeRJG",
+        "icon": "💻",
+        "badge": "article",
+        "memo": "n8n開発サイト"
+      }
+    ]
+  },
+  {
+    "id": "cat_1769384118315_73",
+    "title": "いけとも学習_20260125",
+    "isOpen": false,
+    "links": [
+      {
+        "id": "link_1769384264329_585",
+        "title": "Claude for Excel",
+        "url": "https://x.com/claudeai/status/2014834616889475508?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
+        "icon": "💡",
+        "badge": "doc",
+        "memo": "Claude for ExcelがProプランでも利用可能に"
+      },
+      {
+        "id": "link_1769384264329_116",
+        "title": "Everything Claude Code",
+        "url": "https://x.com/the_agi_way/status/2012903113213292547?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
+        "icon": "💡",
+        "badge": "doc",
+        "memo": "Anthropicハッカソン優勝者の「Everything Claude Code」"
+      },
+      {
+        "id": "link_1769384264329_235",
+        "title": "Microsof社",
+        "url": "https://www.theverge.com/tech/865689/microsoft-claude-code-anthropic-partnership-notepad",
+        "icon": "💡",
+        "badge": "doc",
+        "memo": "Microsoft、Anthropicの「Claude Code」を社内で大規模導入"
+      },
+      {
+        "id": "link_1769384264329_855",
+        "title": "組織編制",
+        "url": "https://note.com/gimupop/n/n5bbdf9720bdb",
+        "icon": "💡",
+        "badge": "doc",
+        "memo": "「AIに働かされる」が正解？事業責任者が考える組織図の変化"
+      }
+    ]
+  }
+]
