@@ -1,0 +1,669 @@
+:root {
+  /* Light Theme (Improved Contrast) */
+  --bg: #f7f8f9;
+  --card-bg: #ffffff;
+  --card-border: #d1d5db;
+  --card-hover: #f0f4f8;
+  --primary: #3b82f6;
+  --primary-dark: #2563eb;
+  --text-main: #1e293b;
+  --text-sub: #64748b;
+  --danger: #ef4444;
+  --secondary-btn-bg: #f0f4f8;
+  --secondary-btn-hover-bg: #e2e8f0;
+  
+  /* Badge Colors */
+  --bg-video: #fee2e2;
+  --bg-doc: #d1fae5;
+  --bg-article: #fef3c7;
+  --bg-portal: #ede9fe;
+  --bg-code: #e2e8f0;
+
+  /* リソース別カラー */
+  --color-video: #ef4444;
+  --color-doc: #10b981;
+  --color-article: #f59e0b;
+  --color-portal: #8b5cf6;
+  --color-code: #334155;
+
+  /* New Badge Colors */
+  --color-tool: var(--primary); /* Blue */
+  --bg-tool: #dbeafe; /* Light blue */
+
+  --color-sns: #0ea5e9; /* Sky blue */
+  --bg-sns: #e0f2fe;
+
+  --color-cloud: #f97316; /* Orange */
+  --bg-cloud: #fff7ed;
+
+  --color-local: #14b8a6; /* Teal */
+  --bg-local: #ccfbf1;
+
+  --color-money: #eab308; /* Yellow/Gold */
+  --bg-money: #fefce8;
+
+  --color-news: #4f46e5; /* Indigo */
+  --bg-news: #eef2ff;
+
+  --color-idea: #ec4899; /* Pink */
+  --bg-idea: #fdf2f8;
+
+  --color-company: #6b7280; /* Gray */
+  --bg-company: #f3f4f6;
+}
+
+body {
+  font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+  background: var(--bg);
+  color: var(--text-main);
+  margin: 0;
+  padding: 40px 20px;
+  display: flex;
+  justify-content: center;
+  line-height: 1.6;
+}
+
+.container {
+  width: 100%;
+  max-width: 800px;
+}
+
+header {
+  margin-bottom: 32px;
+  border-bottom: 2px solid var(--card-border);
+  padding-bottom: 20px;
+}
+
+h1 {
+  font-size: 1.75rem;
+  margin: 0 0 4px 0; /* マージン調整 */
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.note {
+  font-size: 0.95rem;
+  color: var(--text-sub);
+}
+
+/* ヘッダー内コントロール */
+.header-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+/* トグルスイッチ */
+.edit-toggle-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.toggle-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-sub);
+}
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 24px;
+}
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: var(--card-border);
+  transition: .4s;
+  border-radius: 24px;
+}
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: var(--card-bg);
+  transition: .4s;
+  border-radius: 50%;
+}
+input:checked + .slider {
+  background-color: var(--primary);
+}
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+/* 保存ボタン */
+.save-btn {
+  font-size: 0.8rem !important;
+  padding: 6px 12px !important;
+  transition: all 0.3s;
+}
+
+.save-btn:disabled {
+  background: var(--secondary-btn-bg) !important;
+  border-color: var(--card-border) !important;
+  color: var(--text-sub) !important;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.pulse-animation {
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.3);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7); }
+  70% { box-shadow: 0 0 0 6px rgba(59, 130, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0); }
+}
+
+/* Controls */
+.controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.controls button, .secondary-btn {
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  border-radius: 8px;
+  border: 1px solid var(--card-border);
+  background: var(--secondary-btn-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.controls button:hover, .secondary-btn:hover {
+  background: var(--secondary-btn-hover-bg);
+  border-color: var(--primary);
+}
+
+/* Toggle All Buttons Specific Styles */
+/* .toggle-all-btn styles removed, now using .bulk-action-btn */
+
+.bulk-action-btn {
+  background: var(--primary) !important; /* Primary color background, ensure it applies */
+  color: white !important; /* White text, ensure it applies */
+  border: 2px solid var(--primary-dark) !important; /* Make border more prominent */
+  font-weight: 600;
+  gap: 6px; /* Space between icon and text */
+}
+
+.bulk-action-btn:hover {
+  background: var(--primary-dark) !important; /* Darker primary on hover */
+  border-color: var(--primary-dark) !important;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4); /* Add shadow on hover */
+}
+
+.primary-btn {
+  background: var(--primary) !important;
+  color: white !important;
+  border-color: var(--primary) !important;
+}
+.primary-btn:hover {
+  background: var(--primary-dark) !important;
+}
+
+/* Category Style */
+details {
+  background: var(--card-bg);
+  border-radius: 12px;
+  margin-bottom: 16px;
+  border: 1px solid var(--card-border);
+  overflow: hidden;
+  transition: box-shadow 0.2s;
+  position: relative; /* 編集ボタンのため */
+}
+
+details[open] {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+summary {
+  font-weight: 700;
+  cursor: pointer;
+  padding: 16px 20px;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+  background: var(--card-bg);
+}
+
+.summary-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-grow: 1;
+}
+
+/* グループ内ボタン群 */
+.group-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+  margin-right: 15px;
+}
+
+.action-btn {
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid var(--card-border);
+  background: var(--card-bg);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.action-btn:hover { background: var(--card-hover); }
+.btn-open { color: var(--primary); background: var(--secondary-btn-bg); font-weight: 600; }
+.btn-edit { color: var(--text-sub); }
+.btn-delete { color: var(--danger); font-weight: bold; }
+.btn-delete:hover { background: var(--bg-video); }
+.btn-move { color: var(--text-main); font-weight: bold; }
+
+summary::after {
+  content: "↓";
+  font-size: 0.8rem;
+  transition: transform 0.3s;
+  color: var(--text-sub);
+}
+
+details[open] summary::after {
+  transform: rotate(180deg);
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Link List */
+.link-list {
+  padding: 0 16px 16px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.add-link-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  border: 2px dashed var(--card-border);
+  border-radius: 10px;
+  color: var(--text-sub);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: var(--bg);
+}
+.add-link-placeholder:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--card-bg);
+}
+
+/* Link Card Style */
+.link-card-wrapper {
+  position: relative;
+}
+
+.link-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--bg);
+  border: 1px solid transparent;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  height: 100%; /* 高さ揃え */
+  box-sizing: border-box;
+}
+
+.link-card:hover {
+  background: var(--card-hover);
+  border-color: var(--primary);
+  transform: translateX(2px);
+}
+
+/* 編集モード時のカード挙動無効化用 */
+.link-card.disabled {
+  pointer-events: none; 
+}
+.link-card.disabled:hover {
+  transform: none;
+  border-color: transparent;
+}
+
+/* カード内編集ボタン */
+.card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background: var(--card-bg);
+  padding: 2px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+.link-card-wrapper:hover .card-actions, 
+.card-actions.visible { /* スマホ対応等でクラス付与する場合 */
+  opacity: 1;
+}
+
+.icon-area {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--card-bg);
+  font-size: 1.2rem;
+  border: 1px solid var(--card-border);
+}
+
+.content-area {
+  flex-grow: 1;
+  min-width: 0; /* flex内でのtext-overflow用 */
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  gap: 8px;
+}
+
+.link-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+.badge-video { color: var(--color-video); background: var(--bg-video); }
+.badge-doc { color: var(--color-doc); background: var(--bg-doc); }
+.badge-portal { color: var(--color-portal); background: var(--bg-portal); }
+.badge-article { color: var(--color-article); background: var(--bg-article); }
+.badge-code { color: var(--color-code); background: var(--bg-code); }
+
+/* New Badge Classes */
+.badge-tool { color: var(--color-tool); background: var(--bg-tool); }
+.badge-sns { color: var(--color-sns); background: var(--bg-sns); }
+.badge-cloud { color: var(--color-cloud); background: var(--bg-cloud); }
+.badge-local { color: var(--color-local); background: var(--bg-local); }
+.badge-money { color: var(--color-money); background: var(--bg-money); }
+.badge-news { color: var(--color-news); background: var(--bg-news); }
+.badge-idea { color: var(--color-idea); background: var(--bg-idea); }
+.badge-company { color: var(--color-company); background: var(--bg-company); }
+
+.link-memo {
+  font-size: 0.8rem;
+  color: var(--text-sub);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Data Management */
+.data-management {
+  margin-top: 48px;
+  padding-top: 24px;
+  color: var(--text-sub);
+}
+.data-management hr {
+  border: none;
+  border-top: 1px solid var(--card-border);
+  margin-bottom: 24px;
+}
+.data-management h4 {
+  margin: 0 0 16px 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.data-controls {
+  display: flex;
+  gap: 12px;
+}
+.import-label {
+  cursor: pointer;
+}
+
+@media (max-width: 480px) {
+  body { padding: 20px 15px; }
+  .header-row { flex-direction: column; align-items: flex-start; }
+  .action-btn { font-size: 0.65rem; padding: 2px 6px; }
+  .data-controls { flex-direction: column; }
+}
+
+/* Dialog Style */
+dialog {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  padding: 24px;
+  width: 90%;
+  max-width: 400px;
+  background: var(--card-bg);
+  color: var(--text-main);
+}
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+dialog h3, dialog h2 {
+  margin-top: 0;
+  margin-bottom: 16px;
+  font-size: 1.2rem;
+}
+dialog label {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-main);
+}
+dialog input[type="text"],
+dialog input[type="url"],
+dialog textarea,
+dialog select {
+  width: 100%;
+  padding: 8px 12px;
+  margin-top: 4px;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  box-sizing: border-box;
+  font-size: 0.95rem;
+  background: var(--bg);
+  color: var(--text-main);
+}
+dialog.bulk-dialog {
+  max-width: 800px;
+  width: 95%;
+}
+
+/* リンク一括追加の入力エリア */
+#bulk-link-input-area {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  margin-top: 4px;
+  max-height: 40vh;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.bulk-link-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.bulk-link-row input,
+.bulk-link-row select {
+  padding: 6px 8px;
+  font-size: 0.9rem;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text-main);
+}
+
+/* 各入力欄の幅を調整 */
+.bulk-link-row .input-title { flex: 1 1 25%; }
+.bulk-link-row .input-url { flex: 1 1 35%; }
+.bulk-link-row .input-icon { flex: 0 0 50px; text-align: center; }
+.bulk-link-row .input-badge { flex: 0 0 100px; }
+.bulk-link-row .input-memo { flex: 1 1 20%; }
+
+/* Portal Dialog */
+.portal-section {
+  background: var(--bg);
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.portal-section h4 {
+  margin: 0 0 12px 0;
+  border-bottom: 1px solid var(--card-border);
+  padding-bottom: 8px;
+}
+#portalListContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+#portalListContainer label {
+  display: block;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+#portalListContainer label:hover {
+  background-color: var(--card-hover);
+}
+#portalListContainer input[type="radio"] {
+  margin-right: 8px;
+}
+
+#portalSettingsBtn {
+  padding: 6px 8px;
+  margin-right: 8px;
+}
+#portalSettingsBtn:hover {
+  border-color: var(--primary);
+}
+
+
+/* Drag and Drop Styles */
+.dragging {
+  opacity: 0.4 !important;
+}
+
+.drag-placeholder {
+  background: rgba(59, 130, 246, 0.1);
+  border: 2px dashed var(--primary);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+.drag-placeholder.link-placeholder {
+  border-radius: 10px;
+  margin: 0;
+}
+
+
+dialog textarea {
+  resize: vertical;
+}
+.dialog-buttons {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* Icon Picker */
+#iconPickerDialog {
+  max-width: 500px;
+}
+
+#iconSearchInput {
+  margin-bottom: 15px;
+}
+
+.icon-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 5px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding: 5px;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+
+.icon-grid button {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  padding: 8px;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-grid button:hover {
+  background: var(--card-hover);
+  border-color: var(--primary);
+}

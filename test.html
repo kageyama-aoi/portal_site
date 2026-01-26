@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Application Tests</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    #results { list-style-type: none; padding: 0; }
+    .test-case { margin-bottom: 8px; padding: 8px; border-left: 4px solid; }
+    .test-case.pass { border-left-color: #28a745; background-color: #e9f5ec; }
+    .test-case.fail { border-left-color: #dc3545; background-color: #fbebed; }
+    .summary { font-weight: bold; margin-bottom: 20px; }
+    .pass .summary { color: #28a745; }
+    .fail .summary { color: #dc3545; }
+    .error { color: #dc3545; font-family: monospace; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <h1>Application Tests</h1>
+  <div id="summary">Running tests...</div>
+  <ul id="results"></ul>
+
+  <!-- The application's DOM structure for UI tests if needed -->
+  <div id="app-root" style="display:none;">
+    <main class="container">
+      <header>
+        <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+          <div>
+            <h1><span style="color:var(--primary)">📘</span> Study Portal</h1>
+            <div class="note">目的のリソースへ最短でアクセスするためのマイポータル</div>
+          </div>
+          <div class="header-controls">
+            <div id="saveArea" style="margin-bottom: 8px; text-align: right;">
+              <button id="saveChangesBtn" class="primary-btn save-btn" disabled>💾 JSONを保存</button>
+              <div id="unsavedWarning" style="font-size:0.7rem; color:var(--text-sub); margin-top:4px;">データは最新です</div>
+            </div>
+            <div class="edit-toggle-area">
+              <label class="toggle-switch">
+                <input type="checkbox" id="editModeToggle">
+                <span class="slider"></span>
+              </label>
+              <span class="toggle-label">編集モード</span>
+            </div>
+          </div>
+        </div>
+      </header>
+      <div id="errorArea" style="display:none;"></div>
+      <div class="controls">
+        <button id="openAll">カテゴリをすべて開く</button>
+        <button id="closeAll">カテゴリをすべて閉じる</button>
+        <button id="addCategoryBtn" class="primary-btn" style="display:none;">＋ カテゴリ追加</button>
+      </div>
+      <div id="app-container"></div>
+      <div class="data-management" style="margin-top:40px;">
+        <label class="secondary-btn">
+          📥 JSONファイルを読み込んで差し替える
+          <input type="file" id="importFileInput" accept=".json" style="display:none;">
+        </label>
+      </div>
+    </main>
+    <dialog id="categoryDialog">
+      <form method="dialog">
+        <h3>カテゴリ編集</h3>
+        <input type="text" id="catTitleInput" required>
+        <button value="cancel">キャンセル</button><button value="save" class="primary-btn">決定</button>
+      </form>
+    </dialog>
+    <dialog id="linkDialog">
+      <form method="dialog">
+        <h3>リンク編集</h3>
+        <input type="text" id="linkTitleInput" required><input type="url" id="linkUrlInput" required>
+        <input type="text" id="linkIconInput"><select id="linkBadgeInput"><option value="doc"></option></select>
+        <textarea id="linkMemoInput"></textarea>
+        <button value="cancel">キャンセル</button><button value="save" class="primary-btn">決定</button>
+      </form>
+    </dialog>
+  </div>
+
+  <script type="module" src="./test/run-tests.js"></script>
+</body>
+</html>

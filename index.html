@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Portal - 勉強用リンク集</title>
+  <link rel="icon" href="data:,"> <!-- ファビコンエラー防止 -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<main class="container">
+  <header>
+    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <h1><span style="color:var(--primary)">📘</span> Study Portal</h1>
+        <div class="note">
+          目的のリソースへ最短でアクセスするためのマイポータル
+        </div>
+      </div>
+      <div class="header-controls">
+        <!-- 保存ボタンエリア（常時表示、変更がない時は無効化） -->
+        <div id="saveArea" style="margin-bottom: 8px; text-align: right;">
+          <button id="saveChangesBtn" class="primary-btn save-btn" disabled>💾 JSONを保存</button>
+          <div id="unsavedWarning" style="font-size:0.7rem; color:var(--text-sub); margin-top:4px;">データは最新です</div>
+        </div>
+        
+        <div class="edit-toggle-area">
+          <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理">⚙️</button>
+          <label class="toggle-switch">
+            <input type="checkbox" id="editModeToggle">
+            <span class="slider"></span>
+          </label>
+          <span class="toggle-label">編集モード</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- エラー表示用エリア -->
+  <div id="errorArea" style="display:none; padding:16px; background:#fee2e2; border:1px solid #ef4444; border-radius:8px; color:#b91c1c; margin-bottom:20px;">
+    <strong>データの読み込みに失敗しました</strong><br>
+    <small>セキュリティ制限により、このファイルを直接開くとデータを読み込めない場合があります。<br>
+    Webサーバー機能（VS CodeのLive Serverなど）を使って開くか、以下から手動で data.json を読み込んでください。</small>
+    <div style="margin-top:8px;">
+      <input type="file" id="manualLoadInput" accept=".json">
+    </div>
+  </div>
+
+  <div class="controls">
+    <button id="openAll" class="bulk-action-btn">➕ カテゴリをすべて開く</button>
+    <button id="closeAll" class="bulk-action-btn">➖ カテゴリをすべて閉じる</button>
+    <button id="addCategoryBtn" class="bulk-action-btn" style="display:none;">＋ カテゴリ追加</button>
+    <button id="bulkAddLinkBtn" class="bulk-action-btn" style="display:none;">＋ リンク一括追加</button>
+  </div>
+
+  <!-- ここにJSでコンテンツが描画されます -->
+  <div id="app-container"></div>
+
+  <!-- データ管理エリア（フッター） -->
+  <div class="data-management" style="margin-top:40px; border-top:1px solid var(--card-border); padding-top:20px;">
+    <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--text-sub);">⚙️ データ読み込み</h4>
+    <label class="secondary-btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+      📥 JSONファイルを読み込んで差し替える
+      <input type="file" id="importFileInput" accept=".json" style="display:none;">
+    </label>
+    <div style="font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
+      ※ 読み込んだ後、右上の「保存」ボタンで確定させてください。
+    </div>
+  </div>
+
+</main>
+
+<!-- カテゴリ編集ダイアログ -->
+<dialog id="categoryDialog">
+  <form method="dialog">
+    <h3>カテゴリ編集</h3>
+    <label>タイトル: <input type="text" id="catTitleInput" required></label>
+    <div class="dialog-buttons">
+      <button value="cancel" formnovalidate>キャンセル</button>
+      <button value="save" class="primary-btn">決定</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- リンク編集ダイアログ -->
+<dialog id="linkDialog">
+  <form method="dialog">
+    <h3>リンク編集</h3>
+    <label>タイトル: <input type="text" id="linkTitleInput" required></label>
+    <label>URL: <input type="url" id="linkUrlInput" required></label>
+    <label>アイコン (絵文字):
+      <div style="display:flex; gap: 8px;">
+        <input type="text" id="linkIconInput" style="width: 50px; text-align:center;" readonly>
+        <button type="button" id="openLinkIconPickerBtn" class="secondary-btn" style="flex-grow: 1;">選択</button>
+      </div>
+    </label>
+    <label>バッジ:
+      <select id="linkBadgeInput">
+        <option value="doc">Docs (緑)</option>
+        <option value="video">Video (赤)</option>
+        <option value="article">Article (黄)</option>
+        <option value="portal">Portal (紫)</option>
+        <option value="code">Code (灰)</option>
+        <option value="tool">Tool (青)</option>
+        <option value="sns">SNS (水)</option>
+        <option value="cloud">Cloud (橙)</option>
+        <option value="local">Local (茶)</option>
+        <option value="money">Money (金)</option>
+        <option value="news">News (インディゴ)</option>
+        <option value="idea">Idea (シアン)</option>
+        <option value="company">Company (ピンク)</option>
+      </select>
+    </label>
+    <label>メモ: <textarea id="linkMemoInput" rows="3"></textarea></label>
+    <div class="dialog-buttons">
+      <button value="cancel" formnovalidate>キャンセル</button>
+      <button value="save" class="primary-btn">決定</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- リンク一括追加ダイアログ -->
+<dialog id="bulkLinkDialog" class="bulk-dialog">
+  <form method="dialog">
+    <h3>リンク一括追加</h3>
+    <label>追加先カテゴリ:
+      <select id="bulkLinkCategorySelect" required></select>
+    </label>
+    <label>リンクデータ:</label>
+    <div id="bulk-link-input-area">
+      <!-- JSで入力行がここに生成されます -->
+    </div>
+    <div style="font-size: 0.8rem; color: var(--text-sub); margin-top: 8px;">
+      <p>
+      <b>バッジ種別:</b> doc, video, article, portal, code, tool, sns, cloud, local, money, news, idea, company
+      </p>
+    </div>
+    <div class="dialog-buttons">
+      <button value="cancel" formnovalidate>キャンセル</button>
+      <button value="save" class="primary-btn">決定</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- アイコンピッカーダイアログ -->
+<dialog id="iconPickerDialog">
+  <h3>アイコンを選択</h3>
+  <input type="text" id="iconSearchInput" placeholder="アイコンを検索...">
+  <div id="iconGrid" class="icon-grid">
+    <!-- JSでアイコンがここに生成されます -->
+  </div>
+  <div class="dialog-buttons">
+    <button id="closeIconPickerDialogBtn">閉じる</button>
+  </div>
+</dialog>
+
+<!-- ポータル管理ダイアログ -->
+<dialog id="portalDialog" class="bulk-dialog">
+  <form>
+    <h2>ポータル管理</h2>
+
+    <div class="portal-section">
+      <h4>現在のポータル情報</h4>
+      <label>タイトル: <input type="text" id="portalTitleInput"></label>
+      <label>サブタイトル: <input type="text" id="portalSubtitleInput"></label>
+      <div class="dialog-buttons">
+        <button type="button" id="updatePortalInfoBtn" class="primary-btn">情報更新</button>
+      </div>
+    </div>
+
+    <div class="portal-section">
+      <h4>ポータル一覧</h4>
+      <div id="portalListContainer">
+        <!-- JSでポータル一覧がここに生成されます -->
+      </div>
+      <div class="dialog-buttons">
+        <button type="button" id="switchPortalBtn" class="primary-btn">選択したポータルに切り替え</button>
+      </div>
+    </div>
+
+    <div class="portal-section">
+      <h4>新規ポータル作成</h4>
+      <label>新規ポータル名: <input type="text" id="newPortalNameInput" placeholder="例: ゲーム, 仕事..."></label>
+      <label>新規ファイル名: <input type="text" id="newPortalFileInput" placeholder="例: game_links.json..."></label>
+      <div class="dialog-buttons">
+        <button type="button" id="createPortalBtn" class="primary-btn">作成</button>
+      </div>
+    </div>
+
+    <hr style="margin: 24px 0;">
+    <div class="dialog-buttons">
+      <button type="button" id="closePortalDialogBtn">閉じる</button>
+    </div>
+  </form>
+</dialog>
+
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
