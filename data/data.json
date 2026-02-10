@@ -128,6 +128,22 @@
         "icon": "💡",
         "badge": "news",
         "memo": "「AIに働かされる」が正解？事業責任者が考える組織図の変化"
+      },
+      {
+        "id": "link_1770761063631_702",
+        "title": "いけともスライド",
+        "url": "https://www.dropbox.com/scl/fo/joomf60cyjck41tesp6xd/AHZnLQaX7dGH8T6_ryYWB2Y?rlkey=b44jprzxmu7fsae2u5plvgkos&st=nbff73gr&dl=0",
+        "icon": "📚",
+        "badge": "doc",
+        "memo": "毎週ニュースの記事"
+      },
+      {
+        "id": "link_1770761131698_847",
+        "title": "codexアプリ",
+        "url": "https://openai.com/ja-JP/index/introducing-the-codex-app/",
+        "icon": "📌",
+        "badge": "doc",
+        "memo": ""
       }
     ]
   }
