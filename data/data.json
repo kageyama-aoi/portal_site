@@ -35,6 +35,14 @@
         "icon": "📂",
         "badge": "doc",
         "memo": "先頭日付つきのmdファイルを放り投げる"
+      },
+      {
+        "id": "link_1770774567321_129",
+        "title": "data_json格納先",
+        "url": "https://github.com/kageyama-aoi/portal_site/tree/main/data",
+        "icon": "📂",
+        "badge": "doc",
+        "memo": "まだ自動化に完全成功はしていない"
       }
     ]
   },
@@ -144,6 +152,37 @@
         "icon": "📌",
         "badge": "doc",
         "memo": ""
+      }
+    ]
+  },
+  {
+    "id": "cat_1770774039834_510",
+    "title": "API関連設定",
+    "isOpen": true,
+    "links": [
+      {
+        "id": "link_1770774078857_771",
+        "title": "LINE developers",
+        "url": "https://developers.line.biz/console/provider/2004842581",
+        "icon": "⚙️",
+        "badge": "cloud",
+        "memo": "LINEとの連携"
+      },
+      {
+        "id": "link_1770774150223_840",
+        "title": "openai利用状況",
+        "url": "https://platform.openai.com/settings/organization/usage",
+        "icon": "📈",
+        "badge": "cloud",
+        "memo": "API利用制限とか金額チェック"
+      },
+      {
+        "id": "link_1770774263756_914",
+        "title": "Slack API",
+        "url": "https://api.slack.com/apps",
+        "icon": "⚙️",
+        "badge": "cloud",
+        "memo": "アプリからできずweb対応"
       }
     ]
   }
