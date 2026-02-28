@@ -183,6 +183,14 @@
         "icon": "⚙️",
         "badge": "cloud",
         "memo": "アプリからできずweb対応"
+      },
+      {
+        "id": "link_1771970374389_908",
+        "title": "claude_ai_利用状況",
+        "url": "https://claude.ai/settings/billing",
+        "icon": "🔗",
+        "badge": "cloud",
+        "memo": ""
       }
     ]
   }
