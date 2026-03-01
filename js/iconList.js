@@ -1,18 +1,248 @@
 /**
  * @file iconList.js
- * @brief アプリケーションで使用される絵文字アイコンのリスト。
+ * @brief Material Symbols アイコン一覧とカテゴリ定義。
  * @module iconList
  */
 
 /**
- * @constant {Array<string>} iconList
- * @description ポータルサイトでリンクのアイコンとして利用可能な絵文字のリスト。
+ * @typedef {object} IconEntry
+ * @property {string} name     - Material Symbols のアイコン名（スネークケース）。
+ * @property {string} label    - 検索用キーワード（日本語・英語・同義語を含む）。
+ * @property {string} category - カテゴリID。
  */
+
+/**
+ * @typedef {object} IconCategory
+ * @property {string} id    - カテゴリID。
+ * @property {string} label - 表示ラベル。
+ * @property {string} icon  - カテゴリ見出しに使う Material Symbol 名。
+ */
+
+/** @type {Array<IconCategory>} */
+export const iconCategories = [
+  { id: 'all',       label: '全て',           icon: 'apps' },
+  { id: 'general',   label: '汎用',           icon: 'link' },
+  { id: 'learning',  label: '学習',           icon: 'menu_book' },
+  { id: 'media',     label: 'メディア',       icon: 'play_circle' },
+  { id: 'tech',      label: '技術',           icon: 'code' },
+  { id: 'infra',     label: 'インフラ',       icon: 'cloud' },
+  { id: 'community', label: 'コミュニティ',   icon: 'forum' },
+  { id: 'business',  label: 'ビジネス',       icon: 'business' },
+  { id: 'creative',  label: 'クリエイティブ', icon: 'lightbulb' },
+  { id: 'info',      label: '情報',           icon: 'newspaper' },
+  { id: 'life',      label: 'ライフ',         icon: 'favorite' },
+];
+
+/** @type {Array<IconEntry>} */
 export const iconList = [
-  "🌍", "🌱", "🌿", "🌳", "🌲", "🌊", "💧", "🔥", "🌈",
-  "☀️", "🌧️", "🌦️",
-  "📘", "📗", "📕", "📚", "🧠", "💡", "📝", "❓", "❗",
-  "💼", "🛠️", "⚙️", "📂", "📄", "📊", "📈", "📉",
-  "🗂️", "🧭", "🗺️", "🪜", "🧩", "🔗", "📌", "🏁",
-  "⏳", "🚧", "🔄", "🔍", "✅", "☑️", "🚨"
+  // ===== 汎用 =====
+  { name: 'link',                  label: 'リンク link url href',                        category: 'general' },
+  { name: 'open_in_new',           label: '外部リンク 新しいタブ open external new tab',  category: 'general' },
+  { name: 'bookmark',              label: 'ブックマーク お気に入り bookmark saved',       category: 'general' },
+  { name: 'bookmark_add',          label: 'ブックマーク追加 add bookmark save',           category: 'general' },
+  { name: 'star',                  label: 'スター 星 お気に入り star favorite rating',    category: 'general' },
+  { name: 'home',                  label: 'ホーム 家 home house top',                     category: 'general' },
+  { name: 'search',                label: '検索 サーチ search find magnify',              category: 'general' },
+  { name: 'public',                label: 'ウェブ インターネット 公開 public web globe',  category: 'general' },
+  { name: 'language',              label: '言語 地球 language locale globe world',        category: 'general' },
+  { name: 'explore',               label: '探索 コンパス explore compass discover',       category: 'general' },
+  { name: 'map',                   label: 'マップ 地図 map navigation',                   category: 'general' },
+  { name: 'place',                 label: '場所 ピン 位置 place location pin marker',     category: 'general' },
+  { name: 'launch',                label: '起動 開く launch open start',                  category: 'general' },
+  { name: 'add_link',              label: 'リンク追加 add link new url',                  category: 'general' },
+  { name: 'filter_list',           label: 'フィルター 絞り込み filter sort list',         category: 'general' },
+  { name: 'sort',                  label: '並び替え ソート sort order',                   category: 'general' },
+  { name: 'tune',                  label: '調整 カスタム tune adjust customize',          category: 'general' },
+  { name: 'apps',                  label: 'アプリ ポータル まとめ apps grid portal menu', category: 'general' },
+  { name: 'settings_applications', label: 'アプリ設定 settings applications config',     category: 'general' },
+  { name: 'more_horiz',            label: 'その他 メニュー more menu dots options',       category: 'general' },
+  { name: 'folder',                label: 'フォルダ folder directory file',               category: 'general' },
+  { name: 'folder_open',           label: 'フォルダ 開く 格納 folder open directory put', category: 'general' },
+
+  // ===== 学習 =====
+  { name: 'description',           label: 'ドキュメント ファイル document file page',    category: 'learning' },
+  { name: 'article',               label: '記事 テキスト article text post',             category: 'learning' },
+  { name: 'menu_book',             label: '本 書籍 テキスト book textbook read',         category: 'learning' },
+  { name: 'library_books',         label: 'ライブラリ 図書館 library books collection',  category: 'learning' },
+  { name: 'auto_stories',          label: '絵本 ストーリー auto stories flip book',      category: 'learning' },
+  { name: 'school',                label: '学校 教育 スクール school education study',   category: 'learning' },
+  { name: 'class',                 label: 'クラス 授業 class lesson course',             category: 'learning' },
+  { name: 'science',               label: '科学 実験 フラスコ science lab experiment',   category: 'learning' },
+  { name: 'calculate',             label: '計算 数学 電卓 calculate math calc',          category: 'learning' },
+  { name: 'quiz',                  label: 'クイズ テスト quiz test question',            category: 'learning' },
+  { name: 'assignment',            label: '課題 レポート assignment report task',        category: 'learning' },
+  { name: 'grading',               label: '採点 評価 grading grade review',             category: 'learning' },
+  { name: 'note',                  label: 'メモ ノート note memo',                       category: 'learning' },
+  { name: 'sticky_note_2',         label: '付箋 メモ sticky note post-it memo',          category: 'learning' },
+  { name: 'history_edu',           label: '歴史 履歴 history education scroll',         category: 'learning' },
+  { name: 'draw',                  label: '描く 手書き draw sketch pen handwrite',       category: 'learning' },
+  { name: 'edit',                  label: '編集 エディット edit write pencil',           category: 'learning' },
+  { name: 'content_paste',         label: 'ペースト コピー content paste clipboard',    category: 'learning' },
+  { name: 'summarize',             label: '要約 サマリ summarize summary report',        category: 'learning' },
+  { name: 'psychology',            label: '心理 脳 思考 psychology brain mind think',   category: 'learning' },
+  { name: 'spellcheck',            label: 'スペルチェック grammar spell check writing', category: 'learning' },
+  { name: 'format_list_numbered',  label: '番号付きリスト numbered list ordered',       category: 'learning' },
+
+  // ===== メディア =====
+  { name: 'play_circle',           label: '再生 動画 play video circle media',          category: 'media' },
+  { name: 'video_library',         label: '動画ライブラリ 動画一覧 video library',      category: 'media' },
+  { name: 'videocam',              label: 'ビデオカメラ 動画 videocam camera video',    category: 'media' },
+  { name: 'smart_display',         label: 'ディスプレイ 画面 display screen cast',      category: 'media' },
+  { name: 'movie',                 label: '映画 ムービー film movie cinema clapper',    category: 'media' },
+  { name: 'live_tv',               label: 'ライブ TV テレビ live tv broadcast',         category: 'media' },
+  { name: 'tv',                    label: 'テレビ TV monitor television screen',         category: 'media' },
+  { name: 'slideshow',             label: 'スライドショー プレゼン slideshow slide',    category: 'media' },
+  { name: 'podcast',               label: 'ポッドキャスト 音声 podcast audio mic',      category: 'media' },
+  { name: 'music_note',            label: '音楽 音符 music note audio sound',           category: 'media' },
+  { name: 'queue_play_next',       label: '次に再生 キュー queue play next',            category: 'media' },
+  { name: 'headphones',            label: 'ヘッドフォン 音楽 headphones audio listen', category: 'media' },
+  { name: 'volume_up',             label: '音量 スピーカー volume speaker audio loud',  category: 'media' },
+  { name: 'radio',                 label: 'ラジオ 放送 radio broadcast wireless',       category: 'media' },
+  { name: 'mic',                   label: 'マイク 録音 mic microphone record voice',    category: 'media' },
+  { name: 'camera_alt',            label: 'カメラ 写真 camera photo picture shoot',     category: 'media' },
+  { name: 'photo_library',         label: '写真ライブラリ フォト photo gallery library', category: 'media' },
+  { name: 'image',                 label: '画像 イメージ image picture photo',          category: 'media' },
+
+  // ===== 技術 =====
+  { name: 'code',                  label: 'コード プログラム code programming dev',      category: 'tech' },
+  { name: 'terminal',              label: 'ターミナル コンソール terminal console shell', category: 'tech' },
+  { name: 'bug_report',            label: 'バグ デバッグ bug debug report error',       category: 'tech' },
+  { name: 'build',                 label: 'ビルド 工具 build tools wrench fix',         category: 'tech' },
+  { name: 'settings',              label: '設定 config settings gear options',          category: 'tech' },
+  { name: 'developer_mode',        label: '開発者 デベロッパー developer mode dev',     category: 'tech' },
+  { name: 'data_object',           label: 'データ JSON オブジェクト data object json',  category: 'tech' },
+  { name: 'api',                   label: 'API エンドポイント api endpoint interface',  category: 'tech' },
+  { name: 'memory',                label: 'メモリ チップ hardware memory chip RAM',      category: 'tech' },
+  { name: 'hub',                   label: 'ハブ ネットワーク hub network connect',      category: 'tech' },
+  { name: 'integration_instructions', label: '統合 連携 integration instructions doc', category: 'tech' },
+  { name: 'token',                 label: 'トークン 認証 token auth key',               category: 'tech' },
+  { name: 'account_tree',          label: 'ツリー 構造 account tree hierarchy org',     category: 'tech' },
+  { name: 'schema',                label: 'スキーマ DB 設計 schema database design',    category: 'tech' },
+  { name: 'deployed_code',         label: 'デプロイ リリース deployed code release',    category: 'tech' },
+  { name: 'webhook',               label: 'Webhook イベント webhook event trigger',     category: 'tech' },
+  { name: 'keyboard',              label: 'キーボード keyboard typing input',           category: 'tech' },
+  { name: 'computer',              label: 'パソコン PC コンピュータ computer desktop',  category: 'tech' },
+  { name: 'laptop',                label: 'ノートPC ラップトップ laptop notebook',      category: 'tech' },
+  { name: 'smartphone',            label: 'スマホ 携帯 smartphone mobile phone',        category: 'tech' },
+  { name: 'monitor',               label: 'モニター 画面 monitor display screen',       category: 'tech' },
+  { name: 'usb',                   label: 'USB 接続 usb connect port',                  category: 'tech' },
+
+  // ===== インフラ =====
+  { name: 'cloud',                 label: 'クラウド cloud AWS Azure GCP',               category: 'infra' },
+  { name: 'cloud_upload',          label: 'アップロード クラウド upload cloud put',     category: 'infra' },
+  { name: 'cloud_download',        label: 'ダウンロード クラウド download cloud get',   category: 'infra' },
+  { name: 'storage',               label: 'ストレージ ディスク storage disk HDD SSD',   category: 'infra' },
+  { name: 'dns',                   label: 'DNS ドメイン サーバー dns domain server',    category: 'infra' },
+  { name: 'router',                label: 'ルーター ネットワーク router network',       category: 'infra' },
+  { name: 'wifi',                  label: 'WiFi 無線 wifi wireless network',            category: 'infra' },
+  { name: 'cable',                 label: 'ケーブル 有線 cable wire connect LAN',       category: 'infra' },
+  { name: 'network_check',         label: 'ネットワーク確認 速度 network check speed',  category: 'infra' },
+  { name: 'backup',                label: 'バックアップ 復元 backup restore copy',      category: 'infra' },
+  { name: 'security',              label: 'セキュリティ 安全 security protect safe',    category: 'infra' },
+  { name: 'shield',                label: 'シールド 防御 shield protect guard defence', category: 'infra' },
+  { name: 'lock',                  label: '鍵 ロック パスワード lock password secure',  category: 'infra' },
+  { name: 'key',                   label: 'キー 認証 key auth credentials secret',      category: 'infra' },
+  { name: 'vpn_key',               label: 'VPN キー vpn key tunnel secure',             category: 'infra' },
+  { name: 'verified_user',         label: '認証済み 信頼 verified user trusted safe',   category: 'infra' },
+  { name: 'admin_panel_settings',  label: '管理者 管理 admin settings panel',           category: 'infra' },
+  { name: 'manage_accounts',       label: 'アカウント管理 manage accounts user admin',  category: 'infra' },
+
+  // ===== コミュニティ =====
+  { name: 'forum',                 label: 'フォーラム 掲示板 forum community board',    category: 'community' },
+  { name: 'chat',                  label: 'チャット メッセージ chat message talk',       category: 'community' },
+  { name: 'message',               label: 'メッセージ SMS message text chat',           category: 'community' },
+  { name: 'comment',               label: 'コメント 返信 comment reply post',           category: 'community' },
+  { name: 'feedback',              label: 'フィードバック 意見 feedback review opinion', category: 'community' },
+  { name: 'rate_review',           label: '評価 レビュー rate review star comment',     category: 'community' },
+  { name: 'people',                label: '人 ユーザー people users person',            category: 'community' },
+  { name: 'person',                label: '個人 ユーザー アカウント person user account', category: 'community' },
+  { name: 'groups',                label: 'グループ チーム groups team members',        category: 'community' },
+  { name: 'diversity_3',           label: '多様性 コミュニティ diversity team group',   category: 'community' },
+  { name: 'handshake',             label: '握手 連携 パートナー handshake partner deal', category: 'community' },
+  { name: 'volunteer_activism',    label: 'ボランティア 貢献 volunteer help support',   category: 'community' },
+  { name: 'share',                 label: 'シェア 共有 share social spread',            category: 'community' },
+  { name: 'alternate_email',       label: 'メール アドレス email at address contact',   category: 'community' },
+  { name: 'mail',                  label: 'メール 受信箱 mail inbox email',             category: 'community' },
+  { name: 'notifications',         label: '通知 ベル notifications bell alert',         category: 'community' },
+  { name: 'contacts',              label: '連絡先 アドレス帳 contacts address book',    category: 'community' },
+  { name: 'thumb_up',              label: '高評価 いいね thumb up like good',           category: 'community' },
+
+  // ===== ビジネス =====
+  { name: 'business',              label: 'ビジネス 会社 business company office',      category: 'business' },
+  { name: 'corporate_fare',        label: '企業 ビル corporate office building',        category: 'business' },
+  { name: 'work',                  label: '仕事 業務 work job briefcase task',          category: 'business' },
+  { name: 'payments',              label: '支払い 決済 payment money pay billing',      category: 'business' },
+  { name: 'monetization_on',       label: '収益化 マネタイズ monetization money earn',  category: 'business' },
+  { name: 'account_balance',       label: '銀行 残高 bank account balance wallet',      category: 'business' },
+  { name: 'local_offer',           label: 'タグ クーポン offer coupon tag deal sale',   category: 'business' },
+  { name: 'receipt',               label: '領収書 レシート receipt invoice billing',    category: 'business' },
+  { name: 'store',                 label: 'ストア 店 store shop retail market',         category: 'business' },
+  { name: 'inventory',             label: '在庫 管理 inventory stock management',       category: 'business' },
+  { name: 'category',              label: 'カテゴリ 分類 category label tag type',      category: 'business' },
+  { name: 'trending_up',           label: '上昇 トレンド trending up growth increase',  category: 'business' },
+  { name: 'analytics',             label: '分析 解析 analytics stats data insights',    category: 'business' },
+  { name: 'leaderboard',           label: 'ランキング リーダーボード leaderboard rank', category: 'business' },
+  { name: 'show_chart',            label: 'グラフ チャート show chart line graph',      category: 'business' },
+  { name: 'bar_chart',             label: '棒グラフ bar chart graph stats',             category: 'business' },
+  { name: 'pie_chart',             label: '円グラフ 割合 pie chart proportion share',   category: 'business' },
+  { name: 'table_chart',           label: 'テーブル 表 table chart spreadsheet grid',   category: 'business' },
+  { name: 'dashboard',             label: 'ダッシュボード 管理画面 dashboard overview', category: 'business' },
+  { name: 'checklist',             label: 'チェックリスト タスク checklist todo task',  category: 'business' },
+
+  // ===== クリエイティブ =====
+  { name: 'lightbulb',             label: 'アイデア 閃き lightbulb idea insight',       category: 'creative' },
+  { name: 'tips_and_updates',      label: 'ヒント アップデート tips updates new idea',  category: 'creative' },
+  { name: 'bolt',                  label: 'ボルト 電光 bolt flash lightning speed',     category: 'creative' },
+  { name: 'auto_awesome',          label: 'AI 自動 魔法 awesome auto magic AI stars',   category: 'creative' },
+  { name: 'rocket_launch',         label: 'ロケット 起動 スタートアップ rocket launch', category: 'creative' },
+  { name: 'design_services',       label: 'デザイン サービス design services creative', category: 'creative' },
+  { name: 'palette',               label: 'パレット 色 デザイン palette color design',  category: 'creative' },
+  { name: 'brush',                 label: 'ブラシ 絵 art brush paint draw artwork',     category: 'creative' },
+  { name: 'create',                label: '作成 ペン create write edit pen compose',    category: 'creative' },
+  { name: 'format_paint',          label: 'フォーマット 塗り format paint fill color',  category: 'creative' },
+  { name: 'style',                 label: 'スタイル デザイン style theme fashion',      category: 'creative' },
+  { name: 'straighten',            label: 'ルーラー 定規 straighten ruler measure',     category: 'creative' },
+  { name: 'crop',                  label: 'トリミング 切り取り crop trim edit image',   category: 'creative' },
+  { name: 'celebration',           label: '祝 お祝い celebration party congrats',       category: 'creative' },
+  { name: 'grade',                 label: '星評価 グレード grade star award rating',     category: 'creative' },
+  { name: 'diamond',               label: 'ダイヤモンド 高品質 diamond premium gem',    category: 'creative' },
+  { name: 'workspace_premium',     label: 'プレミアム 上位 premium workspace badge',    category: 'creative' },
+  { name: 'new_releases',          label: '新リリース 新機能 new releases update badge', category: 'creative' },
+
+  // ===== 情報 =====
+  { name: 'newspaper',             label: 'ニュース 新聞 newspaper news press media',   category: 'info' },
+  { name: 'feed',                  label: 'フィード RSS feed rss news update stream',   category: 'info' },
+  { name: 'campaign',              label: 'キャンペーン 告知 campaign announce alert',  category: 'info' },
+  { name: 'announcement',          label: 'お知らせ アナウンス announcement notice',    category: 'info' },
+  { name: 'info',                  label: '情報 インフォ info information about detail', category: 'info' },
+  { name: 'help',                  label: 'ヘルプ 質問 help question support FAQ',      category: 'info' },
+  { name: 'question_mark',         label: '?  質問 疑問 question mark unknown',         category: 'info' },
+  { name: 'warning',               label: '警告 注意 warning alert caution danger',     category: 'info' },
+  { name: 'error',                 label: 'エラー 失敗 error fail issue problem',        category: 'info' },
+  { name: 'check_circle',          label: '完了 成功 チェック check circle done ok',    category: 'info' },
+  { name: 'notification_important', label: '重要通知 notification important urgent',    category: 'info' },
+  { name: 'update',                label: 'アップデート 更新 update refresh sync',      category: 'info' },
+  { name: 'history',               label: '履歴 過去 history log past record',          category: 'info' },
+  { name: 'access_time',           label: '時計 時間 access time clock schedule',       category: 'info' },
+  { name: 'today',                 label: '今日 日付 today date calendar day',          category: 'info' },
+  { name: 'event',                 label: 'イベント 予定 event calendar schedule',      category: 'info' },
+
+  // ===== ライフ =====
+  { name: 'favorite',              label: '好き ハート お気に入り favorite heart love', category: 'life' },
+  { name: 'light_mode',           label: '太陽 朝 明るい 天気 light mode sun morning bright day', category: 'life' },
+  { name: 'health_and_safety',     label: '健康 安全 医療 health safety medical care',  category: 'life' },
+  { name: 'local_hospital',        label: '病院 医療 hospital medical clinic doctor',   category: 'life' },
+  { name: 'fitness_center',        label: 'フィットネス ジム fitness gym exercise',     category: 'life' },
+  { name: 'self_improvement',      label: '瞑想 自己啓発 self improvement meditation', category: 'life' },
+  { name: 'sports_esports',        label: 'ゲーム eスポーツ game esports controller',   category: 'life' },
+  { name: 'local_cafe',            label: 'カフェ コーヒー cafe coffee cup drink',      category: 'life' },
+  { name: 'restaurant',            label: 'レストラン 食事 restaurant food dining eat', category: 'life' },
+  { name: 'schedule',              label: 'スケジュール 予定 schedule time plan',       category: 'life' },
+  { name: 'timer',                 label: 'タイマー カウントダウン timer countdown',    category: 'life' },
+  { name: 'calendar_month',        label: 'カレンダー 月 calendar month date plan',    category: 'life' },
+  { name: 'flight',                label: '飛行機 旅行 flight travel airplane trip',    category: 'life' },
+  { name: 'directions_car',        label: '車 ドライブ car drive transport vehicle',    category: 'life' },
+  { name: 'shopping_bag',          label: 'ショッピング 買い物 shopping bag cart buy',  category: 'life' },
+  { name: 'pets',                  label: 'ペット 動物 pets animals cat dog',           category: 'life' },
+  { name: 'nightlife',             label: '夜 バー nightlife bar night party club',     category: 'life' },
 ];

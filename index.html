@@ -6,6 +6,8 @@
   <title>Study Portal - 勉強用リンク集</title>
   <link rel="icon" href="data:,"> <!-- ファビコンエラー防止 -->
   <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
 </head>
 <body>
 
@@ -13,7 +15,7 @@
   <header>
     <div style="display:flex; justify-content:space-between; align-items:flex-start;">
       <div>
-        <h1><span style="color:var(--primary)">📘</span> Study Portal</h1>
+        <h1><span class="icon icon-lg" style="color:var(--primary)">menu_book</span> Study Portal</h1>
         <div class="note">
           目的のリソースへ最短でアクセスするためのマイポータル
         </div>
@@ -21,12 +23,12 @@
       <div class="header-controls">
         <!-- 保存ボタンエリア（常時表示、変更がない時は無効化） -->
         <div id="saveArea" style="margin-bottom: 8px; text-align: right;">
-          <button id="saveChangesBtn" class="primary-btn save-btn" disabled>💾 JSONを保存</button>
+          <button id="saveChangesBtn" class="primary-btn save-btn" disabled><span class="icon icon-sm">save</span> JSONを保存</button>
           <div id="unsavedWarning" style="font-size:0.7rem; color:var(--text-sub); margin-top:4px;">データは最新です</div>
         </div>
         
         <div class="edit-toggle-area">
-          <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理">⚙️</button>
+          <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理"><span class="icon icon-md">settings</span></button>
           <label class="toggle-switch">
             <input type="checkbox" id="editModeToggle">
             <span class="slider"></span>
@@ -48,10 +50,10 @@
   </div>
 
   <div class="controls">
-    <button id="openAll" class="bulk-action-btn">➕ カテゴリをすべて開く</button>
-    <button id="closeAll" class="bulk-action-btn">➖ カテゴリをすべて閉じる</button>
-    <button id="addCategoryBtn" class="bulk-action-btn" style="display:none;">＋ カテゴリ追加</button>
-    <button id="bulkAddLinkBtn" class="bulk-action-btn" style="display:none;">＋ リンク一括追加</button>
+    <button id="openAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_more</span> カテゴリをすべて開く</button>
+    <button id="closeAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_less</span> カテゴリをすべて閉じる</button>
+    <button id="addCategoryBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">create_new_folder</span> カテゴリ追加</button>
+    <button id="bulkAddLinkBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">playlist_add</span> リンク一括追加</button>
   </div>
 
   <!-- ここにJSでコンテンツが描画されます -->
@@ -59,9 +61,9 @@
 
   <!-- データ管理エリア（フッター） -->
   <div class="data-management" style="margin-top:40px; border-top:1px solid var(--card-border); padding-top:20px;">
-    <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--text-sub);">⚙️ データ読み込み</h4>
+    <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--text-sub); display:flex; align-items:center; gap:6px;"><span class="icon icon-sm">settings</span> データ読み込み</h4>
     <label class="secondary-btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
-      📥 JSONファイルを読み込んで差し替える
+      <span class="icon icon-sm">upload_file</span> JSONファイルを読み込んで差し替える
       <input type="file" id="importFileInput" accept=".json" style="display:none;">
     </label>
     <div style="font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
@@ -89,10 +91,13 @@
     <h3>リンク編集</h3>
     <label>タイトル: <input type="text" id="linkTitleInput" required></label>
     <label>URL: <input type="url" id="linkUrlInput" required></label>
-    <label>アイコン (絵文字):
-      <div style="display:flex; gap: 8px;">
-        <input type="text" id="linkIconInput" style="width: 50px; text-align:center;" readonly>
-        <button type="button" id="openLinkIconPickerBtn" class="secondary-btn" style="flex-grow: 1;">選択</button>
+    <label>アイコン:
+      <div style="display:flex; gap: 8px; align-items:center;">
+        <div id="linkIconPreview" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border:1px solid var(--card-border); border-radius:6px; background:var(--bg); flex-shrink:0;">
+          <span class="icon icon-lg" id="linkIconDisplay">link</span>
+        </div>
+        <input type="hidden" id="linkIconInput" value="link">
+        <button type="button" id="openLinkIconPickerBtn" class="secondary-btn" style="flex-grow: 1;"><span class="icon icon-sm">grid_view</span> アイコンを選択</button>
       </div>
     </label>
     <label>バッジ:
@@ -146,7 +151,10 @@
 <!-- アイコンピッカーダイアログ -->
 <dialog id="iconPickerDialog">
   <h3>アイコンを選択</h3>
-  <input type="text" id="iconSearchInput" placeholder="アイコンを検索...">
+  <input type="text" id="iconSearchInput" placeholder="例: 動画、code、メモ、cloud …">
+  <div id="iconCategoryFilter" class="icon-category-filter">
+    <!-- JSでカテゴリボタンが生成されます -->
+  </div>
   <div id="iconGrid" class="icon-grid">
     <!-- JSでアイコンがここに生成されます -->
   </div>

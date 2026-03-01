@@ -4,126 +4,158 @@
  * @module IconPickerDialog
  */
 
-import { iconList } from '../iconList.js';
+import { iconList, iconCategories } from '../iconList.js';
 
 /**
  * @class IconPickerDialog
- * @brief ユーザーが絵文字アイコンを検索・選択するためのモーダルダイアログを制御します。
+ * @brief Material Symbols アイコンを検索・カテゴリ絞り込みして選択するモーダルダイアログを制御します。
  */
 export class IconPickerDialog {
-  /**
-   * @property {HTMLDialogElement} dialog - アイコンピッカーダイアログのDOM要素。
-   */
   dialog;
-  /**
-   * @property {HTMLElement} iconGrid - アイコンが表示されるグリッドコンテナのDOM要素。
-   */
   iconGrid;
-  /**
-   * @property {HTMLInputElement} searchInput - アイコン検索入力フィールドのDOM要素。
-   */
   searchInput;
-  /**
-   * @property {Array<string>} icons - 表示するすべてのアイコンのリスト。
-   */
+  categoryFilter;
   icons = iconList;
-  /**
-   * @property {function(string): void|null} currentSelectCallback - 現在開いているセッションでアイコンが選択されたときに呼び出されるコールバック関数。
-   */
   currentSelectCallback = null;
+  /** @type {string} 現在選択中のカテゴリID（'all' = 全表示） */
+  currentCategory = 'all';
 
-  /**
-   * IconPickerDialogの新しいインスタンスを作成します。
-   */
   constructor() {
-    // DOM要素の取得はinit()メソッドで行う
     this.icons = iconList;
     this.currentSelectCallback = null;
+    this.currentCategory = 'all';
   }
 
-  /**
-   * ダイアログの初期化とイベントリスナーの設定を行います。
-   */
   init() {
     this.dialog = document.getElementById('iconPickerDialog');
     this.iconGrid = document.getElementById('iconGrid');
     this.searchInput = document.getElementById('iconSearchInput');
+    this.categoryFilter = document.getElementById('iconCategoryFilter');
     this.initEventListeners();
+    this.renderCategories();
   }
 
-  /**
-   * ダイアログのイベントリスナーを初期化します。
-   */
   initEventListeners() {
-    // 閉じるボタンのイベントリスナー
     document.getElementById('closeIconPickerDialogBtn').addEventListener('click', () => {
       this.dialog.close();
-      this.currentSelectCallback = null; // コールバックをクリア
+      this.currentSelectCallback = null;
     });
 
-    // 検索入力フィールドのイベントリスナー
     this.searchInput.addEventListener('input', () => this.filterIcons());
 
-    // アイコングリッド内のアイコン選択イベントリスナー（イベント委譲）
     this.iconGrid.addEventListener('click', (e) => {
-      const targetButton = e.target.closest('button');
-      if (targetButton && targetButton.dataset.icon && this.currentSelectCallback) {
-        this.currentSelectCallback(targetButton.dataset.icon); // 選択されたアイコンをコールバックで返す
-        this.dialog.close(); // ダイアログを閉じる
-        this.currentSelectCallback = null; // コールバックをクリア
+      const targetButton = e.target.closest('button[data-icon]');
+      if (targetButton && this.currentSelectCallback) {
+        this.currentSelectCallback(targetButton.dataset.icon);
+        this.dialog.close();
+        this.currentSelectCallback = null;
       }
     });
   }
 
   /**
-   * 検索クエリに基づいてアイコンをフィルタリングし、グリッドを再描画します。
+   * カテゴリフィルターボタン群を描画します。
    * @private
    */
-  filterIcons() {
-    const searchTerm = this.searchInput.value.toLowerCase();
-    const filteredIcons = this.icons.filter(icon => {
-      // 絵文字自体または（将来的に）Unicode名/メタデータで検索
-      return icon.toLowerCase().includes(searchTerm) || this.getIconName(icon).toLowerCase().includes(searchTerm);
+  renderCategories() {
+    this.categoryFilter.innerHTML = '';
+    iconCategories.forEach(cat => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `icon-category-btn${cat.id === this.currentCategory ? ' active' : ''}`;
+      btn.dataset.category = cat.id;
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'icon';
+      iconSpan.style.fontSize = '14px';
+      iconSpan.style.fontVariationSettings = "'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 20";
+      iconSpan.textContent = cat.icon;
+
+      btn.appendChild(iconSpan);
+      btn.append(' ' + cat.label);
+
+      btn.addEventListener('click', () => {
+        this.currentCategory = cat.id;
+        // アクティブクラスを切り替え
+        this.categoryFilter.querySelectorAll('.icon-category-btn').forEach(b =>
+          b.classList.toggle('active', b.dataset.category === cat.id)
+        );
+        this.filterIcons();
+      });
+
+      this.categoryFilter.appendChild(btn);
     });
-    this.renderIcons(filteredIcons);
   }
 
   /**
-   * アイコンのUnicode名または関連するメタデータを返します。
-   * 現時点では絵文字自体を返しますが、将来的にiconListにメタデータを追加することで改善可能です。
-   * @param {string} icon - 絵文字アイコン文字列。
-   * @returns {string} アイコンの検索可能な名前。
+   * 検索文字列・カテゴリに基づいてアイコンをフィルタリングし、グリッドを再描画します。
+   * @private
    */
-  getIconName(icon) {
-    // TODO: iconListにUnicode名や意味を追加して検索性を高める
-    // 現状では絵文字自体での検索か、絵文字のUnicode名での検索のみ
-    // 例: "🌍" -> "globe showing Europe-Africa"
-    return icon;
+  filterIcons() {
+    const searchTerm = this.searchInput.value.toLowerCase().trim();
+
+    const filtered = this.icons.filter(icon => {
+      const categoryMatch = this.currentCategory === 'all' || icon.category === this.currentCategory;
+      const searchMatch = !searchTerm ||
+        icon.name.includes(searchTerm) ||
+        icon.label.toLowerCase().includes(searchTerm);
+      return categoryMatch && searchMatch;
+    });
+
+    this.renderIcons(filtered);
   }
 
   /**
    * 指定されたアイコンのリストをグリッドに描画します。
    * @private
-   * @param {Array<string>} iconsToRender - 描画するアイコンの文字列配列。
+   * @param {Array<IconEntry>} iconsToRender
    */
   renderIcons(iconsToRender) {
-    this.iconGrid.innerHTML = ''; // グリッドをクリア
+    this.iconGrid.innerHTML = '';
+
+    if (iconsToRender.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'icon-grid-empty';
+      empty.textContent = '該当するアイコンがありません';
+      this.iconGrid.appendChild(empty);
+      return;
+    }
+
     iconsToRender.forEach(icon => {
       const button = document.createElement('button');
-      button.textContent = icon;
-      button.dataset.icon = icon; // data-icon属性に絵文字を保存
+      button.type = 'button';
+      button.dataset.icon = icon.name;
+      // ツールチップ: アイコン名 + 日本語キーワード（最初の2語）
+      const keywords = icon.label.split(' ').slice(0, 3).join(' ');
+      button.title = `${icon.name}\n${keywords}`;
+
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'icon icon-lg';
+      iconSpan.textContent = icon.name;
+
+      // アイコン名を短縮して表示（スネークケース → スペース区切り、12文字まで）
+      const nameLabel = document.createElement('span');
+      nameLabel.className = 'icon-grid-label';
+      const displayName = icon.name.replace(/_/g, ' ');
+      nameLabel.textContent = displayName.length > 11 ? displayName.slice(0, 10) + '…' : displayName;
+
+      button.appendChild(iconSpan);
+      button.appendChild(nameLabel);
       this.iconGrid.appendChild(button);
     });
   }
 
-  /**
-   * アイコン選択ダイアログを開きます。
-   * @param {function(string): void} callback - アイコンが選択されたときに呼び出されるコールバック関数。選択されたアイコン文字列を引数に取ります。
-   */
   open(callback) {
-    this.currentSelectCallback = callback; // 渡されたコールバックを保存
-    this.searchInput.value = ''; // 検索入力をクリア
-    this.renderIcons(this.icons); // すべてのアイコンを描画
-    this.dialog.showModal(); // ダイアログを表示
+    this.currentSelectCallback = callback;
+    this.searchInput.value = '';
+    this.currentCategory = 'all';
+    // カテゴリボタンのアクティブ状態をリセット
+    if (this.categoryFilter) {
+      this.categoryFilter.querySelectorAll('.icon-category-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.category === 'all')
+      );
+    }
+    this.filterIcons();
+    this.dialog.showModal();
   }
 }

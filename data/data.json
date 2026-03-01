@@ -8,7 +8,7 @@
         "id": "link_1769330332885_63",
         "title": "Endel",
         "url": "https://app.endel.io/",
-        "icon": "♫",
+        "icon": "headphones",
         "badge": "tool",
         "memo": "集中時の音楽"
       },
@@ -16,7 +16,7 @@
         "id": "link_1769334592318_846",
         "title": "TCC",
         "url": "https://taskchute.cloud/taskchute",
-        "icon": "⏰",
+        "icon": "timer",
         "badge": "tool",
         "memo": "taskchute.cloud　時間記録用"
       },
@@ -24,7 +24,7 @@
         "id": "link_1769334683768_368",
         "title": "学習ナレッジ集",
         "url": "https://kageyama-aoi.github.io/knowledge-base/pages/",
-        "icon": "📝",
+        "icon": "menu_book",
         "badge": "doc",
         "memo": "GitHubで公開しているナレッジ集"
       },
@@ -32,7 +32,7 @@
         "id": "link_1769860571516_892",
         "title": "ナレッジ投入先",
         "url": "https://github.com/kageyama-aoi/knowledge-base#",
-        "icon": "📂",
+        "icon": "folder_open",
         "badge": "doc",
         "memo": "先頭日付つきのmdファイルを放り投げる"
       },
@@ -40,7 +40,7 @@
         "id": "link_1770774567321_129",
         "title": "data_json格納先",
         "url": "https://github.com/kageyama-aoi/portal_site/tree/main/data",
-        "icon": "📂",
+        "icon": "storage",
         "badge": "doc",
         "memo": "まだ自動化に完全成功はしていない"
       }
@@ -55,7 +55,7 @@
         "id": "link_1769328111728_297",
         "title": "Asonowa",
         "url": "https://morning-glory-web.vercel.app/dashboard",
-        "icon": "🌅",
+        "icon": "light_mode",
         "badge": "portal",
         "memo": "朝4～9時に立ち上げポータルサイト"
       },
@@ -63,7 +63,7 @@
         "id": "link_1769328185487_93",
         "title": "IMC Q&A",
         "url": "https://imc-qa-system.web.app/shared-questions",
-        "icon": "📊",
+        "icon": "quiz",
         "badge": "portal",
         "memo": "Q&A"
       },
@@ -71,7 +71,7 @@
         "id": "link_1769328301984_393",
         "title": "chatwork",
         "url": "https://www.chatwork.com/",
-        "icon": "💭",
+        "icon": "chat",
         "badge": "sns",
         "memo": "YMKさんからのメッセージ"
       },
@@ -79,7 +79,7 @@
         "id": "link_1769334710204_462",
         "title": "iPad学習ポータルサイト",
         "url": "https://utage-system.com/members/JHV6T1KC9v29/login",
-        "icon": "🔗",
+        "icon": "apps",
         "badge": "portal",
         "memo": "まとめサイト"
       }
@@ -94,7 +94,7 @@
         "id": "link_1769334893984_445",
         "title": "ローカルサーバー内のサイト",
         "url": "https://computational-nonhyperbolically-irena.ngrok-free.dev/workflow/tu09zXAmuQWYeRJG",
-        "icon": "💻",
+        "icon": "hub",
         "badge": "cloud",
         "memo": "n8n開発サイト"
       }
@@ -109,7 +109,7 @@
         "id": "link_1769384264329_585",
         "title": "Claude for Excel",
         "url": "https://x.com/claudeai/status/2014834616889475508?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
-        "icon": "💡",
+        "icon": "new_releases",
         "badge": "news",
         "memo": "Claude for ExcelがProプランでも利用可能に"
       },
@@ -117,7 +117,7 @@
         "id": "link_1769384264329_116",
         "title": "Everything Claude Code",
         "url": "https://x.com/the_agi_way/status/2012903113213292547?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
-        "icon": "💡",
+        "icon": "newspaper",
         "badge": "news",
         "memo": "Anthropicハッカソン優勝者の「Everything Claude Code」"
       },
@@ -125,7 +125,7 @@
         "id": "link_1769384264329_235",
         "title": "Microsof社",
         "url": "https://www.theverge.com/tech/865689/microsoft-claude-code-anthropic-partnership-notepad",
-        "icon": "💡",
+        "icon": "newspaper",
         "badge": "news",
         "memo": "Microsoft、Anthropicの「Claude Code」を社内で大規模導入"
       },
@@ -133,7 +133,7 @@
         "id": "link_1769384264329_855",
         "title": "組織編制",
         "url": "https://note.com/gimupop/n/n5bbdf9720bdb",
-        "icon": "💡",
+        "icon": "article",
         "badge": "news",
         "memo": "「AIに働かされる」が正解？事業責任者が考える組織図の変化"
       },
@@ -141,7 +141,7 @@
         "id": "link_1770761063631_702",
         "title": "いけともスライド",
         "url": "https://www.dropbox.com/scl/fo/joomf60cyjck41tesp6xd/AHZnLQaX7dGH8T6_ryYWB2Y?rlkey=b44jprzxmu7fsae2u5plvgkos&st=nbff73gr&dl=0",
-        "icon": "📚",
+        "icon": "slideshow",
         "badge": "doc",
         "memo": "毎週ニュースの記事"
       },
@@ -149,7 +149,7 @@
         "id": "link_1770761131698_847",
         "title": "codexアプリ",
         "url": "https://openai.com/ja-JP/index/introducing-the-codex-app/",
-        "icon": "📌",
+        "icon": "code",
         "badge": "doc",
         "memo": ""
       }
@@ -164,7 +164,7 @@
         "id": "link_1770774078857_771",
         "title": "LINE developers",
         "url": "https://developers.line.biz/console/provider/2004842581",
-        "icon": "⚙️",
+        "icon": "api",
         "badge": "cloud",
         "memo": "LINEとの連携"
       },
@@ -172,7 +172,7 @@
         "id": "link_1770774150223_840",
         "title": "openai利用状況",
         "url": "https://platform.openai.com/settings/organization/usage",
-        "icon": "📈",
+        "icon": "analytics",
         "badge": "cloud",
         "memo": "API利用制限とか金額チェック"
       },
@@ -180,7 +180,7 @@
         "id": "link_1770774263756_914",
         "title": "Slack API",
         "url": "https://api.slack.com/apps",
-        "icon": "⚙️",
+        "icon": "api",
         "badge": "cloud",
         "memo": "アプリからできずweb対応"
       },
@@ -188,7 +188,7 @@
         "id": "link_1771970374389_908",
         "title": "claude_ai_利用状況",
         "url": "https://claude.ai/settings/billing",
-        "icon": "🔗",
+        "icon": "monetization_on",
         "badge": "cloud",
         "memo": ""
       }

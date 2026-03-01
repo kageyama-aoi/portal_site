@@ -12,49 +12,19 @@ import { IconPickerDialog } from './iconPickerDialog.js';
  *        IconPickerDialog と連携してアイコン選択機能を提供します。
  */
 export class LinkDialog {
-  /**
-   * @property {DataManager} dataManager - データ操作を管理するDataManagerのインスタンス。
-   */
   dataManager;
-  /**
-   * @property {function(): void} renderCallback - リンク保存後にUIの再描画をトリガーするためのコールバック関数。
-   */
   renderCallback;
-  /**
-   * @property {IconPickerDialog} iconPickerDialog - アイコン選択ダイアログのインスタンス。
-   */
   iconPickerDialog;
-  /**
-   * @property {HTMLDialogElement} dialog - リンクダイアログのDOM要素。
-   */
   dialog;
-  /**
-   * @property {HTMLFormElement} form - ダイアログ内のフォーム要素。
-   */
   form;
-  /**
-   * @property {HTMLInputElement} linkIconInput - アイコン入力フィールドのDOM要素。
-   */
+  /** @property {HTMLInputElement} linkIconInput - アイコン名を保持する hidden input。 */
   linkIconInput;
-  /**
-   * @property {HTMLButtonElement} openIconPickerBtn - アイコンピッカーを開くボタンのDOM要素。
-   */
+  /** @property {HTMLElement} linkIconDisplay - アイコンを視覚表示する span 要素。 */
+  linkIconDisplay;
   openIconPickerBtn;
-  /**
-   * @property {string|null} editingCategoryId - 現在編集中のリンクが属するカテゴリのID。
-   */
   editingCategoryId = null;
-  /**
-   * @property {string|null} editingLinkId - 現在編集中のリンクのID。新規作成の場合は `null`。
-   */
   editingLinkId = null;
 
-  /**
-   * LinkDialogの新しいインスタンスを作成します。
-   * @param {DataManager} dataManager - データ管理オブジェクト。
-   * @param {function(): void} renderCallback - リンク保存後にUIの再描画を行うコールバック関数。
-   * @param {IconPickerDialog} iconPickerDialog - アイコン選択ダイアログのインスタンス。
-   */
   constructor(dataManager, renderCallback, iconPickerDialog) {
     this.dataManager = dataManager;
     this.renderCallback = renderCallback;
@@ -63,28 +33,22 @@ export class LinkDialog {
     this.editingLinkId = null;
   }
 
-  /**
-   * ダイアログの初期化とイベントリスナーの設定を行います。
-   */
   init() {
     this.dialog = document.getElementById('linkDialog');
     this.form = this.dialog.querySelector('form');
     this.linkIconInput = document.getElementById('linkIconInput');
+    this.linkIconDisplay = document.getElementById('linkIconDisplay');
     this.openIconPickerBtn = document.getElementById('openLinkIconPickerBtn');
     this.initEventListeners();
   }
 
-  /**
-   * ダイアログのイベントリスナーを初期化します。
-   */
   initEventListeners() {
     this.dialog.addEventListener('close', () => {
-      // ダイアログが 'save' の値で閉じられた場合のみ保存処理を実行
       if (this.dialog.returnValue === 'save') {
         const linkData = {
           title: this.form.linkTitleInput.value,
           url: this.form.linkUrlInput.value,
-          icon: this.linkIconInput.value || '🔗',
+          icon: this.linkIconInput.value || 'link',
           badge: this.form.linkBadgeInput.value,
           memo: this.form.linkMemoInput.value
         };
@@ -94,43 +58,58 @@ export class LinkDialog {
         } else if (this.editingCategoryId) {
           this.dataManager.addLink(this.editingCategoryId, linkData);
         }
-        this.renderCallback(); // UIの再描画をトリガー
+        this.renderCallback();
       }
-      this.editingCategoryId = null; // 編集中のIDをリセット
+      this.editingCategoryId = null;
       this.editingLinkId = null;
     });
 
-    // アイコンピッカーを開くボタンのイベントリスナー
     this.openIconPickerBtn.addEventListener('click', () => {
       this.iconPickerDialog.open((selectedIcon) => {
-        this.linkIconInput.value = selectedIcon; // 選択されたアイコンをinputフィールドに設定
+        this.linkIconInput.value = selectedIcon;
+        this._renderIconPreview(selectedIcon);
       });
     });
   }
 
   /**
-   * リンク編集ダイアログを開きます。
-   * @param {string} categoryId - リンクが属するカテゴリのID。
-   * @param {string|null} [linkId=null] - 編集するリンクのID。新規作成の場合は `null`。
+   * アイコン名に応じてプレビュー要素を更新します。
+   * Material Symbol 名（ASCII スネークケース）はシンボルとして、
+   * それ以外（絵文字など）はそのままテキストとして表示します。
+   * @private
+   * @param {string} iconValue - アイコン値。
    */
+  _renderIconPreview(iconValue) {
+    const isMaterialSymbol = iconValue && /^[a-z][a-z_0-9]*$/.test(iconValue);
+    if (isMaterialSymbol) {
+      this.linkIconDisplay.className = 'icon icon-lg';
+      this.linkIconDisplay.style.fontSize = '';
+      this.linkIconDisplay.textContent = iconValue;
+    } else {
+      this.linkIconDisplay.className = '';
+      this.linkIconDisplay.style.fontSize = '1.4rem';
+      this.linkIconDisplay.textContent = iconValue || '?';
+    }
+  }
+
   open(categoryId, linkId = null) {
     this.editingCategoryId = categoryId;
     this.editingLinkId = linkId;
-    
+
     if (linkId) {
-      // 既存リンクの編集の場合、現在のデータをフォームにセット
       const link = this.dataManager.getLink(categoryId, linkId);
       this.form.linkTitleInput.value = link.title;
       this.form.linkUrlInput.value = link.url;
-      this.form.linkIconInput.value = link.icon; // this.linkIconInput を使用
+      this.linkIconInput.value = link.icon;
       this.form.linkBadgeInput.value = link.badge;
       this.form.linkMemoInput.value = link.memo;
+      this._renderIconPreview(link.icon);
     } else {
-      // 新規リンク作成の場合、フォームをリセットしデフォルト値を設定
       this.form.reset();
-      this.form.linkIconInput.value = '🔗';
+      this.linkIconInput.value = 'link';
       this.form.linkBadgeInput.value = 'doc';
+      this._renderIconPreview('link');
     }
-    this.dialog.showModal(); // ダイアログを表示
+    this.dialog.showModal();
   }
 }

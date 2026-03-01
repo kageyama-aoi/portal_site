@@ -119,7 +119,14 @@ export class UI {
    */
   setPageTitle(title, subtitle) {
     document.title = title;
-    document.querySelector('h1').innerHTML = title;
+    const h1 = document.querySelector('h1');
+    const icon = document.createElement('span');
+    icon.className = 'icon icon-lg';
+    icon.style.color = 'var(--primary)';
+    icon.textContent = 'menu_book';
+    h1.textContent = '';
+    h1.appendChild(icon);
+    h1.append(' ' + title);
     document.querySelector('.note').textContent = subtitle;
   }
   
@@ -132,16 +139,30 @@ export class UI {
     const btn = document.getElementById('saveChangesBtn');
     const warning = document.getElementById('unsavedWarning');
 
+    const iconEl = btn.querySelector('.icon') || document.createElement('span');
+    iconEl.className = 'icon icon-sm';
+    iconEl.textContent = 'save';
+    if (!btn.contains(iconEl)) btn.prepend(iconEl);
+
+    const textNode = btn.childNodes[btn.childNodes.length - 1];
+    const setLabel = (text) => {
+      if (textNode && textNode.nodeType === Node.TEXT_NODE) {
+        textNode.textContent = ` ${text}`;
+      } else {
+        btn.append(` ${text}`);
+      }
+    };
+
     if (isDirty) {
       btn.disabled = false;
       btn.classList.add('pulse-animation');
-      btn.textContent = `💾 ${fileName} を保存`;
-      warning.textContent = '⚠️ 未保存の変更あり';
+      setLabel(`${fileName} を保存`);
+      warning.textContent = '未保存の変更あり';
       warning.style.color = 'var(--danger)';
     } else {
       btn.disabled = true;
       btn.classList.remove('pulse-animation');
-      btn.textContent = `💾 ${fileName} を保存`;
+      setLabel(`${fileName} を保存`);
       warning.textContent = 'データは最新です';
       warning.style.color = 'var(--text-sub)';
     }
@@ -335,30 +356,36 @@ export class UI {
 
       if (this.isEditMode) {
         if (catIndex > 0) {
-          const upBtn = this._createActionButton('↑', 'action-btn btn-move', () => this.dataManager.moveCategory(catIndex, catIndex - 1), 'カテゴリを上に移動');
+          const upBtn = this._createActionButton('<span class="icon icon-sm">arrow_upward</span>', 'action-btn btn-move', () => this.dataManager.moveCategory(catIndex, catIndex - 1), 'カテゴリを上に移動');
           groupActions.appendChild(upBtn);
         }
         if (catIndex < data.length - 1) {
-          const downBtn = this._createActionButton('↓', 'action-btn btn-move', () => this.dataManager.moveCategory(catIndex, catIndex + 1), 'カテゴリを下に移動');
+          const downBtn = this._createActionButton('<span class="icon icon-sm">arrow_downward</span>', 'action-btn btn-move', () => this.dataManager.moveCategory(catIndex, catIndex + 1), 'カテゴリを下に移動');
           groupActions.appendChild(downBtn);
         }
-        const editBtn = this._createActionButton('編集', 'action-btn btn-edit', () => this.categoryDialog.open(category.id), 'カテゴリを編集');
-        const deleteBtn = this._createActionButton('🗑️', 'action-btn btn-delete', () => {
+        const editBtn = this._createActionButton('<span class="icon icon-sm">edit</span>', 'action-btn btn-edit', () => this.categoryDialog.open(category.id), 'カテゴリを編集');
+        const deleteBtn = this._createActionButton('<span class="icon icon-sm">delete</span>', 'action-btn btn-delete', () => {
           if (confirm(`カテゴリ「${category.title}」と中のリンクをすべて削除しますか？`)) {
             this.dataManager.deleteCategory(category.id);
             this.render();
           }
-        });
+        }, 'カテゴリを削除');
         groupActions.appendChild(editBtn);
         groupActions.appendChild(deleteBtn);
       } else {
-        const openBtn = this._createActionButton('一括で開く', 'action-btn btn-open', () => this.openCategoryLinks(category));
+        const openBtn = this._createActionButton('<span class="icon icon-sm">open_in_new</span> 一括で開く', 'action-btn btn-open', () => this.openCategoryLinks(category));
         openBtn.title = 'このカテゴリのリンクをすべて開く';
         groupActions.appendChild(openBtn);
       }
 
       summaryContent.appendChild(groupActions);
       summary.appendChild(summaryContent);
+
+      const chevron = document.createElement('span');
+      chevron.className = 'icon icon-lg summary-chevron';
+      chevron.textContent = 'expand_more';
+      summary.appendChild(chevron);
+
       details.appendChild(summary);
 
       const linkList = document.createElement('div');
@@ -372,7 +399,7 @@ export class UI {
       if (this.isEditMode) {
         const addPlaceholder = document.createElement('div');
         addPlaceholder.className = 'add-link-placeholder';
-        addPlaceholder.textContent = '＋ リンクを追加';
+        addPlaceholder.innerHTML = '<span class="icon icon-md">add_link</span> リンクを追加';
         addPlaceholder.addEventListener('click', () => this.linkDialog.open(category.id));
         linkList.appendChild(addPlaceholder);
       }
@@ -394,7 +421,7 @@ export class UI {
   _createActionButton(text, className, onClick, title = '') {
     const btn = document.createElement('button');
     btn.className = className;
-    btn.textContent = text;
+    btn.innerHTML = text;
     if (title) btn.title = title;
     btn.addEventListener('click', (e) => {
       e.stopPropagation(); 
@@ -434,7 +461,16 @@ export class UI {
 
       const iconArea = document.createElement('div');
       iconArea.className = 'icon-area';
-      iconArea.textContent = link.icon;
+      if (/^[a-z][a-z_0-9]*$/.test(link.icon)) {
+        // Material Symbol
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'icon icon-lg';
+        iconSpan.textContent = link.icon;
+        iconArea.appendChild(iconSpan);
+      } else {
+        // 絵文字（既存データの後方互換）
+        iconArea.textContent = link.icon;
+      }
 
       const contentArea = document.createElement('div');
       contentArea.className = 'content-area';
@@ -469,17 +505,17 @@ export class UI {
         
         // リンク移動ボタン
         if (linkIndex > 0) {
-           const upBtn = this._createCardActionButton('↑', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex - 1), 'リンクを上に移動');
+           const upBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_upward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex - 1), 'リンクを上に移動');
            cardActions.appendChild(upBtn);
         }
         if (linkIndex < this.dataManager.getCategory(catId).links.length - 1) {
-          const downBtn = this._createCardActionButton('↓', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex + 1), 'リンクを下に移動');
+          const downBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_downward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex + 1), 'リンクを下に移動');
           cardActions.appendChild(downBtn);
         }
 
         // リンク編集・削除ボタン
-        const editBtn = this._createCardActionButton('🖊', () => this.linkDialog.open(catId, link.id), 'リンクを編集');
-        const delBtn = this._createCardActionButton('🗑', () => {
+        const editBtn = this._createCardActionButton('<span class="icon icon-sm">edit</span>', () => this.linkDialog.open(catId, link.id), 'リンクを編集');
+        const delBtn = this._createCardActionButton('<span class="icon icon-sm">delete</span>', () => {
            if (confirm(`リンク「${link.title}」を削除しますか？`)) {
              this.dataManager.deleteLink(catId, link.id);
              this.render();
