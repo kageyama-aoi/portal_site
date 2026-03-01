@@ -36,10 +36,18 @@ export class IconPickerDialog {
    * IconPickerDialogの新しいインスタンスを作成します。
    */
   constructor() {
+    // DOM要素の取得はinit()メソッドで行う
+    this.icons = iconList;
+    this.currentSelectCallback = null;
+  }
+
+  /**
+   * ダイアログの初期化とイベントリスナーの設定を行います。
+   */
+  init() {
     this.dialog = document.getElementById('iconPickerDialog');
     this.iconGrid = document.getElementById('iconGrid');
     this.searchInput = document.getElementById('iconSearchInput');
-
     this.initEventListeners();
   }
 

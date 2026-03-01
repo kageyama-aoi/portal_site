@@ -40,9 +40,6 @@ export class CategoryDialog {
    */
   constructor(dataManager) {
     this.dataManager = dataManager;
-    this.dialog = document.getElementById('categoryDialog');
-    this.form = this.dialog.querySelector('form');
-    this.titleInput = document.getElementById('catTitleInput');
   }
 
   /**
@@ -51,6 +48,9 @@ export class CategoryDialog {
    */
   init(onCloseCallback) {
     this.onCloseCallback = onCloseCallback;
+    this.dialog = document.getElementById('categoryDialog');
+    this.form = this.dialog.querySelector('form');
+    this.titleInput = document.getElementById('catTitleInput');
     this.form.addEventListener('submit', (e) => {
       e.preventDefault(); // フォームのデフォルト送信を防ぐ
       this._handleSave();

@@ -36,7 +36,7 @@ export class DataManager {
    * @returns {Array<Category>} すべてのデータ。
    */
   getData() {
-    return this.data;
+    return JSON.parse(JSON.stringify(this.data));
   }
 
   /**
@@ -56,7 +56,7 @@ export class DataManager {
    */
   getLink(catId, linkId) {
     const cat = this.getCategory(catId);
-    return cat ? cat.links.find(l => l.id === linkId) : null;
+    return cat ? cat.links.find(l => l.id === linkId) : undefined;
   }
 
   /**
@@ -223,8 +223,11 @@ export class DataManager {
    * @param {string} id - 削除するカテゴリのID。
    */
   deleteCategory(id) {
+    const initialLength = this.data.length;
     this.data = this.data.filter(c => c.id !== id);
-    this.markAsDirty();
+    if (this.data.length < initialLength) {
+      this.markAsDirty();
+    }
   }
 
   /**
@@ -283,8 +286,11 @@ export class DataManager {
   deleteLink(catId, linkId) {
     const cat = this.getCategory(catId);
     if (cat) {
+      const initialLinksLength = cat.links.length;
       cat.links = cat.links.filter(l => l.id !== linkId);
-      this.markAsDirty();
+      if (cat.links.length < initialLinksLength) {
+        this.markAsDirty();
+      }
     }
   }
 

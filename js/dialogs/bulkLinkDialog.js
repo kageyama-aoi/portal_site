@@ -39,6 +39,12 @@ export class BulkLinkDialog {
     this.dataManager = dataManager;
     this.renderCallback = renderCallback;
     this.iconPickerDialog = iconPickerDialog;
+  }
+
+  /**
+   * ダイアログの初期化とイベントリスナーの設定を行います。
+   */
+  init() {
     this.dialog = document.getElementById('bulkLinkDialog');
     this.initEventListeners();
   }

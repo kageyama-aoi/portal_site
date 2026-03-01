@@ -11,6 +11,7 @@ import { LinkDialog } from './dialogs/linkDialog.js';
 import { BulkLinkDialog } from './dialogs/bulkLinkDialog.js';
 import { PortalDialog } from './dialogs/portalDialog.js';
 import { IconPickerDialog } from './dialogs/iconPickerDialog.js';
+import { CategoryDialog } from './dialogs/categoryDialog.js';
 
 /**
  * DOMContentLoaded イベントリスナー。DOMが完全にロードされた後にアプリケーションを初期化します。
@@ -80,19 +81,24 @@ document.addEventListener('DOMContentLoaded', async () => {
    */
   const linkDialog = new LinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog); 
 
-  /**
-   * @type {BulkLinkDialog}
-   * @description 複数リンク一括追加ダイアログのインスタンス。
-   */
-  const bulkLinkDialog = new BulkLinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog); 
+      /**
+       * @type {BulkLinkDialog}
+       * @description 複数リンク一括追加ダイアログのインスタンス。
+       */
+      const bulkLinkDialog = new BulkLinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog); 
+      
+      /**
+       * @type {CategoryDialog}
+       * @description カテゴリ編集ダイアログのインスタンス。
+       */
+      const categoryDialog = new CategoryDialog(dataManager);
   
-  /**
-   * @type {UI}
-   * @description ユーザーインターフェースの描画とイベント処理を管理するインスタンス。
-   */
-  ui = new UI(dataManager, configManager, linkDialog, bulkLinkDialog); 
-  
-  /**
+      /**
+       * @type {UI}
+       * @description ユーザーインターフェースの描画とイベント処理を管理するインスタンス。
+       */
+      ui = new UI(dataManager, configManager, categoryDialog, linkDialog, bulkLinkDialog); // categoryDialogを追加
+        /**
    * @type {PortalDialog}
    * @description ポータル設定ダイアログのインスタンス。
    */
@@ -117,9 +123,20 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (loadResult.success) {
     ui.init();
+    
+    // 各種ダイアログの初期化
+    // ここで各ダイアログのinit()を呼び出すことで、DOMContentLoaded後にDOM要素が利用可能な状態でイベントリスナーを設定できます。
+    categoryDialog.init(() => uiRenderCallback()); 
+    linkDialog.init(() => uiRenderCallback()); 
+    bulkLinkDialog.init(() => uiRenderCallback()); 
+    portalDialog.init(() => ui.render()); // portalDialogのrenderコールバックはUIのrender()を呼ぶ
+    iconPickerDialog.init(); 
+
   } else {
     console.error(`Failed to load ${finalFileName}:`, loadResult.error);
     document.getElementById('errorArea').style.display = 'block';
     alert(`データの自動読み込みに失敗しました (${finalFileName})。\nWebサーバー経由でない場合、セキュリティ制限が原因の可能性があります。\n\n下の「ファイルを選択」ボタンから手動でファイルを読み込んでください。`);
   }
+  // 保存ボタンの状態を更新 (DOMContentLoadedの末尾で一度だけ更新)
+  ui.updateSaveButtonState(dataManager.hasUnsavedChanges, configManager.getActivePortal().fileName);
 });

@@ -91,24 +91,23 @@ export class UI {
    * UIの新しいインスタンスを作成します。
    * @param {DataManager} dataManager - データ管理オブジェクト。
    * @param {ConfigManager} configManager - 設定管理オブジェクト。
+   * @param {CategoryDialog} categoryDialog - カテゴリ編集ダイアログオブジェクト。
    * @param {LinkDialog} linkDialog - リンク編集ダイアログオブジェクト。
    * @param {BulkLinkDialog} bulkLinkDialog - リンク一括追加ダイアログオブジェクト。
    */
-  constructor(dataManager, configManager, linkDialog, bulkLinkDialog) {
+  constructor(dataManager, configManager, categoryDialog, linkDialog, bulkLinkDialog) {
     this.dataManager = dataManager;
     this.configManager = configManager;
+    this.categoryDialog = categoryDialog; // 引数から受け取る
     this.linkDialog = linkDialog;
     this.bulkLinkDialog = bulkLinkDialog;
-    this.container = document.getElementById('app-container');
     this.isEditMode = false;
-
-    this.categoryDialog = new CategoryDialog(this.dataManager);
   }
-
   /**
    * UIの初期化を行います。イベントリスナーを設定し、初回描画を行います。
    */
   init() {
+    this.container = document.getElementById('app-container'); // init()に移動
     this.initEventListeners();
     this.render();
   }
@@ -233,7 +232,7 @@ export class UI {
 
     document.getElementById('addCategoryBtn').addEventListener('click', () => this.categoryDialog.open());
 
-    this.categoryDialog.init(() => this.render());
+
 
 
 

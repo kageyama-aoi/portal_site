@@ -36,8 +36,13 @@ export class PortalDialog {
     this.dataManager = dataManager;
     this.configManager = configManager;
     this.setPageTitle = setPageTitleCallback;
-    this.dialog = document.getElementById('portalDialog');
+  }
 
+  /**
+   * ダイアログの初期化とイベントリスナーの設定を行います。
+   */
+  init() {
+    this.dialog = document.getElementById('portalDialog');
     this.initEventListeners();
   }
 

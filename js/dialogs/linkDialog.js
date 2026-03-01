@@ -59,13 +59,18 @@ export class LinkDialog {
     this.dataManager = dataManager;
     this.renderCallback = renderCallback;
     this.iconPickerDialog = iconPickerDialog;
+    this.editingCategoryId = null;
+    this.editingLinkId = null;
+  }
+
+  /**
+   * ダイアログの初期化とイベントリスナーの設定を行います。
+   */
+  init() {
     this.dialog = document.getElementById('linkDialog');
     this.form = this.dialog.querySelector('form');
     this.linkIconInput = document.getElementById('linkIconInput');
     this.openIconPickerBtn = document.getElementById('openLinkIconPickerBtn');
-    this.editingCategoryId = null;
-    this.editingLinkId = null;
-
     this.initEventListeners();
   }
 
