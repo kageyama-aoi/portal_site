@@ -28,6 +28,14 @@
         </div>
         
         <div class="edit-toggle-area">
+          <div class="view-btn-group">
+            <button id="viewCardBtn" class="secondary-btn view-btn" title="カード表示">
+              <span class="icon icon-sm">grid_view</span>
+            </button>
+            <button id="viewTableBtn" class="secondary-btn view-btn" title="テーブル表示">
+              <span class="icon icon-sm">table_rows</span>
+            </button>
+          </div>
           <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理"><span class="icon icon-md">settings</span></button>
           <label class="toggle-switch">
             <input type="checkbox" id="editModeToggle">
@@ -190,7 +198,6 @@
     <div class="portal-section">
       <h4>新規ポータル作成</h4>
       <label>新規ポータル名: <input type="text" id="newPortalNameInput" placeholder="例: ゲーム, 仕事..."></label>
-      <label>新規ファイル名: <input type="text" id="newPortalFileInput" placeholder="例: game_links.json..."></label>
       <div class="dialog-buttons">
         <button type="button" id="createPortalBtn" class="primary-btn">作成</button>
       </div>

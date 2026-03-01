@@ -73,24 +73,21 @@ export class PortalDialog {
     // 新規ポータル作成ボタン
     document.getElementById('createPortalBtn').addEventListener('click', () => {
         const name = document.getElementById('newPortalNameInput').value.trim();
-        let fileName = document.getElementById('newPortalFileInput').value.trim();
-        if (!name || !fileName) {
-            alert('ポータル名とファイル名を入力してください。');
+        if (!name) {
+            alert('ポータル名を入力してください。');
             return;
         }
-        if (!fileName.endsWith('.json')) {
-            fileName += '.json';
-        }
         const id = `portal_${Date.now()}`;
-        this.configManager.addPortal({ id, name, fileName });
+        this.configManager.addPortal({ id, name });
         this.configManager.setActivePortal(id);
-        
-        // 新しいポータルのために空のデータファイルを作成
+
+        // 新しいポータルのために空のカテゴリ配列を設定して全体を保存
+        this.dataManager.allPortals[id] = [];
         this.dataManager.data = [];
-        this.dataManager.save(fileName);
-        
+        this.dataManager.save(id);
+
         alert(`新規ポータル「${name}」を作成しました。ページがリロードされます。`);
-        window.location.reload(); // ページリロードで新しいポータルを適用
+        window.location.reload();
     });
 
     // ダイアログを閉じるボタン
@@ -124,13 +121,12 @@ export class PortalDialog {
         radio.checked = true;
       }
       label.appendChild(radio);
-      label.append(` ${portal.title} (ファイル: ${portal.fileName})`);
+      label.append(` ${portal.title}`);
       listContainer.appendChild(label);
     });
 
     // 新規作成フォームをクリア
     document.getElementById('newPortalNameInput').value = '';
-    document.getElementById('newPortalFileInput').value = '';
 
     this.dialog.showModal(); // ダイアログを表示
   }

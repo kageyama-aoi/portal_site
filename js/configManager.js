@@ -16,7 +16,6 @@ const CONFIG_KEY = 'portalAppConfig';
  * @property {string} activePortalId - デフォルトでアクティブにするポータルのID。
  * @property {object} portals - ポータルオブジェクトのマップ。
  * @property {object} portals.default - デフォルトポータルの詳細。
- * @property {string} portals.default.fileName - デフォルトポータルに関連付けられたデータファイル名。
  * @property {string} portals.default.title - デフォルトポータルのタイトル。
  * @property {string} portals.default.subtitle - デフォルトポータルのサブタイトル。
  */
@@ -24,7 +23,6 @@ const defaultConfig = {
   activePortalId: 'default',
   portals: {
     default: {
-      fileName: 'data/data.json',
       title: '📘 Study Portal',
       subtitle: '目的のリソースへ最短でアクセスするためのマイポータル'
     }
@@ -65,13 +63,6 @@ export class ConfigManager {
         const parsed = JSON.parse(storedConfig);
         // Ensure essential keys exist, otherwise return default to prevent errors
         if(parsed.portals && parsed.activePortalId){
-          // fileName が 'data.json' の場合、'data/data.json' に更新 (旧パスからの移行)
-          const activePortal = parsed.portals[parsed.activePortalId];
-          if (activePortal && activePortal.fileName === 'data.json') {
-            activePortal.fileName = 'data/data.json';
-            // 変更を保存して、次回以降は新しいパスを使用するようにする
-            localStorage.setItem(CONFIG_KEY, JSON.stringify(parsed));
-          }
           return parsed;
         }
       }
@@ -143,18 +134,24 @@ export class ConfigManager {
   }
   
   /**
+   * 現在アクティブなポータルのIDを取得します。
+   * @returns {string} アクティブなポータルのID。
+   */
+  getActivePortalId() {
+    return this.config.activePortalId;
+  }
+
+  /**
    * 新しいポータルを追加します。
    * 追加後、localStorage に保存されます。
    * @param {object} portalData - 追加するポータルのデータ。
    * @param {string} portalData.id - 新しいポータルのユニークID。
    * @param {string} portalData.name - 新しいポータルの名前（タイトルとして使用）。
-   * @param {string} portalData.fileName - 新しいポータルに関連付けるファイル名。
    */
-  addPortal({ id, name, fileName }) {
+  addPortal({ id, name }) {
     const newPortal = {
-      fileName,
       title: name,
-      subtitle: `${name} links and resources` // デフォルトのサブタイトル
+      subtitle: `${name} links and resources`
     };
     this.config.portals[id] = newPortal;
     this._save();

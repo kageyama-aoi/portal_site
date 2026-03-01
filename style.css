@@ -803,3 +803,97 @@ dialog textarea {
   font-size: 0.7rem !important;
   padding: 4px 6px !important;
 }
+
+/* ===== ビュー切り替えボタン ===== */
+.view-btn-group {
+  display: inline-flex;
+  border: 1px solid var(--card-border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.view-btn {
+  border: none !important;
+  border-radius: 0 !important;
+  padding: 6px 8px !important;
+}
+.view-btn.active {
+  background: var(--primary) !important;
+  color: white !important;
+}
+
+/* ===== テーブルビュー ===== */
+.link-list-table {
+  display: block;
+  padding: 0 0 8px 0;
+}
+
+.table-row-wrapper {
+  position: relative;
+}
+
+.table-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-bottom: 1px solid var(--card-border);
+  text-decoration: none;
+  color: var(--text-main);
+  transition: background 0.15s;
+  position: relative;
+  min-width: 0;
+}
+.table-row:last-of-type { border-bottom: none; }
+.table-row:hover { background: var(--card-hover); }
+.table-row.disabled { pointer-events: none; }
+
+.icon-area-sm {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+}
+
+.link-title-cell {
+  flex: 1;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.badge-cell {
+  flex-shrink: 0;
+}
+
+/* メモ ツールチップ */
+.table-row[data-memo]:hover::after {
+  content: attr(data-memo);
+  position: absolute;
+  left: 24px;
+  top: calc(100% + 4px);
+  background: rgba(30, 41, 59, 0.92);
+  color: white;
+  font-size: 0.75rem;
+  padding: 5px 10px;
+  border-radius: 6px;
+  white-space: nowrap;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  z-index: 100;
+  pointer-events: none;
+}
+
+/* テーブル行の D&D プレースホルダー */
+.link-list-table .drag-placeholder {
+  height: 32px;
+  border-radius: 4px;
+  margin: 0;
+}

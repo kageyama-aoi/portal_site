@@ -86,6 +86,11 @@ export class UI {
    * @property {HTMLElement|null} placeholder - ドラッグアンドドロップ操作中に表示されるプレースホルダー要素。
    */
   placeholder = null;
+  /**
+   * @property {'card'|'table'} viewMode - 現在のビューモード。
+   */
+  viewMode = 'card';
+  static VIEW_MODE_KEY = 'portalViewMode';
 
   /**
    * UIの新しいインスタンスを作成します。
@@ -108,6 +113,8 @@ export class UI {
    */
   init() {
     this.container = document.getElementById('app-container'); // init()に移動
+    this.viewMode = localStorage.getItem(UI.VIEW_MODE_KEY) || 'card';
+    this._updateViewButtons();
     this.initEventListeners();
     this.render();
   }
@@ -133,9 +140,8 @@ export class UI {
   /**
    * 保存ボタンの状態（有効/無効）と表示を更新します。
    * @param {boolean} isDirty - 未保存の変更があるかどうか。
-   * @param {string} [fileName='data.json'] - 保存対象のファイル名。
    */
-  updateSaveButtonState(isDirty, fileName = 'data.json') {
+  updateSaveButtonState(isDirty) {
     const btn = document.getElementById('saveChangesBtn');
     const warning = document.getElementById('unsavedWarning');
 
@@ -156,13 +162,13 @@ export class UI {
     if (isDirty) {
       btn.disabled = false;
       btn.classList.add('pulse-animation');
-      setLabel(`${fileName} を保存`);
+      setLabel('JSONを保存');
       warning.textContent = '未保存の変更あり';
       warning.style.color = 'var(--danger)';
     } else {
       btn.disabled = true;
       btn.classList.remove('pulse-animation');
-      setLabel(`${fileName} を保存`);
+      setLabel('JSONを保存');
       warning.textContent = 'データは最新です';
       warning.style.color = 'var(--text-sub)';
     }
@@ -186,12 +192,10 @@ export class UI {
 
     // 保存ボタン
     document.getElementById('saveChangesBtn').addEventListener('click', () => {
-      const activePortal = this.configManager.getActivePortal();
-      if (activePortal) {
-        this.dataManager.save(activePortal.fileName);
-        this.updateSaveButtonState(false, activePortal.fileName);
-        alert(`ダウンロードされた "${activePortal.fileName}" を\n元のファイルに上書きしてください。`);
-      }
+      const activePortalId = this.configManager.getActivePortalId();
+      this.dataManager.save(activePortalId);
+      this.updateSaveButtonState(false);
+      alert('ダウンロードされた "data.json" を\n元の data/data.json に上書きしてください。');
     });
 
     // JSON読み込み（インポート・差し替え）
@@ -199,32 +203,29 @@ export class UI {
       const file = e.target.files[0];
       if (!file) return;
 
+      const activePortalId = this.configManager.getActivePortalId();
       const overwrite = confirm(`現在のポータル「${this.configManager.getActivePortal().title}」のデータを、読み込んだファイルの内容で上書きしますか？\n（この操作はまだ保存されません）`);
 
       if (overwrite) {
-          try {
-            await this.dataManager.importData(file);
-            alert('データを読み込みました。内容を確認し、問題なければ右上の「保存」ボタンを押してください。');
-            this.render();
-          } catch (err) {
-            console.error(err);
-            alert(`JSONファイルの読み込みに失敗しました: ${err.message}`);
-          }
+        try {
+          await this.dataManager.importData(file, activePortalId);
+          alert('データを読み込みました。内容を確認し、問題なければ右上の「保存」ボタンを押してください。');
+          this.render();
+        } catch (err) {
+          console.error(err);
+          alert(`JSONファイルの読み込みに失敗しました: ${err.message}`);
+        }
       } else {
         const createNew = confirm("では、読み込んだファイルから新しいポータルを作成しますか？");
         if (createNew) {
           const portalName = prompt("新しいポータルの名前を入力してください:", file.name.replace('.json', ''));
           if (portalName) {
             try {
-              // データを読み込んで、新しいポータルとして設定
               const id = `portal_${Date.now()}`;
-              this.configManager.addPortal({ id, name: portalName, fileName: file.name });
+              this.configManager.addPortal({ id, name: portalName });
               this.configManager.setActivePortal(id);
-              
-              // メモリ上のデータをリロードして新しいポータルのデータとして保存
-              await this.dataManager.loadFromFile(file);
-              this.dataManager.save(file.name); 
-              
+              await this.dataManager.loadFromFile(file, id);
+              this.dataManager.save(id);
               alert(`新規ポータル「${portalName}」を作成し、切り替えました。`);
               window.location.reload();
             } catch(err) {
@@ -237,6 +238,19 @@ export class UI {
     });
 
     document.getElementById('portalSettingsBtn').addEventListener('click', () => this.portalDialog.open());
+
+    document.getElementById('viewCardBtn').addEventListener('click', () => {
+      this.viewMode = 'card';
+      localStorage.setItem(UI.VIEW_MODE_KEY, 'card');
+      this._updateViewButtons();
+      this.render();
+    });
+    document.getElementById('viewTableBtn').addEventListener('click', () => {
+      this.viewMode = 'table';
+      localStorage.setItem(UI.VIEW_MODE_KEY, 'table');
+      this._updateViewButtons();
+      this.render();
+    });
 
     // 手動ファイル読み込み（エラー時用）
     document.getElementById('manualLoadInput').addEventListener('change', async (e) => {
@@ -389,11 +403,13 @@ export class UI {
       details.appendChild(summary);
 
       const linkList = document.createElement('div');
-      linkList.className = 'link-list';
+      linkList.className = this.viewMode === 'table' ? 'link-list link-list-table' : 'link-list';
 
       category.links.forEach((link, linkIndex) => {
-        const linkCardWrapper = this._createLinkCard(link, category.id, catIndex, linkIndex);
-        linkList.appendChild(linkCardWrapper);
+        const el = this.viewMode === 'table'
+          ? this._createTableRow(link, category.id, catIndex, linkIndex)
+          : this._createLinkCard(link, category.id, catIndex, linkIndex);
+        linkList.appendChild(el);
       });
 
       if (this.isEditMode) {
@@ -530,6 +546,96 @@ export class UI {
       return wrapper;
   }
   
+  /**
+   * ビュー切り替えボタンのアクティブ状態を更新します。
+   * @private
+   */
+  _updateViewButtons() {
+    document.getElementById('viewCardBtn').classList.toggle('active', this.viewMode === 'card');
+    document.getElementById('viewTableBtn').classList.toggle('active', this.viewMode === 'table');
+  }
+
+  /**
+   * テーブルビュー用のリンク行要素を作成します。
+   * @private
+   * @param {Link} link - リンクデータオブジェクト。
+   * @param {string} catId - 親カテゴリのID。
+   * @param {number} catIndex - 親カテゴリのインデックス。
+   * @param {number} linkIndex - リンクのインデックス。
+   * @returns {HTMLDivElement} 作成されたラッパー要素。
+   */
+  _createTableRow(link, catId, catIndex, linkIndex) {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'table-row-wrapper';
+
+    if (this.isEditMode) {
+      wrapper.draggable = true;
+      wrapper.addEventListener('dragstart', (e) => this._handleDragStart(e, { type: 'link', catIndex, index: linkIndex }));
+      wrapper.addEventListener('dragover', (e) => this._handleDragOver(e));
+      wrapper.addEventListener('drop', (e) => this._handleDrop(e, { type: 'link', catIndex, index: linkIndex }));
+      wrapper.addEventListener('dragend', (e) => this._handleDragEnd(e));
+    }
+
+    const a = document.createElement('a');
+    a.className = 'table-row' + (this.isEditMode ? ' disabled' : '');
+    a.href = link.url;
+    a.target = '_blank';
+    if (link.memo) a.dataset.memo = link.memo;
+
+    const iconArea = document.createElement('div');
+    iconArea.className = 'icon-area-sm';
+    if (/^[a-z][a-z_0-9]*$/.test(link.icon)) {
+      const iconSpan = document.createElement('span');
+      iconSpan.className = 'icon icon-sm';
+      iconSpan.textContent = link.icon;
+      iconArea.appendChild(iconSpan);
+    } else {
+      iconArea.textContent = link.icon;
+    }
+
+    const titleCell = document.createElement('span');
+    titleCell.className = 'link-title-cell';
+    titleCell.textContent = link.title;
+
+    const badgeSpan = document.createElement('span');
+    badgeSpan.className = `badge badge-cell badge-${link.badge}`;
+    badgeSpan.textContent = this.getBadgeLabel(link.badge);
+
+    a.appendChild(iconArea);
+    a.appendChild(titleCell);
+    a.appendChild(badgeSpan);
+    wrapper.appendChild(a);
+
+    if (this.isEditMode) {
+      const cardActions = document.createElement('div');
+      cardActions.className = 'card-actions';
+
+      if (linkIndex > 0) {
+        const upBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_upward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex - 1), 'リンクを上に移動');
+        cardActions.appendChild(upBtn);
+      }
+      if (linkIndex < this.dataManager.getCategory(catId).links.length - 1) {
+        const downBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_downward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex + 1), 'リンクを下に移動');
+        cardActions.appendChild(downBtn);
+      }
+
+      const editBtn = this._createCardActionButton('<span class="icon icon-sm">edit</span>', () => this.linkDialog.open(catId, link.id), 'リンクを編集');
+      const delBtn = this._createCardActionButton('<span class="icon icon-sm">delete</span>', () => {
+        if (confirm(`リンク「${link.title}」を削除しますか？`)) {
+          this.dataManager.deleteLink(catId, link.id);
+          this.render();
+        }
+      }, 'リンクを削除');
+      delBtn.classList.add('btn-delete');
+
+      cardActions.appendChild(editBtn);
+      cardActions.appendChild(delBtn);
+      wrapper.appendChild(cardActions);
+    }
+
+    return wrapper;
+  }
+
   /**
    * カード内のアクションボタン要素を作成します。
    * @private

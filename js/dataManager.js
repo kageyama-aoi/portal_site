@@ -11,9 +11,13 @@
  */
 export class DataManager {
   /**
-   * @property {Array<Category>} data - アプリケーションのすべてのカテゴリとリンクを保持する配列。
+   * @property {Array<Category>} data - 現在アクティブなポータルのカテゴリとリンクを保持する配列。
    */
   data = [];
+  /**
+   * @property {object} allPortals - すべてのポータルのカテゴリデータを保持するオブジェクト。
+   */
+  allPortals = {};
   /**
    * @property {boolean} hasUnsavedChanges - 未保存の変更があるかどうかを示すフラグ。
    */
@@ -90,19 +94,14 @@ export class DataManager {
    * プライベートヘルパー: 指定されたファイルからJSONデータを読み込み、パースします。
    * @private
    * @param {File} file - 読み込むファイルオブジェクト。
-   * @returns {Promise<Array<Category>>} パースされたJSONデータを含むPromise。
-   * @throws {Error} データ形式が不正な場合（配列でない場合）。
+   * @returns {Promise<any>} パースされたJSONデータを含むPromise。
    */
   _readJsonFile(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
-          const json = JSON.parse(ev.target.result);
-          if (!Array.isArray(json)) {
-             throw new Error('Invalid data format. Expected an array.');
-          }
-          resolve(json);
+          resolve(JSON.parse(ev.target.result));
         } catch (err) {
           reject(err);
         }
@@ -113,57 +112,76 @@ export class DataManager {
   }
 
   /**
-   * 指定されたファイル名から初期データを読み込みます。
-   * 主にアプリケーション起動時に使用されます。
+   * 常に data/data.json を fetch し、指定ポータルIDのカテゴリをロードします。
    * @async
-   * @param {string} [fileName='data.json'] - 読み込むJSONファイルの名前。
-   * @returns {Promise<{success: boolean, data?: Array<Category>, error?: Error}>} 読み込みの成否とデータまたはエラー。
+   * @param {string} [portalId='default'] - ロードするポータルのID。
+   * @returns {Promise<{success: boolean, data?: Array<Category>, error?: Error}>}
    */
-  async load(fileName = 'data.json') {
-    // ファイルパスを 'data/' ディレクトリ内から取得するように調整
-    const filePath = fileName.startsWith('data/') ? fileName : `data/${fileName}`;
+  async load(portalId = 'default') {
     try {
-      const response = await fetch(filePath);
+      const response = await fetch('data/data.json');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      this.data = await response.json();
+      const parsed = await response.json();
+      // 旧形式（配列）への後方互換対応
+      if (Array.isArray(parsed)) {
+        this.allPortals = { default: parsed };
+      } else {
+        this.allPortals = parsed.portals || {};
+      }
+      this.data = this.allPortals[portalId] ?? [];
       return { success: true, data: this.data };
     } catch (e) {
-      console.error(`Data load failed for ${filePath}:`, e);
+      console.error('Data load failed:', e);
       return { success: false, error: e };
     }
   }
 
   /**
    * ユーザーが選択したファイルからデータを手動で読み込みます。
+   * 新形式（{portals:{...}}）と旧形式（カテゴリ配列）の両方に対応します。
    * @async
    * @param {File} file - 読み込むファイルオブジェクト。
+   * @param {string} [portalId='default'] - 対象ポータルID（旧形式の場合に使用）。
    * @returns {Promise<Array<Category>>} 読み込まれたデータを含むPromise。
-   * @throws {Error} ファイル読み込みまたはJSONパースに失敗した場合。
    */
-  async loadFromFile(file) {
+  async loadFromFile(file, portalId = 'default') {
     try {
       const json = await this._readJsonFile(file);
-      this.data = json;
+      if (json && typeof json === 'object' && !Array.isArray(json) && json.portals) {
+        this.allPortals = json.portals;
+      } else if (Array.isArray(json)) {
+        this.allPortals[portalId] = json;
+      } else {
+        throw new Error('Invalid data format.');
+      }
+      this.data = this.allPortals[portalId] ?? [];
       return this.data;
     } catch (err) {
       throw err;
     }
   }
-  
+
   /**
-   * ユーザーが選択したファイルからデータをインポートし、現在のデータを差し替えます。
+   * ユーザーが選択したファイルからデータをインポートし、現在のポータルデータを差し替えます。
    * データは変更されたものとしてマークされます。
    * @async
    * @param {File} file - インポートするファイルオブジェクト。
-   * @returns {Promise<void>} インポート操作が完了したときに解決されるPromise。
-   * @throws {Error} ファイル読み込みまたはJSONパースに失敗した場合。
+   * @param {string} [portalId='default'] - 対象ポータルID。
+   * @returns {Promise<void>}
    */
-  async importData(file) {
+  async importData(file, portalId = 'default') {
     try {
       const json = await this._readJsonFile(file);
-      this.data = json;
+      if (json && typeof json === 'object' && !Array.isArray(json) && json.portals) {
+        this.allPortals = json.portals;
+      } else if (Array.isArray(json)) {
+        this.allPortals[portalId] = json;
+      } else {
+        throw new Error('Invalid data format.');
+      }
+      this.data = this.allPortals[portalId] ?? [];
       this.markAsDirty();
     } catch (err) {
       throw err;
@@ -171,23 +189,24 @@ export class DataManager {
   }
 
   /**
-   * 現在のデータをJSONファイルとしてダウンロード（保存）します。
+   * 全ポータルデータを data.json としてダウンロード（保存）します。
    * データは保存済みとしてマークされます。
-   * @param {string} [fileName='data.json'] - 保存するファイルの名前。
+   * @param {string} [portalId='default'] - 現在アクティブなポータルID（allPortals を更新するために使用）。
    */
-  save(fileName = 'data.json') {
-    const dataStr = JSON.stringify(this.data, null, 2);
+  save(portalId = 'default') {
+    this.allPortals[portalId] = this.data;
+    const dataStr = JSON.stringify({ portals: this.allPortals }, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
 
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName;
+    a.download = 'data.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    
+
     this.markAsClean();
   }
 

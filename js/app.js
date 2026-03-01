@@ -26,9 +26,6 @@ document.addEventListener('DOMContentLoaded', async () => {
   const configManager = new ConfigManager();
   /**
    * @type {object}
-   * @property {string} id - アクティブなポータルのID。
-   * @property {string} name - アクティブなポータルの名前。
-   * @property {string} fileName - アクティブなポータルに関連付けられたファイル名。
    * @property {string} title - アクティブなポータルの表示タイトル。
    * @property {string} subtitle - アクティブなポータルのサブタイトル。
    * @description 現在アクティブなポータルの情報。
@@ -53,7 +50,7 @@ document.addEventListener('DOMContentLoaded', async () => {
    */
   const onDirtyCallback = () => {
     if (ui) {
-      ui.updateSaveButtonState(true, activePortal.fileName);
+      ui.updateSaveButtonState(true);
     }
   };
 
@@ -108,35 +105,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   uiRenderCallback = () => ui.render();
 
 
-  // データをロード
-  let loadResult = await dataManager.load(activePortal.fileName);
-  let finalFileName = activePortal.fileName;
+  const activePortalId = configManager.getActivePortalId();
 
-  // 読み込みに失敗し、かつファイル名が旧デフォルト 'data.json' の場合、新パス 'data/data.json' を試す
-  if (!loadResult.success && activePortal.fileName === 'data.json') {
-    finalFileName = 'data/data.json'; // フォールバックするファイル名を更新
-    loadResult = await dataManager.load(finalFileName); // 新しいパスで再試行
-  }
+  // データをロード（常に data/data.json から）
+  const loadResult = await dataManager.load(activePortalId);
 
   // ページタイトルとサブタイトルを設定
   ui.setPageTitle(activePortal.title, activePortal.subtitle);
 
   if (loadResult.success) {
     ui.init();
-    
+
     // 各種ダイアログの初期化
-    // ここで各ダイアログのinit()を呼び出すことで、DOMContentLoaded後にDOM要素が利用可能な状態でイベントリスナーを設定できます。
-    categoryDialog.init(() => uiRenderCallback()); 
-    linkDialog.init(() => uiRenderCallback()); 
-    bulkLinkDialog.init(() => uiRenderCallback()); 
-    portalDialog.init(() => ui.render()); // portalDialogのrenderコールバックはUIのrender()を呼ぶ
-    iconPickerDialog.init(); 
+    categoryDialog.init(() => uiRenderCallback());
+    linkDialog.init(() => uiRenderCallback());
+    bulkLinkDialog.init(() => uiRenderCallback());
+    portalDialog.init(() => ui.render());
+    iconPickerDialog.init();
 
   } else {
-    console.error(`Failed to load ${finalFileName}:`, loadResult.error);
+    console.error('Failed to load data/data.json:', loadResult.error);
     document.getElementById('errorArea').style.display = 'block';
-    alert(`データの自動読み込みに失敗しました (${finalFileName})。\nWebサーバー経由でない場合、セキュリティ制限が原因の可能性があります。\n\n下の「ファイルを選択」ボタンから手動でファイルを読み込んでください。`);
+    alert('データの自動読み込みに失敗しました (data/data.json)。\nWebサーバー経由でない場合、セキュリティ制限が原因の可能性があります。\n\n下の「ファイルを選択」ボタンから手動でファイルを読み込んでください。');
   }
-  // 保存ボタンの状態を更新 (DOMContentLoadedの末尾で一度だけ更新)
-  ui.updateSaveButtonState(dataManager.hasUnsavedChanges, configManager.getActivePortal().fileName);
+  // 保存ボタンの状態を更新
+  ui.updateSaveButtonState(dataManager.hasUnsavedChanges);
 });
