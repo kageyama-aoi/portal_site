@@ -27,6 +27,22 @@
         "icon": "📝",
         "badge": "doc",
         "memo": "GitHubで公開しているナレッジ集"
+      },
+      {
+        "id": "link_1769860571516_892",
+        "title": "ナレッジ投入先",
+        "url": "https://github.com/kageyama-aoi/knowledge-base#",
+        "icon": "📂",
+        "badge": "doc",
+        "memo": "先頭日付つきのmdファイルを放り投げる"
+      },
+      {
+        "id": "link_1770774567321_129",
+        "title": "data_json格納先",
+        "url": "https://github.com/kageyama-aoi/portal_site/tree/main/data",
+        "icon": "📂",
+        "badge": "doc",
+        "memo": "まだ自動化に完全成功はしていない"
       }
     ]
   },
@@ -120,6 +136,61 @@
         "icon": "💡",
         "badge": "news",
         "memo": "「AIに働かされる」が正解？事業責任者が考える組織図の変化"
+      },
+      {
+        "id": "link_1770761063631_702",
+        "title": "いけともスライド",
+        "url": "https://www.dropbox.com/scl/fo/joomf60cyjck41tesp6xd/AHZnLQaX7dGH8T6_ryYWB2Y?rlkey=b44jprzxmu7fsae2u5plvgkos&st=nbff73gr&dl=0",
+        "icon": "📚",
+        "badge": "doc",
+        "memo": "毎週ニュースの記事"
+      },
+      {
+        "id": "link_1770761131698_847",
+        "title": "codexアプリ",
+        "url": "https://openai.com/ja-JP/index/introducing-the-codex-app/",
+        "icon": "📌",
+        "badge": "doc",
+        "memo": ""
+      }
+    ]
+  },
+  {
+    "id": "cat_1770774039834_510",
+    "title": "API関連設定",
+    "isOpen": true,
+    "links": [
+      {
+        "id": "link_1770774078857_771",
+        "title": "LINE developers",
+        "url": "https://developers.line.biz/console/provider/2004842581",
+        "icon": "⚙️",
+        "badge": "cloud",
+        "memo": "LINEとの連携"
+      },
+      {
+        "id": "link_1770774150223_840",
+        "title": "openai利用状況",
+        "url": "https://platform.openai.com/settings/organization/usage",
+        "icon": "📈",
+        "badge": "cloud",
+        "memo": "API利用制限とか金額チェック"
+      },
+      {
+        "id": "link_1770774263756_914",
+        "title": "Slack API",
+        "url": "https://api.slack.com/apps",
+        "icon": "⚙️",
+        "badge": "cloud",
+        "memo": "アプリからできずweb対応"
+      },
+      {
+        "id": "link_1771970374389_908",
+        "title": "claude_ai_利用状況",
+        "url": "https://claude.ai/settings/billing",
+        "icon": "🔗",
+        "badge": "cloud",
+        "memo": ""
       }
     ]
   }
