@@ -848,8 +848,8 @@ dialog textarea {
 .table-row.disabled { pointer-events: none; }
 
 .icon-area-sm {
-  width: 22px;
-  height: 22px;
+  min-width: 22px;
+  min-height: 22px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
@@ -897,3 +897,38 @@ dialog textarea {
   border-radius: 4px;
   margin: 0;
 }
+
+/* ===== アイコンスタイルコントロール ===== */
+.icon-style-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+.icon-style-label {
+  font-size: 0.72rem;
+  color: var(--text-sub);
+  flex-shrink: 0;
+}
+.icon-style-group {
+  display: inline-flex;
+  border: 1px solid var(--card-border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.icon-style-btn {
+  border: none;
+  background: var(--secondary-btn-bg);
+  color: var(--text-main);
+  font-size: 0.75rem;
+  padding: 4px 9px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.icon-style-btn:hover { background: var(--secondary-btn-hover-bg); }
+.icon-style-btn.active {
+  background: var(--primary);
+  color: white;
+}
+

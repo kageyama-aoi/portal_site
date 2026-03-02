@@ -482,6 +482,8 @@ export class UI {
         const iconSpan = document.createElement('span');
         iconSpan.className = 'icon icon-lg';
         iconSpan.textContent = link.icon;
+        if (link.iconColor) iconSpan.style.color = link.iconColor;
+        this._applyIconStyle(iconSpan, link, false);
         iconArea.appendChild(iconSpan);
       } else {
         // 絵文字（既存データの後方互換）
@@ -547,6 +549,33 @@ export class UI {
   }
   
   /**
+   * リンクのアイコンスタイル（FILL/wght/size）をスパン要素に適用します。
+   * iconFill/iconWeight/iconSize のいずれかが設定されている場合のみ動作します。
+   * @private
+   * @param {HTMLElement} span - アイコンの span 要素。
+   * @param {Link} link - リンクデータ。
+   * @param {boolean} isTable - テーブルビューかどうか。
+   */
+  _applyIconStyle(span, link, isTable = false) {
+    const hasFill = link.iconFill !== undefined && link.iconFill !== null;
+    const hasWeight = !!link.iconWeight;
+    const hasSize = link.iconSize && link.iconSize !== 'normal';
+    if (!hasFill && !hasWeight && !hasSize) return;
+
+    const fill = link.iconFill ?? 0;
+    const weight = link.iconWeight || 400;
+    span.style.fontVariationSettings = `'FILL' ${fill}, 'wght' ${weight}, 'GRAD' 0, 'opsz' 40`;
+
+    if (hasSize) {
+      if (isTable) {
+        span.style.fontSize = link.iconSize === 'xl' ? '26px' : '22px';
+      } else {
+        span.style.fontSize = link.iconSize === 'xl' ? '40px' : '32px';
+      }
+    }
+  }
+
+  /**
    * ビュー切り替えボタンのアクティブ状態を更新します。
    * @private
    */
@@ -588,6 +617,8 @@ export class UI {
       const iconSpan = document.createElement('span');
       iconSpan.className = 'icon icon-sm';
       iconSpan.textContent = link.icon;
+      if (link.iconColor) iconSpan.style.color = link.iconColor;
+      this._applyIconStyle(iconSpan, link, true);
       iconArea.appendChild(iconSpan);
     } else {
       iconArea.textContent = link.icon;

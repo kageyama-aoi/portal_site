@@ -21,6 +21,14 @@ export class LinkDialog {
   linkIconInput;
   /** @property {HTMLElement} linkIconDisplay - アイコンを視覚表示する span 要素。 */
   linkIconDisplay;
+  /** @property {HTMLInputElement} linkIconColorInput - アイコン色を保持する color input。 */
+  linkIconColorInput;
+  /** @property {HTMLInputElement} linkIconFillInput - FILL 値を保持する hidden input。 */
+  linkIconFillInput;
+  /** @property {HTMLInputElement} linkIconWeightInput - wght 値を保持する hidden input。 */
+  linkIconWeightInput;
+  /** @property {HTMLInputElement} linkIconSizeInput - サイズを保持する hidden input。 */
+  linkIconSizeInput;
   openIconPickerBtn;
   editingCategoryId = null;
   editingLinkId = null;
@@ -38,6 +46,10 @@ export class LinkDialog {
     this.form = this.dialog.querySelector('form');
     this.linkIconInput = document.getElementById('linkIconInput');
     this.linkIconDisplay = document.getElementById('linkIconDisplay');
+    this.linkIconColorInput = document.getElementById('linkIconColorInput');
+    this.linkIconFillInput = document.getElementById('linkIconFillInput');
+    this.linkIconWeightInput = document.getElementById('linkIconWeightInput');
+    this.linkIconSizeInput = document.getElementById('linkIconSizeInput');
     this.openIconPickerBtn = document.getElementById('openLinkIconPickerBtn');
     this.initEventListeners();
   }
@@ -49,6 +61,10 @@ export class LinkDialog {
           title: this.form.linkTitleInput.value,
           url: this.form.linkUrlInput.value,
           icon: this.linkIconInput.value || 'link',
+          iconColor: this.linkIconColorInput.dataset.custom === 'true' ? this.linkIconColorInput.value : '',
+          iconFill: Number(this.linkIconFillInput.value),
+          iconWeight: Number(this.linkIconWeightInput.value),
+          iconSize: this.linkIconSizeInput.value,
           badge: this.form.linkBadgeInput.value,
           memo: this.form.linkMemoInput.value
         };
@@ -67,29 +83,88 @@ export class LinkDialog {
     this.openIconPickerBtn.addEventListener('click', () => {
       this.iconPickerDialog.open((selectedIcon) => {
         this.linkIconInput.value = selectedIcon;
-        this._renderIconPreview(selectedIcon);
+        this._updatePreview();
+      });
+    });
+
+    this.linkIconColorInput.addEventListener('input', () => {
+      this.linkIconColorInput.dataset.custom = 'true';
+      this._updatePreview();
+    });
+
+    document.getElementById('resetIconColorBtn').addEventListener('click', () => {
+      this.linkIconColorInput.dataset.custom = 'false';
+      this.linkIconColorInput.value = '#64748b';
+      this._updatePreview();
+    });
+
+    // アイコンスタイルボタン群
+    this._initStyleGroup('iconFillGroup', this.linkIconFillInput);
+    this._initStyleGroup('iconWeightGroup', this.linkIconWeightInput);
+    this._initStyleGroup('iconSizeGroup', this.linkIconSizeInput);
+  }
+
+  /**
+   * スタイルボタングループにクリックハンドラを設定します。
+   * @private
+   */
+  _initStyleGroup(groupId, hiddenInput) {
+    document.getElementById(groupId).querySelectorAll('.icon-style-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        hiddenInput.value = btn.dataset.value;
+        this._activateBtn(groupId, btn.dataset.value);
+        this._updatePreview();
       });
     });
   }
 
   /**
-   * アイコン名に応じてプレビュー要素を更新します。
-   * Material Symbol 名（ASCII スネークケース）はシンボルとして、
-   * それ以外（絵文字など）はそのままテキストとして表示します。
+   * ボタングループ内でアクティブボタンを切り替えます。
    * @private
-   * @param {string} iconValue - アイコン値。
    */
-  _renderIconPreview(iconValue) {
+  _activateBtn(groupId, value) {
+    document.getElementById(groupId).querySelectorAll('.icon-style-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.value === String(value));
+    });
+  }
+
+  /**
+   * 現在の設定値に基づいてプレビューアイコンを更新します。
+   * @private
+   */
+  _updatePreview() {
+    const iconValue = this.linkIconInput.value;
+    const color = this.linkIconColorInput.dataset.custom === 'true' ? this.linkIconColorInput.value : '';
+    const fill = Number(this.linkIconFillInput.value);
+    const weight = Number(this.linkIconWeightInput.value);
+    const size = this.linkIconSizeInput.value;
+
     const isMaterialSymbol = iconValue && /^[a-z][a-z_0-9]*$/.test(iconValue);
     if (isMaterialSymbol) {
       this.linkIconDisplay.className = 'icon icon-lg';
-      this.linkIconDisplay.style.fontSize = '';
-      this.linkIconDisplay.textContent = iconValue;
+      this.linkIconDisplay.style.fontSize = size === 'xl' ? '40px' : size === 'large' ? '32px' : '';
+      this.linkIconDisplay.style.fontVariationSettings = `'FILL' ${fill}, 'wght' ${weight}, 'GRAD' 0, 'opsz' 40`;
     } else {
       this.linkIconDisplay.className = '';
       this.linkIconDisplay.style.fontSize = '1.4rem';
+      this.linkIconDisplay.style.fontVariationSettings = '';
       this.linkIconDisplay.textContent = iconValue || '?';
     }
+    if (isMaterialSymbol) this.linkIconDisplay.textContent = iconValue;
+    this.linkIconDisplay.style.color = color || '';
+  }
+
+  /**
+   * スタイル値を各コントロールに反映して表示を初期化します。
+   * @private
+   */
+  _loadStyle(fill, weight, size) {
+    this.linkIconFillInput.value = fill;
+    this.linkIconWeightInput.value = weight;
+    this.linkIconSizeInput.value = size;
+    this._activateBtn('iconFillGroup', String(fill));
+    this._activateBtn('iconWeightGroup', String(weight));
+    this._activateBtn('iconSizeGroup', size);
   }
 
   open(categoryId, linkId = null) {
@@ -103,13 +178,19 @@ export class LinkDialog {
       this.linkIconInput.value = link.icon;
       this.form.linkBadgeInput.value = link.badge;
       this.form.linkMemoInput.value = link.memo;
-      this._renderIconPreview(link.icon);
+      const hasColor = !!link.iconColor;
+      this.linkIconColorInput.value = link.iconColor || '#64748b';
+      this.linkIconColorInput.dataset.custom = hasColor ? 'true' : 'false';
+      this._loadStyle(link.iconFill ?? 0, link.iconWeight || 400, link.iconSize || 'normal');
     } else {
       this.form.reset();
       this.linkIconInput.value = 'link';
       this.form.linkBadgeInput.value = 'doc';
-      this._renderIconPreview('link');
+      this.linkIconColorInput.value = '#64748b';
+      this.linkIconColorInput.dataset.custom = 'false';
+      this._loadStyle(0, 400, 'normal');
     }
+    this._updatePreview();
     this.dialog.showModal();
   }
 }

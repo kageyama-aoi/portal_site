@@ -106,6 +106,33 @@
         </div>
         <input type="hidden" id="linkIconInput" value="link">
         <button type="button" id="openLinkIconPickerBtn" class="secondary-btn" style="flex-grow: 1;"><span class="icon icon-sm">grid_view</span> アイコンを選択</button>
+        <input type="color" id="linkIconColorInput" value="#64748b" title="アイコンの色" style="width:36px; height:36px; padding:2px; border:1px solid var(--card-border); border-radius:6px; cursor:pointer; flex-shrink:0;">
+        <button type="button" id="resetIconColorBtn" class="secondary-btn" title="デフォルト色に戻す" style="flex-shrink:0; padding:6px 8px;"><span class="icon icon-sm">format_color_reset</span></button>
+      </div>
+    </label>
+    <label>アイコンスタイル:
+      <div class="icon-style-row">
+        <input type="hidden" id="linkIconFillInput" value="0">
+        <input type="hidden" id="linkIconWeightInput" value="400">
+        <input type="hidden" id="linkIconSizeInput" value="normal">
+        <span class="icon-style-label">塗り</span>
+        <div class="icon-style-group" id="iconFillGroup">
+          <button type="button" class="icon-style-btn" data-value="0">アウトライン</button>
+          <button type="button" class="icon-style-btn" data-value="1">塗りつぶし</button>
+        </div>
+        <span class="icon-style-label">太さ</span>
+        <div class="icon-style-group" id="iconWeightGroup">
+          <button type="button" class="icon-style-btn" data-value="200">細</button>
+          <button type="button" class="icon-style-btn" data-value="400">標準</button>
+          <button type="button" class="icon-style-btn" data-value="600">太</button>
+          <button type="button" class="icon-style-btn" data-value="700">極太</button>
+        </div>
+        <span class="icon-style-label">大きさ</span>
+        <div class="icon-style-group" id="iconSizeGroup">
+          <button type="button" class="icon-style-btn" data-value="normal">S</button>
+          <button type="button" class="icon-style-btn" data-value="large">M</button>
+          <button type="button" class="icon-style-btn" data-value="xl">L</button>
+        </div>
       </div>
     </label>
     <label>バッジ:
