@@ -114,6 +114,14 @@ document.addEventListener('DOMContentLoaded', async () => {
   ui.setPageTitle(activePortal.title, activePortal.subtitle);
 
   if (loadResult.success) {
+    // data.json に存在するが configManager 未登録のポータルを自動登録
+    // （GitHub Pages など localStorage が空の環境でもポータル一覧に表示されるようにする）
+    Object.keys(dataManager.allPortals).forEach(portalId => {
+      if (!configManager.getConfig().portals[portalId]) {
+        configManager.addPortal({ id: portalId, name: portalId });
+      }
+    });
+
     ui.init();
 
     // 各種ダイアログの初期化
