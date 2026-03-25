@@ -57,6 +57,8 @@ export class LinkDialog {
   initEventListeners() {
     this.dialog.addEventListener('close', () => {
       if (this.dialog.returnValue === 'save') {
+        const tagsRaw = document.getElementById('linkTagsInput').value;
+        const keywordsRaw = document.getElementById('linkKeywordsInput').value;
         const linkData = {
           title: this.form.linkTitleInput.value,
           url: this.form.linkUrlInput.value,
@@ -66,7 +68,10 @@ export class LinkDialog {
           iconWeight: Number(this.linkIconWeightInput.value),
           iconSize: this.linkIconSizeInput.value,
           badge: this.form.linkBadgeInput.value,
-          memo: this.form.linkMemoInput.value
+          memo: this.form.linkMemoInput.value,
+          tags: tagsRaw.split(',').map(t => t.trim()).filter(Boolean),
+          keywords: keywordsRaw.split(',').map(k => k.trim()).filter(Boolean),
+          freq: document.getElementById('linkFreqInput').value || null
         };
 
         if (this.editingCategoryId && this.editingLinkId) {
@@ -178,6 +183,9 @@ export class LinkDialog {
       this.linkIconInput.value = link.icon;
       this.form.linkBadgeInput.value = link.badge;
       this.form.linkMemoInput.value = link.memo;
+      document.getElementById('linkTagsInput').value = (link.tags || []).join(', ');
+      document.getElementById('linkKeywordsInput').value = (link.keywords || []).join(', ');
+      document.getElementById('linkFreqInput').value = link.freq || '';
       const hasColor = !!link.iconColor;
       this.linkIconColorInput.value = link.iconColor || '#64748b';
       this.linkIconColorInput.dataset.custom = hasColor ? 'true' : 'false';
@@ -188,6 +196,9 @@ export class LinkDialog {
       this.form.linkBadgeInput.value = 'doc';
       this.linkIconColorInput.value = '#64748b';
       this.linkIconColorInput.dataset.custom = 'false';
+      document.getElementById('linkTagsInput').value = '';
+      document.getElementById('linkKeywordsInput').value = '';
+      document.getElementById('linkFreqInput').value = '';
       this._loadStyle(0, 400, 'normal');
     }
     this._updatePreview();

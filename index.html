@@ -35,6 +35,12 @@
             <button id="viewTableBtn" class="secondary-btn view-btn" title="テーブル表示">
               <span class="icon icon-sm">table_rows</span>
             </button>
+            <button id="viewMemoryBtn" class="secondary-btn view-btn" title="思い出しモード">
+              <span class="icon icon-sm">psychology</span>
+            </button>
+            <button id="viewWorkflowBtn" class="secondary-btn view-btn" title="作業フロー">
+              <span class="icon icon-sm">account_tree</span>
+            </button>
           </div>
           <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理"><span class="icon icon-md">settings</span></button>
           <label class="toggle-switch">
@@ -46,6 +52,32 @@
       </div>
     </div>
   </header>
+
+  <!-- 検索・タグフィルタパネル -->
+  <div id="searchPanel" class="search-panel">
+    <div class="search-input-row">
+      <span class="icon icon-md search-icon">search</span>
+      <input type="text" id="searchInput" class="search-input" placeholder="何を探してる？（タイトル・タグ・キーワード）">
+      <button type="button" id="searchClearBtn" class="search-clear-btn" title="クリア" style="display:none;">
+        <span class="icon icon-sm">close</span>
+      </button>
+    </div>
+    <div id="tagFilterRow" class="tag-filter-row" style="display:none;">
+      <span class="tag-filter-label">タグ:</span>
+      <div id="tagFilterChips" class="tag-filter-chips"></div>
+      <button type="button" id="tagFilterClearBtn" class="secondary-btn tag-filter-clear" style="display:none; font-size:0.75rem; padding:2px 8px;">クリア</button>
+    </div>
+    <div id="freqFilterRow" class="freq-filter-row">
+      <span class="tag-filter-label">頻度:</span>
+      <div class="freq-filter-chips">
+        <button type="button" class="freq-chip" data-freq="">全て</button>
+        <button type="button" class="freq-chip" data-freq="rare">たまに（思い出し）</button>
+        <button type="button" class="freq-chip" data-freq="monthly">月次</button>
+        <button type="button" class="freq-chip" data-freq="weekly">週次</button>
+        <button type="button" class="freq-chip" data-freq="daily">毎日</button>
+      </div>
+    </div>
+  </div>
 
   <!-- エラー表示用エリア -->
   <div id="errorArea" style="display:none; padding:16px; background:#fee2e2; border:1px solid #ef4444; border-radius:8px; color:#b91c1c; margin-bottom:20px;">
@@ -153,6 +185,21 @@
       </select>
     </label>
     <label>メモ: <textarea id="linkMemoInput" rows="3"></textarea></label>
+    <label>タグ <span style="font-size:0.75rem;color:var(--text-sub)">（カンマ区切り、思い出しに使う）</span>
+      <input type="text" id="linkTagsInput" placeholder="例: 確定申告, 年次, 税務">
+    </label>
+    <label>検索キーワード <span style="font-size:0.75rem;color:var(--text-sub)">（補助ワード、カンマ区切り）</span>
+      <input type="text" id="linkKeywordsInput" placeholder="例: 税金, 収支, 帳簿">
+    </label>
+    <label>使用頻度
+      <select id="linkFreqInput">
+        <option value="">未設定</option>
+        <option value="daily">毎日</option>
+        <option value="weekly">週次</option>
+        <option value="monthly">月次</option>
+        <option value="rare">たまに（思い出し対象）</option>
+      </select>
+    </label>
     <div class="dialog-buttons">
       <button value="cancel" formnovalidate>キャンセル</button>
       <button value="save" class="primary-btn">決定</button>
@@ -235,6 +282,13 @@
       <button type="button" id="closePortalDialogBtn">閉じる</button>
     </div>
   </form>
+</dialog>
+
+<!-- ワークフロー管理ダイアログ -->
+<dialog id="workflowDialog" class="bulk-dialog workflow-dialog">
+  <div id="workflowDialogContent">
+    <!-- JSで動的に描画されます -->
+  </div>
 </dialog>
 
 <script type="module" src="js/app.js"></script>

@@ -12,6 +12,10 @@ import { BulkLinkDialog } from './dialogs/bulkLinkDialog.js';
 import { PortalDialog } from './dialogs/portalDialog.js';
 import { IconPickerDialog } from './dialogs/iconPickerDialog.js';
 import { CategoryDialog } from './dialogs/categoryDialog.js';
+import { SearchManager } from './searchManager.js';
+import { MemoryManager } from './memoryManager.js';
+import { WorkflowManager } from './workflowManager.js';
+import { WorkflowDialog } from './dialogs/workflowDialog.js';
 
 /**
  * DOMContentLoaded イベントリスナー。DOMが完全にロードされた後にアプリケーションを初期化します。
@@ -95,14 +99,39 @@ document.addEventListener('DOMContentLoaded', async () => {
        * @description ユーザーインターフェースの描画とイベント処理を管理するインスタンス。
        */
       ui = new UI(dataManager, configManager, categoryDialog, linkDialog, bulkLinkDialog); // categoryDialogを追加
+
+  /**
+   * @type {SearchManager}
+   */
+  const searchManager = new SearchManager(dataManager);
+  ui.searchManager = searchManager;
+
+  /**
+   * @type {MemoryManager}
+   */
+  const memoryManager = new MemoryManager();
+  ui.memoryManager = memoryManager;
+
+  /**
+   * @type {WorkflowManager}
+   */
+  const workflowManager = new WorkflowManager(dataManager);
+  ui.workflowManager = workflowManager;
+
         /**
    * @type {PortalDialog}
    * @description ポータル設定ダイアログのインスタンス。
    */
   const portalDialog = new PortalDialog(dataManager, configManager, (...args) => ui.setPageTitle(...args));
-  ui.portalDialog = portalDialog; 
-  
+  ui.portalDialog = portalDialog;
+
   uiRenderCallback = () => ui.render();
+
+  /**
+   * @type {WorkflowDialog}
+   */
+  const workflowDialog = new WorkflowDialog(workflowManager, dataManager, configManager, () => uiRenderCallback());
+  ui.workflowDialog = workflowDialog;
 
 
   const activePortalId = configManager.getActivePortalId();
@@ -130,6 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     bulkLinkDialog.init(() => uiRenderCallback());
     portalDialog.init(() => ui.render());
     iconPickerDialog.init();
+    workflowDialog.init();
 
   } else {
     console.error('Failed to load data/data.json:', loadResult.error);
