@@ -11,22 +11,23 @@
 </head>
 <body>
 
-<main class="container">
+<div class="app-layout">
   <header>
-    <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-      <div>
+    <div class="header-inner">
+      <button id="sidebarToggleBtn" class="secondary-btn sidebar-toggle-btn" title="サイドバーを開閉">
+        <span class="icon icon-md">menu</span>
+      </button>
+      <div class="header-title">
         <h1><span class="icon icon-lg" style="color:var(--primary)">menu_book</span> Study Portal</h1>
-        <div class="note">
-          目的のリソースへ最短でアクセスするためのマイポータル
-        </div>
+        <div class="note">目的のリソースへ最短でアクセスするためのマイポータル</div>
       </div>
       <div class="header-controls">
         <!-- 保存ボタンエリア（常時表示、変更がない時は無効化） -->
-        <div id="saveArea" style="margin-bottom: 8px; text-align: right;">
+        <div id="saveArea" style="text-align: right;">
           <button id="saveChangesBtn" class="primary-btn save-btn" disabled><span class="icon icon-sm">save</span> JSONを保存</button>
           <div id="unsavedWarning" style="font-size:0.7rem; color:var(--text-sub); margin-top:4px;">データは最新です</div>
         </div>
-        
+
         <div class="edit-toggle-area">
           <div class="view-btn-group">
             <button id="viewCardBtn" class="secondary-btn view-btn" title="カード表示">
@@ -34,6 +35,12 @@
             </button>
             <button id="viewTableBtn" class="secondary-btn view-btn" title="テーブル表示">
               <span class="icon icon-sm">table_rows</span>
+            </button>
+            <button id="viewMemoryBtn" class="secondary-btn view-btn" title="思い出しモード">
+              <span class="icon icon-sm">psychology</span>
+            </button>
+            <button id="viewWorkflowBtn" class="secondary-btn view-btn" title="作業フロー">
+              <span class="icon icon-sm">account_tree</span>
             </button>
           </div>
           <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理"><span class="icon icon-md">settings</span></button>
@@ -47,39 +54,73 @@
     </div>
   </header>
 
-  <!-- エラー表示用エリア -->
-  <div id="errorArea" style="display:none; padding:16px; background:#fee2e2; border:1px solid #ef4444; border-radius:8px; color:#b91c1c; margin-bottom:20px;">
-    <strong>データの読み込みに失敗しました</strong><br>
-    <small>セキュリティ制限により、このファイルを直接開くとデータを読み込めない場合があります。<br>
-    Webサーバー機能（VS CodeのLive Serverなど）を使って開くか、以下から手動で data.json を読み込んでください。</small>
-    <div style="margin-top:8px;">
-      <input type="file" id="manualLoadInput" accept=".json">
-    </div>
+  <div class="app-body">
+    <!-- サイドバー -->
+    <aside class="sidebar" id="appSidebar">
+      <!-- 検索・タグフィルタパネル -->
+      <div id="searchPanel" class="search-panel">
+        <div class="search-input-row">
+          <span class="icon icon-md search-icon">search</span>
+          <input type="text" id="searchInput" class="search-input" placeholder="タイトル・タグ・キーワード">
+          <button type="button" id="searchClearBtn" class="search-clear-btn" title="クリア" style="display:none;">
+            <span class="icon icon-sm">close</span>
+          </button>
+        </div>
+        <div id="tagFilterRow" class="tag-filter-row" style="display:none;">
+          <span class="tag-filter-label">タグ:</span>
+          <div id="tagFilterChips" class="tag-filter-chips"></div>
+          <button type="button" id="tagFilterClearBtn" class="secondary-btn tag-filter-clear" style="display:none; font-size:0.75rem; padding:2px 8px;">クリア</button>
+        </div>
+        <div id="freqFilterRow" class="freq-filter-row">
+          <span class="tag-filter-label">頻度:</span>
+          <div class="freq-filter-chips">
+            <button type="button" class="freq-chip" data-freq="">全て</button>
+            <button type="button" class="freq-chip" data-freq="rare">たまに</button>
+            <button type="button" class="freq-chip" data-freq="monthly">月次</button>
+            <button type="button" class="freq-chip" data-freq="weekly">週次</button>
+            <button type="button" class="freq-chip" data-freq="daily">毎日</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- カテゴリ操作 -->
+      <div class="controls">
+        <button id="openAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_more</span> すべて開く</button>
+        <button id="closeAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_less</span> すべて閉じる</button>
+        <button id="addCategoryBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">create_new_folder</span> カテゴリ追加</button>
+        <button id="bulkAddLinkBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">playlist_add</span> 一括追加</button>
+      </div>
+
+      <!-- データ管理 -->
+      <div class="data-management">
+        <h4><span class="icon icon-sm">settings</span> データ管理</h4>
+        <label class="secondary-btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
+          <span class="icon icon-sm">upload_file</span> JSONを読み込む
+          <input type="file" id="importFileInput" accept=".json" style="display:none;">
+        </label>
+        <div style="font-size:0.75rem; color:var(--text-sub); margin-top:6px;">
+          ※ 読み込み後、右上「保存」で確定
+        </div>
+      </div>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <main class="main-content">
+      <!-- エラー表示用エリア -->
+      <div id="errorArea" style="display:none; padding:16px; background:#fee2e2; border:1px solid #ef4444; border-radius:8px; color:#b91c1c; margin-bottom:20px;">
+        <strong>データの読み込みに失敗しました</strong><br>
+        <small>セキュリティ制限により、このファイルを直接開くとデータを読み込めない場合があります。<br>
+        Webサーバー機能（VS CodeのLive Serverなど）を使って開くか、以下から手動で data.json を読み込んでください。</small>
+        <div style="margin-top:8px;">
+          <input type="file" id="manualLoadInput" accept=".json">
+        </div>
+      </div>
+
+      <!-- ここにJSでコンテンツが描画されます -->
+      <div id="app-container"></div>
+    </main>
   </div>
-
-  <div class="controls">
-    <button id="openAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_more</span> カテゴリをすべて開く</button>
-    <button id="closeAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_less</span> カテゴリをすべて閉じる</button>
-    <button id="addCategoryBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">create_new_folder</span> カテゴリ追加</button>
-    <button id="bulkAddLinkBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">playlist_add</span> リンク一括追加</button>
-  </div>
-
-  <!-- ここにJSでコンテンツが描画されます -->
-  <div id="app-container"></div>
-
-  <!-- データ管理エリア（フッター） -->
-  <div class="data-management" style="margin-top:40px; border-top:1px solid var(--card-border); padding-top:20px;">
-    <h4 style="margin:0 0 10px 0; font-size:0.9rem; color:var(--text-sub); display:flex; align-items:center; gap:6px;"><span class="icon icon-sm">settings</span> データ読み込み</h4>
-    <label class="secondary-btn" style="cursor:pointer; display:inline-flex; align-items:center; gap:8px;">
-      <span class="icon icon-sm">upload_file</span> JSONファイルを読み込んで差し替える
-      <input type="file" id="importFileInput" accept=".json" style="display:none;">
-    </label>
-    <div style="font-size:0.75rem; color:var(--text-sub); margin-top:4px;">
-      ※ 読み込んだ後、右上の「保存」ボタンで確定させてください。
-    </div>
-  </div>
-
-</main>
+</div>
 
 <!-- カテゴリ編集ダイアログ -->
 <dialog id="categoryDialog">
@@ -98,7 +139,14 @@
   <form method="dialog">
     <h3>リンク編集</h3>
     <label>タイトル: <input type="text" id="linkTitleInput" required></label>
-    <label>URL: <input type="url" id="linkUrlInput" required></label>
+    <label class="opendir-checkbox-label">
+      <input type="checkbox" id="linkIsLocalInput">
+      <span class="icon icon-xs" style="color:var(--color-local)">folder_open</span>
+      ローカルフォルダを開く（opendir:）
+    </label>
+    <label>URL:
+      <input type="text" id="linkUrlInput" required placeholder="https://example.com">
+    </label>
     <label>アイコン:
       <div style="display:flex; gap: 8px; align-items:center;">
         <div id="linkIconPreview" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border:1px solid var(--card-border); border-radius:6px; background:var(--bg); flex-shrink:0;">
@@ -153,6 +201,21 @@
       </select>
     </label>
     <label>メモ: <textarea id="linkMemoInput" rows="3"></textarea></label>
+    <label>タグ <span style="font-size:0.75rem;color:var(--text-sub)">（カンマ区切り、思い出しに使う）</span>
+      <input type="text" id="linkTagsInput" placeholder="例: 確定申告, 年次, 税務">
+    </label>
+    <label>検索キーワード <span style="font-size:0.75rem;color:var(--text-sub)">（補助ワード、カンマ区切り）</span>
+      <input type="text" id="linkKeywordsInput" placeholder="例: 税金, 収支, 帳簿">
+    </label>
+    <label>使用頻度
+      <select id="linkFreqInput">
+        <option value="">未設定</option>
+        <option value="daily">毎日</option>
+        <option value="weekly">週次</option>
+        <option value="monthly">月次</option>
+        <option value="rare">たまに（思い出し対象）</option>
+      </select>
+    </label>
     <div class="dialog-buttons">
       <button value="cancel" formnovalidate>キャンセル</button>
       <button value="save" class="primary-btn">決定</button>
@@ -235,6 +298,13 @@
       <button type="button" id="closePortalDialogBtn">閉じる</button>
     </div>
   </form>
+</dialog>
+
+<!-- ワークフロー管理ダイアログ -->
+<dialog id="workflowDialog" class="bulk-dialog workflow-dialog">
+  <div id="workflowDialogContent">
+    <!-- JSで動的に描画されます -->
+  </div>
 </dialog>
 
 <script type="module" src="js/app.js"></script>

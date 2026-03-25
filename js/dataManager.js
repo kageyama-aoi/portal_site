@@ -19,6 +19,10 @@ export class DataManager {
    */
   allPortals = {};
   /**
+   * @property {object} allWorkflows - すべてのポータルのワークフローデータを保持するオブジェクト。
+   */
+  allWorkflows = {};
+  /**
    * @property {boolean} hasUnsavedChanges - 未保存の変更があるかどうかを示すフラグ。
    */
   hasUnsavedChanges = false;
@@ -127,8 +131,10 @@ export class DataManager {
       // 旧形式（配列）への後方互換対応
       if (Array.isArray(parsed)) {
         this.allPortals = { default: parsed };
+        this.allWorkflows = {};
       } else {
         this.allPortals = parsed.portals || {};
+        this.allWorkflows = parsed.workflows || {};
       }
       this.data = this.allPortals[portalId] ?? [];
       return { success: true, data: this.data };
@@ -151,8 +157,10 @@ export class DataManager {
       const json = await this._readJsonFile(file);
       if (json && typeof json === 'object' && !Array.isArray(json) && json.portals) {
         this.allPortals = json.portals;
+        this.allWorkflows = json.workflows || {};
       } else if (Array.isArray(json)) {
         this.allPortals[portalId] = json;
+        this.allWorkflows = {};
       } else {
         throw new Error('Invalid data format.');
       }
@@ -176,8 +184,10 @@ export class DataManager {
       const json = await this._readJsonFile(file);
       if (json && typeof json === 'object' && !Array.isArray(json) && json.portals) {
         this.allPortals = json.portals;
+        this.allWorkflows = json.workflows || {};
       } else if (Array.isArray(json)) {
         this.allPortals[portalId] = json;
+        this.allWorkflows = {};
       } else {
         throw new Error('Invalid data format.');
       }
@@ -195,7 +205,7 @@ export class DataManager {
    */
   save(portalId = 'default') {
     this.allPortals[portalId] = this.data;
-    const dataStr = JSON.stringify({ portals: this.allPortals }, null, 2);
+    const dataStr = JSON.stringify({ portals: this.allPortals, workflows: this.allWorkflows }, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
 

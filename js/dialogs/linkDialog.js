@@ -30,6 +30,8 @@ export class LinkDialog {
   /** @property {HTMLInputElement} linkIconSizeInput - サイズを保持する hidden input。 */
   linkIconSizeInput;
   openIconPickerBtn;
+  /** @property {HTMLInputElement} linkIsLocalInput - ローカルフォルダ用チェックボックス。 */
+  linkIsLocalInput;
   editingCategoryId = null;
   editingLinkId = null;
 
@@ -51,12 +53,15 @@ export class LinkDialog {
     this.linkIconWeightInput = document.getElementById('linkIconWeightInput');
     this.linkIconSizeInput = document.getElementById('linkIconSizeInput');
     this.openIconPickerBtn = document.getElementById('openLinkIconPickerBtn');
+    this.linkIsLocalInput = document.getElementById('linkIsLocalInput');
     this.initEventListeners();
   }
 
   initEventListeners() {
     this.dialog.addEventListener('close', () => {
       if (this.dialog.returnValue === 'save') {
+        const tagsRaw = document.getElementById('linkTagsInput').value;
+        const keywordsRaw = document.getElementById('linkKeywordsInput').value;
         const linkData = {
           title: this.form.linkTitleInput.value,
           url: this.form.linkUrlInput.value,
@@ -66,7 +71,10 @@ export class LinkDialog {
           iconWeight: Number(this.linkIconWeightInput.value),
           iconSize: this.linkIconSizeInput.value,
           badge: this.form.linkBadgeInput.value,
-          memo: this.form.linkMemoInput.value
+          memo: this.form.linkMemoInput.value,
+          tags: tagsRaw.split(',').map(t => t.trim()).filter(Boolean),
+          keywords: keywordsRaw.split(',').map(k => k.trim()).filter(Boolean),
+          freq: document.getElementById('linkFreqInput').value || null
         };
 
         if (this.editingCategoryId && this.editingLinkId) {
@@ -96,6 +104,23 @@ export class LinkDialog {
       this.linkIconColorInput.dataset.custom = 'false';
       this.linkIconColorInput.value = '#64748b';
       this._updatePreview();
+    });
+
+    // opendir: チェックボックス
+    this.linkIsLocalInput.addEventListener('change', () => {
+      const urlInput = this.form.linkUrlInput;
+      if (this.linkIsLocalInput.checked) {
+        if (!urlInput.value.startsWith('opendir:')) {
+          urlInput.value = 'opendir:' + urlInput.value;
+        }
+        urlInput.placeholder = 'C:\\Users\\...（フォルダパス）';
+      } else {
+        if (urlInput.value.startsWith('opendir:')) {
+          urlInput.value = urlInput.value.slice('opendir:'.length);
+        }
+        urlInput.placeholder = 'https://example.com';
+      }
+      urlInput.focus();
     });
 
     // アイコンスタイルボタン群
@@ -173,21 +198,32 @@ export class LinkDialog {
 
     if (linkId) {
       const link = this.dataManager.getLink(categoryId, linkId);
+      const isLocal = !!link.url?.startsWith('opendir:');
+      this.linkIsLocalInput.checked = isLocal;
+      this.form.linkUrlInput.placeholder = isLocal ? 'C:\\Users\\...（フォルダパス）' : 'https://example.com';
       this.form.linkTitleInput.value = link.title;
       this.form.linkUrlInput.value = link.url;
       this.linkIconInput.value = link.icon;
       this.form.linkBadgeInput.value = link.badge;
       this.form.linkMemoInput.value = link.memo;
+      document.getElementById('linkTagsInput').value = (link.tags || []).join(', ');
+      document.getElementById('linkKeywordsInput').value = (link.keywords || []).join(', ');
+      document.getElementById('linkFreqInput').value = link.freq || '';
       const hasColor = !!link.iconColor;
       this.linkIconColorInput.value = link.iconColor || '#64748b';
       this.linkIconColorInput.dataset.custom = hasColor ? 'true' : 'false';
       this._loadStyle(link.iconFill ?? 0, link.iconWeight || 400, link.iconSize || 'normal');
     } else {
       this.form.reset();
+      this.linkIsLocalInput.checked = false;
+      this.form.linkUrlInput.placeholder = 'https://example.com';
       this.linkIconInput.value = 'link';
       this.form.linkBadgeInput.value = 'doc';
       this.linkIconColorInput.value = '#64748b';
       this.linkIconColorInput.dataset.custom = 'false';
+      document.getElementById('linkTagsInput').value = '';
+      document.getElementById('linkKeywordsInput').value = '';
+      document.getElementById('linkFreqInput').value = '';
       this._loadStyle(0, 400, 'normal');
     }
     this._updatePreview();

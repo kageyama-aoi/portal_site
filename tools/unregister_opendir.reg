@@ -1,0 +1,6 @@
+Windows Registry Editor Version 5.00
+
+; opendir: プロトコルの登録を解除します
+; このファイルをダブルクリックすると削除されます
+
+[-HKEY_CURRENT_USER\Software\Classes\opendir]

@@ -91,6 +91,34 @@ export class UI {
    */
   viewMode = 'card';
   static VIEW_MODE_KEY = 'portalViewMode';
+  /**
+   * @property {SearchManager|null} searchManager
+   */
+  searchManager = null;
+  /**
+   * @property {MemoryManager|null} memoryManager
+   */
+  memoryManager = null;
+  /**
+   * @property {WorkflowManager|null} workflowManager
+   */
+  workflowManager = null;
+  /**
+   * @property {WorkflowDialog|null} workflowDialog
+   */
+  workflowDialog = null;
+  /**
+   * @property {string} searchQuery - 現在の検索キーワード
+   */
+  searchQuery = '';
+  /**
+   * @property {string[]} selectedTags - 選択中のタグフィルタ
+   */
+  selectedTags = [];
+  /**
+   * @property {string} freqFilter - 選択中の頻度フィルタ
+   */
+  freqFilter = '';
 
   /**
    * UIの新しいインスタンスを作成します。
@@ -112,11 +140,56 @@ export class UI {
    * UIの初期化を行います。イベントリスナーを設定し、初回描画を行います。
    */
   init() {
-    this.container = document.getElementById('app-container'); // init()に移動
+    this.container = document.getElementById('app-container');
     this.viewMode = localStorage.getItem(UI.VIEW_MODE_KEY) || 'card';
+    this._initViewBtnOrder();
     this._updateViewButtons();
     this.initEventListeners();
+    this._updateTagPanel();
     this.render();
+  }
+
+  /**
+   * 表示切替ボタンの並び順を localStorage から復元し、D&D で並び替え可能にします。
+   * @private
+   */
+  _initViewBtnOrder() {
+    const group = document.querySelector('.view-btn-group');
+    if (!group) return;
+
+    // 保存済みの順序を復元
+    const saved = localStorage.getItem('portalViewBtnOrder');
+    if (saved) {
+      try {
+        JSON.parse(saved).forEach(id => {
+          const btn = document.getElementById(id);
+          if (btn) group.appendChild(btn);
+        });
+      } catch (_) {}
+    }
+
+    // D&D で並び替え
+    let dragging = null;
+    group.querySelectorAll('.view-btn').forEach(btn => {
+      btn.draggable = true;
+      btn.addEventListener('dragstart', () => {
+        dragging = btn;
+        setTimeout(() => btn.classList.add('view-btn-dragging'), 0);
+      });
+      btn.addEventListener('dragend', () => {
+        btn.classList.remove('view-btn-dragging');
+        dragging = null;
+        const order = [...group.querySelectorAll('.view-btn')].map(b => b.id);
+        localStorage.setItem('portalViewBtnOrder', JSON.stringify(order));
+      });
+      btn.addEventListener('dragover', e => {
+        e.preventDefault();
+        if (!dragging || dragging === btn) return;
+        const rect = btn.getBoundingClientRect();
+        const after = e.clientX > rect.left + rect.width / 2;
+        group.insertBefore(dragging, after ? btn.nextSibling : btn);
+      });
+    });
   }
 
   /**
@@ -252,6 +325,20 @@ export class UI {
       this.render();
     });
 
+    document.getElementById('viewMemoryBtn').addEventListener('click', () => {
+      this.viewMode = 'memory';
+      localStorage.setItem(UI.VIEW_MODE_KEY, 'memory');
+      this._updateViewButtons();
+      this.render();
+    });
+
+    document.getElementById('viewWorkflowBtn').addEventListener('click', () => {
+      this.viewMode = 'workflow';
+      localStorage.setItem(UI.VIEW_MODE_KEY, 'workflow');
+      this._updateViewButtons();
+      this.render();
+    });
+
     // 手動ファイル読み込み（エラー時用）
     document.getElementById('manualLoadInput').addEventListener('change', async (e) => {
       const file = e.target.files[0];
@@ -272,6 +359,35 @@ export class UI {
 
 
     document.getElementById('bulkAddLinkBtn').addEventListener('click', () => this.bulkLinkDialog.open());
+
+    // 検索バー
+    const searchInput = document.getElementById('searchInput');
+    const searchClearBtn = document.getElementById('searchClearBtn');
+    searchInput.addEventListener('input', () => {
+      this.searchQuery = searchInput.value;
+      searchClearBtn.style.display = this.searchQuery ? 'flex' : 'none';
+      this._updateTagPanel();
+      this.render();
+    });
+    searchClearBtn.addEventListener('click', () => {
+      searchInput.value = '';
+      this.searchQuery = '';
+      searchClearBtn.style.display = 'none';
+      this._updateTagPanel();
+      this.render();
+    });
+
+    // 頻度フィルタ
+    document.querySelectorAll('.freq-chip').forEach(chip => {
+      chip.addEventListener('click', () => {
+        this.freqFilter = chip.dataset.freq;
+        document.querySelectorAll('.freq-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        this.render();
+      });
+    });
+    // 初期状態で「全て」をアクティブに
+    document.querySelector('.freq-chip[data-freq=""]')?.classList.add('active');
   }
 
 
@@ -337,10 +453,73 @@ export class UI {
   }
 
   /**
+   * タグパネルを更新します（利用中タグをボタン表示）。
+   */
+  _updateTagPanel() {
+    if (!this.searchManager) return;
+    const tags = this.searchManager.getAllTags();
+    const row = document.getElementById('tagFilterRow');
+    const chips = document.getElementById('tagFilterChips');
+    const clearBtn = document.getElementById('tagFilterClearBtn');
+
+    if (tags.length === 0) {
+      row.style.display = 'none';
+      return;
+    }
+    row.style.display = 'flex';
+    chips.innerHTML = '';
+    tags.forEach(tag => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'tag-chip' + (this.selectedTags.includes(tag) ? ' active' : '');
+      btn.textContent = tag;
+      btn.addEventListener('click', () => {
+        if (this.selectedTags.includes(tag)) {
+          this.selectedTags = this.selectedTags.filter(t => t !== tag);
+        } else {
+          this.selectedTags.push(tag);
+        }
+        this._updateTagPanel();
+        this.render();
+      });
+      chips.appendChild(btn);
+    });
+
+    const hasActive = this.selectedTags.length > 0;
+    clearBtn.style.display = hasActive ? 'inline-flex' : 'none';
+    if (!clearBtn._hasListener) {
+      clearBtn._hasListener = true;
+      clearBtn.addEventListener('click', () => {
+        this.selectedTags = [];
+        this._updateTagPanel();
+        this.render();
+      });
+    }
+  }
+
+  /**
    * アプリケーションのUI全体を再描画します。
    */
   render() {
     this.container.innerHTML = ''; // コンテナをクリア
+
+    // 検索/フィルタがアクティブな場合は検索結果表示
+    const isSearchActive = this.searchQuery.trim() || this.selectedTags.length > 0 || this.freqFilter;
+    if (isSearchActive && this.searchManager) {
+      this._renderSearchResults();
+      return;
+    }
+
+    // viewMode による切り替え
+    if (this.viewMode === 'memory') {
+      this._renderMemoryMode();
+      return;
+    }
+    if (this.viewMode === 'workflow') {
+      this._renderWorkflowMode();
+      return;
+    }
+
     const data = this.dataManager.getData(); // 最新のデータを取得
 
     data.forEach((category, catIndex) => {
@@ -470,10 +649,14 @@ export class UI {
         wrapper.addEventListener('dragend', (e) => this._handleDragEnd(e));
       }
 
+      const isLocal = link.url && link.url.startsWith('opendir:');
       const a = document.createElement('a');
-      a.className = `link-card ${this.isEditMode ? 'disabled' : ''}`;
+      a.className = `link-card ${this.isEditMode ? 'disabled' : ''}${isLocal ? ' link-local' : ''}`;
       a.href = link.url;
-      a.target = '_blank'; // 新しいタブで開く
+      if (!isLocal) a.target = '_blank';
+      if (!this.isEditMode && this.memoryManager) {
+        a.addEventListener('click', () => this.memoryManager.recordVisit(link.id));
+      }
 
       const iconArea = document.createElement('div');
       iconArea.className = 'icon-area';
@@ -512,9 +695,34 @@ export class UI {
       contentArea.appendChild(headerRow);
       contentArea.appendChild(memoDiv);
 
+      if (isLocal) {
+        const pathDiv = document.createElement('div');
+        pathDiv.className = 'link-local-path';
+        pathDiv.textContent = link.url.replace('opendir:', '');
+        contentArea.appendChild(pathDiv);
+      }
+
       a.appendChild(iconArea);
       a.appendChild(contentArea);
       wrapper.appendChild(a);
+
+      // ローカルリンクのクリップボードコピーボタン（閲覧モード時）
+      if (isLocal && !this.isEditMode) {
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'local-copy-btn';
+        copyBtn.title = 'パスをクリップボードにコピー';
+        copyBtn.innerHTML = '<span class="icon icon-xs">content_copy</span>';
+        copyBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const localPath = link.url.replace('opendir:', '');
+          navigator.clipboard.writeText(localPath).then(() => {
+            copyBtn.innerHTML = '<span class="icon icon-xs">check</span>';
+            setTimeout(() => { copyBtn.innerHTML = '<span class="icon icon-xs">content_copy</span>'; }, 1500);
+          });
+        });
+        wrapper.appendChild(copyBtn);
+      }
 
       // 編集モード時のカードアクションボタン
       if (this.isEditMode) {
@@ -582,6 +790,602 @@ export class UI {
   _updateViewButtons() {
     document.getElementById('viewCardBtn').classList.toggle('active', this.viewMode === 'card');
     document.getElementById('viewTableBtn').classList.toggle('active', this.viewMode === 'table');
+    document.getElementById('viewMemoryBtn').classList.toggle('active', this.viewMode === 'memory');
+    document.getElementById('viewWorkflowBtn').classList.toggle('active', this.viewMode === 'workflow');
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // 検索結果モード
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * 検索結果をフラットなカードリストで描画します。
+   * @private
+   */
+  _renderSearchResults() {
+    const results = this.searchManager.search(this.searchQuery, {
+      tags: this.selectedTags,
+      freq: this.freqFilter || null
+    });
+
+    const header = document.createElement('div');
+    header.className = 'search-results-header';
+    header.innerHTML = `
+      <span class="icon icon-sm" style="color:var(--primary)">search</span>
+      検索結果: <strong>${results.length}</strong> 件
+    `;
+    this.container.appendChild(header);
+
+    if (results.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'search-empty';
+      empty.innerHTML = `
+        <span class="icon" style="font-size:2rem;color:var(--text-sub)">search_off</span>
+        <p>該当するリンクが見つかりませんでした。</p>
+      `;
+      this.container.appendChild(empty);
+      return;
+    }
+
+    // カテゴリごとにグループ化して表示
+    const grouped = {};
+    results.forEach(r => {
+      if (!grouped[r.catTitle]) grouped[r.catTitle] = [];
+      grouped[r.catTitle].push(r);
+    });
+
+    Object.entries(grouped).forEach(([catTitle, items]) => {
+      const section = document.createElement('div');
+      section.className = 'search-result-section';
+      const catLabel = document.createElement('div');
+      catLabel.className = 'search-result-cat-label';
+      catLabel.textContent = catTitle;
+      section.appendChild(catLabel);
+
+      const grid = document.createElement('div');
+      grid.className = 'link-list';
+      items.forEach(({ link, catId }) => {
+        const el = this._createLinkCard(link, catId, 0, 0);
+        grid.appendChild(el);
+      });
+      section.appendChild(grid);
+      this.container.appendChild(section);
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // 思い出しモード
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * 思い出しモード（最近使った / よく使う / たまに使う）を描画します。
+   * @private
+   */
+  _renderMemoryMode() {
+    const header = document.createElement('div');
+    header.className = 'memory-mode-header';
+    header.innerHTML = `
+      <span class="icon" style="color:var(--primary);font-size:1.4rem">psychology</span>
+      <div>
+        <div style="font-weight:700;font-size:1rem;">思い出しモード</div>
+        <div style="font-size:0.8rem;color:var(--text-sub);">リンクをクリックすると自動的に訪問履歴が記録されます</div>
+      </div>
+    `;
+    this.container.appendChild(header);
+
+    // 最近使った
+    this._renderMemorySection(
+      '最近使った',
+      'schedule',
+      '#3b82f6',
+      this._resolveLinks(this.memoryManager.getRecentLinkIds()),
+      link => {
+        const info = this.memoryManager.getVisitInfo(link.id);
+        return this.memoryManager.formatTimeAgo(info.lastVisited);
+      }
+    );
+
+    // よく使う
+    this._renderMemorySection(
+      'よく使う',
+      'star',
+      '#f59e0b',
+      this._resolveLinks(this.memoryManager.getFrequentLinkIds()),
+      link => {
+        const info = this.memoryManager.getVisitInfo(link.id);
+        return `${info.visitCount}回`;
+      }
+    );
+
+    // たまに使う（freq:rare）
+    const rareLinks = this.searchManager.getRareLinks();
+    this._renderMemorySection(
+      'たまにしか使わない（思い出し対象）',
+      'lightbulb',
+      '#10b981',
+      rareLinks.map(r => r.link),
+      () => 'rare',
+      rareLinks.map(r => r.catTitle)
+    );
+  }
+
+  /**
+   * @private - 思い出しモードのセクションを描画します。
+   */
+  _renderMemorySection(title, icon, color, links, subLabelFn, catTitles = []) {
+    const section = document.createElement('div');
+    section.className = 'memory-section';
+
+    const sectionHeader = document.createElement('div');
+    sectionHeader.className = 'memory-section-header';
+    sectionHeader.innerHTML = `
+      <span class="icon icon-sm" style="color:${color}">${icon}</span>
+      <span>${title}</span>
+      <span class="memory-count">${links.length}件</span>
+    `;
+    section.appendChild(sectionHeader);
+
+    if (links.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'memory-empty';
+      empty.textContent = title === 'よく使う' ? 'まだ複数回訪問したリンクはありません。' :
+                          title.startsWith('最近') ? 'まだ訪問履歴がありません。' :
+                          'freq: "rare" が設定されたリンクがありません。';
+      section.appendChild(empty);
+    } else {
+      const grid = document.createElement('div');
+      grid.className = 'memory-card-grid';
+      links.forEach((link, i) => {
+        if (!link) return;
+        const catTitle = catTitles[i] || '';
+        const subLabel = subLabelFn(link);
+        const card = this._createMemoryCard(link, subLabel, catTitle);
+        grid.appendChild(card);
+      });
+      section.appendChild(grid);
+    }
+    this.container.appendChild(section);
+  }
+
+  /**
+   * @private - linkIdの配列をlinkオブジェクト配列に解決します。
+   */
+  _resolveLinks(linkIds) {
+    if (!this.searchManager) return [];
+    return linkIds.map(id => {
+      const found = this.searchManager.findLinkById(id);
+      return found ? found.link : null;
+    }).filter(Boolean);
+  }
+
+  /**
+   * @private - 思い出しモード用のコンパクトカードを作成します。
+   */
+  _createMemoryCard(link, subLabel, catTitle) {
+    const card = document.createElement('a');
+    card.className = 'memory-card';
+    card.href = link.url;
+    card.target = '_blank';
+    card.addEventListener('click', () => {
+      if (this.memoryManager) this.memoryManager.recordVisit(link.id);
+    });
+
+    const iconSpan = document.createElement('span');
+    iconSpan.className = 'icon icon-lg';
+    iconSpan.textContent = link.icon || 'link';
+    if (link.iconColor) iconSpan.style.color = link.iconColor;
+    this._applyIconStyle(iconSpan, link, false);
+
+    const info = document.createElement('div');
+    info.className = 'memory-card-info';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'memory-card-title';
+    titleEl.textContent = link.title;
+
+    const meta = document.createElement('div');
+    meta.className = 'memory-card-meta';
+    if (catTitle) {
+      const catEl = document.createElement('span');
+      catEl.className = 'memory-card-cat';
+      catEl.textContent = catTitle;
+      meta.appendChild(catEl);
+    }
+    const subEl = document.createElement('span');
+    subEl.className = 'memory-card-sub';
+    subEl.textContent = subLabel;
+    meta.appendChild(subEl);
+
+    if (link.tags && link.tags.length > 0) {
+      const tagsEl = document.createElement('div');
+      tagsEl.className = 'memory-card-tags';
+      link.tags.slice(0, 3).forEach(tag => {
+        const chip = document.createElement('span');
+        chip.className = 'tag-chip tag-chip-sm';
+        chip.textContent = tag;
+        tagsEl.appendChild(chip);
+      });
+      info.appendChild(titleEl);
+      info.appendChild(meta);
+      info.appendChild(tagsEl);
+    } else {
+      info.appendChild(titleEl);
+      info.appendChild(meta);
+    }
+
+    card.appendChild(iconSpan);
+    card.appendChild(info);
+    return card;
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // ワークフローモード
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * ワークフローモードを描画します。
+   * @private
+   */
+  _renderWorkflowMode() {
+    const portalId = this.configManager.getActivePortalId();
+    const workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
+
+    const header = document.createElement('div');
+    header.className = 'workflow-mode-header';
+    header.innerHTML = `
+      <div style="display:flex; align-items:center; gap:10px;">
+        <span class="icon" style="color:var(--primary);font-size:1.4rem">account_tree</span>
+        <div>
+          <div style="font-weight:700;font-size:1rem;">作業フロー</div>
+          <div style="font-size:0.8rem;color:var(--text-sub);">たまにしかやらない手順を忘れないために</div>
+        </div>
+      </div>
+    `;
+
+    const headerBtns = document.createElement('div');
+    headerBtns.style.cssText = 'display:flex; gap:8px;';
+
+    const pdfBtn = document.createElement('button');
+    pdfBtn.type = 'button';
+    pdfBtn.className = 'secondary-btn';
+    pdfBtn.innerHTML = '<span class="icon icon-sm">picture_as_pdf</span> PDF出力';
+    pdfBtn.style.cssText = 'font-size:0.85rem;';
+    pdfBtn.addEventListener('click', () => this._exportWorkflowAsPdf());
+    headerBtns.appendChild(pdfBtn);
+
+    const editBtn = document.createElement('button');
+    editBtn.type = 'button';
+    editBtn.className = 'secondary-btn';
+    editBtn.innerHTML = '<span class="icon icon-sm">edit</span> フローを管理';
+    editBtn.style.cssText = 'font-size:0.85rem;';
+    editBtn.addEventListener('click', () => {
+      if (this.workflowDialog) this.workflowDialog.open();
+    });
+    headerBtns.appendChild(editBtn);
+
+    header.appendChild(headerBtns);
+
+    this.container.appendChild(header);
+
+    if (workflows.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'workflow-empty';
+      empty.innerHTML = `
+        <span class="icon" style="font-size:2.5rem;color:var(--text-sub)">account_tree</span>
+        <p>ワークフローがまだ登録されていません。</p>
+        <button type="button" class="primary-btn" id="wfCreateFromEmpty" style="margin-top:8px;">
+          <span class="icon icon-sm">add</span> 最初のフローを作成
+        </button>
+      `;
+      this.container.appendChild(empty);
+      document.getElementById('wfCreateFromEmpty')?.addEventListener('click', () => {
+        if (this.workflowDialog) this.workflowDialog.open();
+      });
+      return;
+    }
+
+    const freqOrder = { rare: 0, monthly: 1, weekly: 2, daily: 3 };
+    const sorted = [...workflows].sort((a, b) => (freqOrder[a.freq] ?? 9) - (freqOrder[b.freq] ?? 9));
+
+    sorted.forEach(wf => {
+      const card = document.createElement('details');
+      card.className = 'workflow-card';
+      card.open = true;
+
+      const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' }[wf.freq] || '';
+      const tags = (wf.tags || []).map(t => `<span class="tag-chip tag-chip-sm">${this._escapeHtml(t)}</span>`).join('');
+
+      const summary = document.createElement('summary');
+      summary.className = 'workflow-card-summary';
+      summary.innerHTML = `
+        <div class="workflow-card-title">
+          <span class="icon icon-sm" style="color:var(--primary)">account_tree</span>
+          ${this._escapeHtml(wf.title)}
+          <span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel}</span>
+        </div>
+        <div class="workflow-card-meta">
+          ${wf.description ? `<span style="color:var(--text-sub);font-size:0.8rem">${this._escapeHtml(wf.description)}</span>` : ''}
+          ${tags ? `<div class="wf-tags-row" style="margin-top:4px">${tags}</div>` : ''}
+        </div>
+        <span class="icon icon-lg summary-chevron">expand_more</span>
+      `;
+      card.appendChild(summary);
+
+      const stepsDiv = document.createElement('div');
+      stepsDiv.className = 'workflow-steps';
+
+      if (wf.steps.length === 0) {
+        stepsDiv.innerHTML = '<div style="padding:12px 20px;color:var(--text-sub);font-size:0.85rem;">ステップがありません。</div>';
+      } else {
+        let dragSrcIdx = null;
+
+        wf.steps.forEach((step, stepIndex) => {
+          const stepRow = document.createElement('div');
+          stepRow.className = 'workflow-step-row';
+
+          // 編集モード: D&D並び替え
+          if (this.isEditMode) {
+            stepRow.draggable = true;
+            const handle = document.createElement('span');
+            handle.className = 'icon icon-xs workflow-step-drag-handle';
+            handle.textContent = 'drag_indicator';
+            stepRow.appendChild(handle);
+
+            stepRow.addEventListener('dragstart', (e) => {
+              dragSrcIdx = stepIndex;
+              stepRow.classList.add('wf-step-dragging');
+              e.dataTransfer.effectAllowed = 'move';
+            });
+            stepRow.addEventListener('dragend', () => {
+              stepRow.classList.remove('wf-step-dragging');
+              stepsDiv.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
+            });
+            stepRow.addEventListener('dragover', (e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = 'move';
+              stepsDiv.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
+              if (dragSrcIdx !== stepIndex) stepRow.classList.add('wf-step-drag-over');
+            });
+            stepRow.addEventListener('drop', (e) => {
+              e.preventDefault();
+              if (dragSrcIdx === null || dragSrcIdx === stepIndex) return;
+              const wfData = this.workflowManager.getWorkflow(portalId, wf.id);
+              const steps = [...wfData.steps];
+              const [moved] = steps.splice(dragSrcIdx, 1);
+              steps.splice(stepIndex, 0, moved);
+              steps.forEach((s, i) => { s.step = i + 1; });
+              this.workflowManager.updateWorkflow(portalId, wf.id, { steps });
+              dragSrcIdx = null;
+              this.render();
+            });
+          }
+
+          const num = document.createElement('div');
+          num.className = 'workflow-step-num';
+          num.textContent = step.step;
+          stepRow.appendChild(num);
+
+          const content = document.createElement('div');
+          content.className = 'workflow-step-content';
+
+          // タイトル行
+          const titleRow = document.createElement('div');
+          titleRow.className = 'workflow-step-title-row';
+
+          const stepTitle = document.createElement('div');
+          stepTitle.className = 'workflow-step-title';
+
+          if (this.isEditMode) {
+            stepTitle.contentEditable = 'true';
+            stepTitle.textContent = step.title;
+            stepTitle.addEventListener('blur', () => {
+              const newTitle = stepTitle.textContent.trim();
+              if (newTitle !== step.title) {
+                this.workflowManager.updateStep(portalId, wf.id, stepIndex, { title: newTitle });
+              }
+            });
+            stepTitle.addEventListener('keydown', (e) => {
+              if (e.key === 'Enter') { e.preventDefault(); stepTitle.blur(); }
+            });
+          } else {
+            stepTitle.textContent = step.title;
+          }
+          titleRow.appendChild(stepTitle);
+
+          // メモ展開ボタン（メモあり or 編集モード）
+          if (step.memo || this.isEditMode) {
+            const expandBtn = document.createElement('button');
+            expandBtn.type = 'button';
+            expandBtn.className = 'workflow-step-expand-btn';
+            expandBtn.innerHTML = '<span class="icon icon-xs">expand_more</span>';
+            expandBtn.title = 'メモを表示/非表示';
+            expandBtn.addEventListener('click', () => {
+              stepRow.classList.toggle('wf-expanded');
+              expandBtn.querySelector('.icon').textContent =
+                stepRow.classList.contains('wf-expanded') ? 'expand_less' : 'expand_more';
+            });
+            titleRow.appendChild(expandBtn);
+
+            if (this.isEditMode) {
+              stepRow.classList.add('wf-expanded');
+              expandBtn.querySelector('.icon').textContent = 'expand_less';
+            }
+          }
+
+          content.appendChild(titleRow);
+
+          // 詳細パネル（メモ）
+          const detailsPanel = document.createElement('div');
+          detailsPanel.className = 'workflow-step-details';
+
+          if (this.isEditMode) {
+            const memoInput = document.createElement('input');
+            memoInput.type = 'text';
+            memoInput.className = 'workflow-step-memo-input';
+            memoInput.placeholder = 'メモ（補足説明）';
+            memoInput.value = step.memo || '';
+            memoInput.addEventListener('blur', () => {
+              this.workflowManager.updateStep(portalId, wf.id, stepIndex, { memo: memoInput.value });
+            });
+            detailsPanel.appendChild(memoInput);
+          } else if (step.memo) {
+            const memo = document.createElement('div');
+            memo.className = 'workflow-step-memo';
+            memo.innerHTML = `<span class="icon icon-xs">lightbulb</span> ${this._escapeHtml(step.memo)}`;
+            detailsPanel.appendChild(memo);
+          }
+
+          content.appendChild(detailsPanel);
+          stepRow.appendChild(content);
+
+          if (step.linkId) {
+            const found = this.searchManager?.findLinkById(step.linkId);
+            if (found) {
+              const isLocal = found.link.url && found.link.url.startsWith('opendir:');
+              const linkBtn = document.createElement('a');
+              linkBtn.className = 'workflow-step-link-btn' + (isLocal ? ' wf-link-local' : '');
+              linkBtn.href = found.link.url;
+              if (!isLocal) linkBtn.target = '_blank';
+              linkBtn.innerHTML = `<span class="icon icon-sm">open_in_new</span> ${this._escapeHtml(found.link.title)}`;
+              if (found.link.memo) {
+                linkBtn.dataset.tooltip = found.link.memo;
+                linkBtn.classList.add('has-tooltip');
+              }
+              linkBtn.addEventListener('click', () => {
+                if (this.memoryManager) this.memoryManager.recordVisit(found.link.id);
+              });
+              stepRow.appendChild(linkBtn);
+            }
+          }
+
+          stepsDiv.appendChild(stepRow);
+        });
+      }
+
+      card.appendChild(stepsDiv);
+      this.container.appendChild(card);
+    });
+  }
+
+  /**
+   * ワークフロービューの内容をPDFエクスポート用HTMLとして新規ウィンドウで開きます。
+   * ブラウザの印刷機能でPDFとして保存可能です。
+   * @private
+   */
+  _exportWorkflowAsPdf() {
+    const portalId = this.configManager.getActivePortalId();
+    const portal = this.configManager.getActivePortal();
+    const workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
+
+    if (workflows.length === 0) {
+      alert('エクスポートするワークフローがありません。');
+      return;
+    }
+
+    const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
+    const esc = (s) => this._escapeHtml(s);
+
+    const workflowsHtml = workflows.map(wf => {
+      const freq = freqLabel[wf.freq] || '';
+      const tags = (wf.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+
+      const stepsHtml = wf.steps.map(step => {
+        let linkHtml = '';
+        if (step.linkId) {
+          const found = this.searchManager?.findLinkById(step.linkId);
+          if (found) {
+            const isLocal = found.link.url?.startsWith('opendir:');
+            if (isLocal) {
+              const path = found.link.url.replace('opendir:', '');
+              linkHtml = `<span class="link-local">📁 ${esc(path)}</span>`;
+            } else {
+              linkHtml = `<a href="${esc(found.link.url)}" class="link-url">${esc(found.link.title)}</a>`;
+            }
+          }
+        }
+        return `<tr>
+          <td class="step-num">${step.step}</td>
+          <td class="step-body">
+            <div class="step-title">${esc(step.title)}</div>
+            ${step.memo ? `<div class="step-memo">${esc(step.memo)}</div>` : ''}
+            ${linkHtml ? `<div class="step-link">${linkHtml}</div>` : ''}
+          </td>
+        </tr>`;
+      }).join('');
+
+      return `<div class="workflow">
+        <div class="wf-header">
+          <h2>${esc(wf.title)}</h2>
+          ${freq ? `<span class="freq-badge">${freq}</span>` : ''}
+        </div>
+        ${wf.description ? `<p class="wf-desc">${esc(wf.description)}</p>` : ''}
+        ${tags ? `<div class="wf-tags">${tags}</div>` : ''}
+        <table class="steps-table"><tbody>${stepsHtml}</tbody></table>
+      </div>`;
+    }).join('');
+
+    const title = portal?.title || '作業フロー';
+    const subtitle = portal?.subtitle || '';
+    const today = new Date().toLocaleDateString('ja-JP');
+
+    const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>${esc(title)} - 作業フロー</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; font-size: 11pt; color: #1e293b; background: #fff; padding: 20mm 15mm; }
+    h1 { font-size: 18pt; margin-bottom: 4px; }
+    .subtitle { font-size: 10pt; color: #64748b; margin-bottom: 6px; }
+    .export-date { font-size: 9pt; color: #94a3b8; margin-bottom: 24px; }
+    .workflow { margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
+    .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    .wf-header h2 { font-size: 13pt; flex: 1; }
+    .freq-badge { font-size: 8pt; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #d1fae5; color: #059669; white-space: nowrap; }
+    .wf-desc { padding: 6px 14px; font-size: 10pt; color: #475569; border-bottom: 1px solid #f1f5f9; }
+    .wf-tags { padding: 4px 14px 6px; border-bottom: 1px solid #f1f5f9; }
+    .tag { display: inline-block; font-size: 8.5pt; padding: 1px 6px; border-radius: 8px; background: #e2e8f0; color: #475569; margin-right: 4px; }
+    .steps-table { width: 100%; border-collapse: collapse; }
+    .step-num { width: 36px; text-align: center; font-weight: 700; font-size: 10pt; color: #fff; background: #6366f1; vertical-align: top; padding: 10px 4px; }
+    .step-body { padding: 10px 14px; vertical-align: top; border-bottom: 1px solid #f1f5f9; }
+    .steps-table tr:last-child .step-body,
+    .steps-table tr:last-child .step-num { border-bottom: none; }
+    .step-title { font-weight: 600; font-size: 11pt; }
+    .step-memo { font-size: 9.5pt; color: #64748b; margin-top: 3px; }
+    .step-link { margin-top: 5px; }
+    .link-url { color: #2563eb; text-decoration: underline; font-size: 10pt; }
+    .link-local { font-size: 9.5pt; color: #92400e; background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+    @media print {
+      body { padding: 0; }
+      @page { margin: 15mm; size: A4; }
+    }
+  </style>
+</head>
+<body>
+  <h1>${esc(title)}</h1>
+  ${subtitle ? `<div class="subtitle">${esc(subtitle)}</div>` : ''}
+  <div class="export-date">出力日: ${today}</div>
+  ${workflowsHtml}
+  <script>window.onload = function() { window.print(); };<\/script>
+</body>
+</html>`;
+
+    const win = window.open('', '_blank');
+    if (win) {
+      win.document.write(html);
+      win.document.close();
+    }
+  }
+
+  /**
+   * @private - HTML特殊文字をエスケープします。
+   */
+  _escapeHtml(str) {
+    return String(str || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
   }
 
   /**
@@ -605,11 +1409,15 @@ export class UI {
       wrapper.addEventListener('dragend', (e) => this._handleDragEnd(e));
     }
 
+    const isLocalRow = link.url && link.url.startsWith('opendir:');
     const a = document.createElement('a');
-    a.className = 'table-row' + (this.isEditMode ? ' disabled' : '');
+    a.className = 'table-row' + (this.isEditMode ? ' disabled' : '') + (isLocalRow ? ' link-local' : '');
     a.href = link.url;
-    a.target = '_blank';
+    if (!isLocalRow) a.target = '_blank';
     if (link.memo) a.dataset.memo = link.memo;
+    if (!this.isEditMode && this.memoryManager) {
+      a.addEventListener('click', () => this.memoryManager.recordVisit(link.id));
+    }
 
     const iconArea = document.createElement('div');
     iconArea.className = 'icon-area-sm';

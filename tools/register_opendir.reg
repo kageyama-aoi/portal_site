@@ -1,0 +1,19 @@
+Windows Registry Editor Version 5.00
+
+; opendir: custom protocol handler
+; Double-click to register (no admin required)
+; Usage: set link URL to  opendir:C:\path\to\folder
+
+[HKEY_CURRENT_USER\Software\Classes\opendir]
+@="URL:Open Directory Protocol"
+"URL Protocol"=""
+
+[HKEY_CURRENT_USER\Software\Classes\opendir\DefaultIcon]
+@="explorer.exe,0"
+
+[HKEY_CURRENT_USER\Software\Classes\opendir\shell]
+
+[HKEY_CURRENT_USER\Software\Classes\opendir\shell\open]
+
+[HKEY_CURRENT_USER\Software\Classes\opendir\shell\open\command]
+@="powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File \"C:\\Users\\kageyama\\Tools\\portal_site_bussiness\\portal_site\\tools\\opendir_handler.ps1\" \"%1\""
