@@ -403,6 +403,134 @@
           }
         ]
       }
+    ],
+    "portal_1785654232735": [
+      {
+        "id": "cat_1785654270937_280",
+        "title": "学習サイト",
+        "isOpen": true,
+        "links": [
+          {
+            "id": "link_1785657520258_233",
+            "title": "アイザック",
+            "url": "https://aicamp.circle.so/c/daa6d1",
+            "icon": "link",
+            "iconColor": "",
+            "iconFill": 0,
+            "iconWeight": 400,
+            "iconSize": "normal",
+            "badge": "doc",
+            "memo": "参照できてない",
+            "tags": [],
+            "keywords": [],
+            "freq": null
+          },
+          {
+            "id": "link_1785654371563_531",
+            "title": "明鏡",
+            "url": "https://ikedahayato.com/meikyou-official",
+            "icon": "history_edu",
+            "iconColor": "#b19e25",
+            "iconFill": 0,
+            "iconWeight": 600,
+            "iconSize": "normal",
+            "badge": "doc",
+            "memo": "いけとも",
+            "tags": [],
+            "keywords": [],
+            "freq": null
+          },
+          {
+            "id": "link_1785654324087_202",
+            "title": "Brain_Market",
+            "url": "https://brain-market.com/u/ikehaya",
+            "icon": "history_edu",
+            "iconColor": "#583c9a",
+            "iconFill": 0,
+            "iconWeight": 200,
+            "iconSize": "normal",
+            "badge": "doc",
+            "memo": "いけともスキルを購入時に",
+            "tags": [],
+            "keywords": [],
+            "freq": null
+          },
+          {
+            "id": "link_1785657789789_604",
+            "title": "netlify",
+            "url": "https://app.netlify.com/projects/famous-buttercream-b1f1bf/overview",
+            "icon": "link",
+            "iconColor": "",
+            "iconFill": 0,
+            "iconWeight": 400,
+            "iconSize": "normal",
+            "badge": "doc",
+            "memo": "",
+            "tags": [],
+            "keywords": [],
+            "freq": null
+          }
+        ]
+      },
+      {
+        "id": "cat_1785656444482_660",
+        "title": "vercel_デプロイ",
+        "isOpen": true,
+        "links": [
+          {
+            "id": "link_1785656529803_558",
+            "title": "rss-news-app",
+            "url": "https://rss-news-app.vercel.app/",
+            "icon": "feed",
+            "iconColor": "#658b70",
+            "iconFill": 0,
+            "iconWeight": 700,
+            "iconSize": "normal",
+            "badge": "doc",
+            "memo": "ニュース集め",
+            "tags": [],
+            "keywords": [],
+            "freq": null
+          }
+        ]
+      },
+      {
+        "id": "cat_1785657549658_981",
+        "title": "デプロイ関連",
+        "isOpen": true,
+        "links": [
+          {
+            "id": "link_1785657570421_732",
+            "title": "vercel",
+            "url": "https://vercel.com/kisaragisouma09-8718s-projects",
+            "icon": "link",
+            "iconColor": "",
+            "iconFill": 0,
+            "iconWeight": 400,
+            "iconSize": "normal",
+            "badge": "doc",
+            "memo": "",
+            "tags": [],
+            "keywords": [],
+            "freq": null
+          },
+          {
+            "id": "link_1785657582671_711",
+            "title": "supabase",
+            "url": "https://supabase.com/dashboard",
+            "icon": "link",
+            "iconColor": "",
+            "iconFill": 0,
+            "iconWeight": 400,
+            "iconSize": "normal",
+            "badge": "doc",
+            "memo": "",
+            "tags": [],
+            "keywords": [],
+            "freq": null
+          }
+        ]
+      }
     ]
   },
   "workflows": {}
