@@ -1822,14 +1822,14 @@ export class UI {
   .wf-progress { position: relative; width: 42px; height: 42px; flex-shrink: 0; margin-left: auto; display: inline-grid; place-items: center; }
   .wf-progress svg { width: 100%; height: 100%; transform: rotate(-90deg); }
   .wf-progress .wp-track { stroke: #D6DFDA; fill: none; stroke-width: 5; }
-  .wf-progress .wp-bar { stroke: #10B981; fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .3s cubic-bezier(.2,.8,.2,1); }
-  .wf-progress .wp-pct { position: absolute; font-size: 0.6rem; font-weight: 700; color: #059669; }
-  .wf-progress.is-complete .wp-bar { stroke: #059669; }
-  .wf-progress.is-complete .wp-pct { color: #059669; }
+  .wf-progress .wp-bar { stroke: #1F5F4A; fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .3s cubic-bezier(.2,.8,.2,1); }
+  .wf-progress .wp-pct { position: absolute; font-size: 0.6rem; font-weight: 700; color: #1F5F4A; }
+  .wf-progress.is-complete .wp-bar { stroke: #164A38; }
+  .wf-progress.is-complete .wp-pct { color: #164A38; }
   .wf-progress .wp-reset { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; display: none; align-items: center; justify-content: center; font-size: 11px; line-height: 1; border: 1px solid #C7D0CB; border-radius: 50%; background: #fff; color: #57645E; cursor: pointer; padding: 0; }
   .wf-progress.has-progress .wp-reset { display: flex; }
   body.wf-edit-mode .wf-progress { display: none; }
-  .freq-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 10px; border-radius: 10px; background: #d1fae5; color: #059669; white-space: nowrap; }
+  .freq-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 10px; border-radius: 10px; background: #D7EAE1; color: #1F5F4A; white-space: nowrap; }
   .wf-desc { padding: 6px 18px; font-size: 0.85rem; color: #57645E; border-bottom: 1px solid #E8EDEA; outline: none; }
   .wf-tags { padding: 4px 18px 6px; border-bottom: 1px solid #E8EDEA; }
   .tag { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 8px; background: #DCE3DF; color: #57645E; margin-right: 4px; }
@@ -1840,11 +1840,11 @@ export class UI {
   .step { display: flex; align-items: flex-start; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #E8EDEA; }
   .step:last-child { border-bottom: none; }
   .step-check { flex-shrink: 0; display: flex; align-items: flex-start; padding-top: 3px; cursor: pointer; }
-  .step-checkbox { width: 17px; height: 17px; margin: 0; cursor: pointer; accent-color: #10B981; }
+  .step-checkbox { width: 17px; height: 17px; margin: 0; cursor: pointer; accent-color: #1F5F4A; }
   body.wf-edit-mode .step-check { display: none; }
-  /* チェック済みステップは打ち消し線＋淡色（編集モード中は素の表示に戻す） */
+  /* チェック済みステップは打ち消し線＋淡色（番号の丸も淡い緑に退かせる。編集モード中は素の表示に戻す） */
   .step.is-done .step-title, .step.is-done .step-memo { text-decoration: line-through; color: #9AA69F; }
-  .step.is-done .step-num { background: #10B981; }
+  .step.is-done .step-num { background: #9EC6B4; }
   .step.is-done .prompt-block, .step.is-done .step-resource { opacity: 0.5; }
   body.wf-edit-mode .step.is-done .step-title, body.wf-edit-mode .step.is-done .step-memo { text-decoration: none; color: #1B2421; }
   body.wf-edit-mode .step.is-done .step-num { background: #1F5F4A; }
@@ -1881,9 +1881,9 @@ export class UI {
   .prompt-block.pt-code { border-color: #94a3b8; background: #DCE3DF; }
   .prompt-block.pt-code .prompt-header { color: #334155; background: #CBD5D1; }
   .prompt-block.pt-code .prompt-text { color: #1B2421; }
-  .prompt-block.pt-text { border-color: #6ee7b7; background: #d1fae5; }
-  .prompt-block.pt-text .prompt-header { color: #047857; background: #a7f3d0; }
-  .prompt-block.pt-text .prompt-text { color: #064e3b; font-family: inherit; }
+  .prompt-block.pt-text { border-color: #9EC6B4; background: #EAF0EE; }
+  .prompt-block.pt-text .prompt-header { color: #164A38; background: #D7EAE1; }
+  .prompt-block.pt-text .prompt-text { color: #1C3226; font-family: inherit; }
   /* 資料名（link-name）を主表示にし、生のパス／URL（link-controls）は
      コピー・開くのために残しつつ、一段小さく控えめな見た目にする。 */
   .link-block { margin-top: 8px; }
