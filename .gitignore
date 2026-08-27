@@ -6,3 +6,6 @@ node_modules/
 
 # 作業フロー発行履歴（配布先メモに個人名が入りうるため追跡しない）
 data/distribution-log.json
+
+# 手動バックアップ（＿ プレフィックス）
+data/＿*.json
