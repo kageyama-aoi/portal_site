@@ -1869,11 +1869,15 @@ dialog textarea {
 .wf-export-row .wf-export-field { flex: 1 1 200px; }
 
 /* 発行履歴（配布台帳）ダイアログ */
+.dist-dot { color: #dc2626; font-size: 0.7em; margin-left: 3px; vertical-align: middle; }
 .dist-header h3 { margin: 0; }
-.dist-note-help { margin: 4px 0 0; font-size: 0.78rem; color: var(--text-sub); }
-.dist-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 8px; flex-wrap: wrap; }
-.dist-toolbar-right { display: flex; gap: 6px; }
-.dist-toolbar-right .secondary-btn { font-size: 0.78rem; padding: 5px 10px; }
+.dist-note-help { margin: 4px 0 0; font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; }
+.dist-note-help code { font-size: 0.9em; background: var(--bg-tool); padding: 1px 5px; border-radius: 4px; }
+.dist-dirty { margin: 10px 0 0; font-size: 0.8rem; color: #92400e; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 7px; padding: 7px 10px; }
+.dist-dirty code { background: rgba(0,0,0,0.06); padding: 1px 5px; border-radius: 4px; }
+.dist-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 12px 0 8px; flex-wrap: wrap; }
+.dist-toolbar-right { display: flex; gap: 6px; align-items: center; }
+.dist-toolbar-right .secondary-btn, .dist-toolbar-right .primary-btn { font-size: 0.78rem; padding: 5px 10px; }
 .dist-filter { padding: 6px 10px; border: 1px solid var(--card-border); border-radius: 7px; background: var(--bg); color: var(--text-main); font-size: 0.85rem; max-width: 60%; }
 .dist-summary { font-size: 0.8rem; color: var(--text-sub); background: var(--bg-tool); border-radius: 7px; padding: 6px 10px; margin-bottom: 8px; }
 .dist-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; }

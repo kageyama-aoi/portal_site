@@ -5,6 +5,8 @@
  * @module DistributionLogDialog
  */
 
+import { LEDGER_FILE_NAME, LEDGER_FILE_PATH } from '../distributionLog.js';
+
 /**
  * @class DistributionLogDialog
  * @brief 発行履歴ダイアログを制御します。DistributionLogManager の内容を一覧・編集し、CSV/JSON を書き出します。
@@ -116,21 +118,32 @@ export class DistributionLogDialog {
         </div>
       `).join('');
 
+    const dirty = !!this.logManager.hasUnsavedChanges;
+
     content.innerHTML = `
       <div class="dist-header">
         <h3 style="margin:0;">発行履歴</h3>
-        <p class="dist-note-help">どの版をいつ誰に配ったかの記録です。<b>この端末内にのみ</b>保存され、配布物には含まれません。</p>
+        <p class="dist-note-help">
+          どの版をいつ誰に配ったかの記録です。配布物には含まれません。<br>
+          この端末内で共有するには「台帳を保存」で <code>${this._esc(LEDGER_FILE_NAME)}</code> を書き出し、
+          <code>${this._esc(LEDGER_FILE_PATH)}</code> に置いてください（起動時に自動で取り込まれます）。
+        </p>
       </div>
+      ${dirty ? `<div class="dist-dirty">未保存の追記があります。「台帳を保存」で <code>${this._esc(LEDGER_FILE_NAME)}</code> を更新してください。</div>` : ''}
       <div class="dist-toolbar">
         <select id="distFilterSelect" class="dist-filter">${filterOptions}</select>
         <div class="dist-toolbar-right">
           <button type="button" id="distAddManualBtn" class="secondary-btn">
             <span class="icon icon-sm">add</span> 手入力で追加
           </button>
+          <button type="button" id="distLoadBtn" class="secondary-btn" title="別の台帳ファイルを選んでマージ">読み込み</button>
           <button type="button" id="distExportCsvBtn" class="secondary-btn">CSV</button>
-          <button type="button" id="distExportJsonBtn" class="secondary-btn">JSON</button>
+          <button type="button" id="distSaveBtn" class="primary-btn${dirty ? '' : ' '}">
+            <span class="icon icon-sm">save</span> 台帳を保存
+          </button>
         </div>
       </div>
+      <input type="file" id="distLoadInput" accept="application/json,.json" style="display:none;">
       ${summaryHtml}
       <div class="dist-list">${rowsHtml}</div>
       <div style="display:flex; justify-content:flex-end; margin-top:14px;">
@@ -148,9 +161,30 @@ export class DistributionLogDialog {
       // Excel 互換のため BOM 付き
       this._download(`発行履歴_${stamp}.csv`, '﻿' + this.logManager.toCsv(), 'text/csv');
     });
-    content.querySelector('#distExportJsonBtn').addEventListener('click', () => {
-      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      this._download(`発行履歴_${stamp}.json`, this.logManager.toJson(), 'application/json');
+    content.querySelector('#distSaveBtn').addEventListener('click', () => {
+      this._download(LEDGER_FILE_NAME, this.logManager.toFileJson(), 'application/json');
+      this.logManager.markSaved();
+      this._render();
+    });
+    const loadInput = content.querySelector('#distLoadInput');
+    content.querySelector('#distLoadBtn').addEventListener('click', () => loadInput.click());
+    loadInput.addEventListener('change', () => {
+      const file = loadInput.files && loadInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          const { added, updated } = this.logManager.mergeEntries(
+            Array.isArray(data) ? data : (data && data.entries) || []
+          );
+          alert(`取り込み完了: 新規 ${added} 件 / 更新 ${updated} 件`);
+          this._render();
+        } catch (e) {
+          alert('読み込みに失敗しました。台帳の JSON ファイルを選んでください。');
+        }
+      };
+      reader.readAsText(file);
     });
     content.querySelector('#distAddManualBtn').addEventListener('click', () => this._addManual());
 

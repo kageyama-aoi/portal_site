@@ -1,13 +1,24 @@
 /**
  * @file distributionLog.js
- * @brief 作業フロー HTML/PDF の発行履歴（配布台帳）を localStorage で管理する。
+ * @brief 作業フロー HTML/PDF の発行履歴（配布台帳）を管理する。
  *        「どの版を・いつ・誰に配ったか」をメモレベルで残すためのもの。厳密な宛先管理は目的にしない。
  *        配布物（出力HTML）には配布先メモを一切含めない。台帳は配布側の手元だけに残る。
+ *
+ *        保存モデル（data.json と同じ考え方）:
+ *        - localStorage を「作業コピー」として常時保持（リロードで消えない）
+ *        - `data/distribution-log.json` を「共有・バックアップ用ファイル」とする。
+ *          起動時に fetch してマージ（同一PC内なら複数ブラウザ/オリジンで同じ履歴を見られる）。
+ *          追記が発生したら「台帳を保存」でこのファイルを書き出し、data/ に置き直す。
+ *        - 配布先メモに個人名が入りうるため、このファイルは .gitignore 対象。
  * @module distributionLog
  */
 
 const LOG_KEY = 'portalWorkflowDistributionLog';
 const PREFS_KEY = 'portalWorkflowExportPrefs';
+
+/** 共有・バックアップ用ファイルの相対パス（起動時 fetch / 保存時ファイル名）。 */
+export const LEDGER_FILE_PATH = 'data/distribution-log.json';
+export const LEDGER_FILE_NAME = 'distribution-log.json';
 
 /**
  * @typedef {object} DistributionEntry
@@ -35,6 +46,21 @@ export class DistributionLogManager {
     this.storage = storage !== undefined
       ? storage
       : (typeof localStorage !== 'undefined' ? localStorage : null);
+    /**
+     * 共有ファイル（distribution-log.json）へ未書き出しの変更があるか。
+     * add/update/deleteEntry で true、保存・ファイル取り込みで false になる。
+     * @type {boolean}
+     */
+    this.hasUnsavedChanges = false;
+    /** @type {(() => void)|null} 未保存状態が変わったときに呼ぶ（UIのバッジ更新用）。 */
+    this.onDirtyChange = null;
+  }
+
+  /** @private 未保存フラグを更新し、変化があれば通知する。 */
+  _setDirty(v) {
+    if (this.hasUnsavedChanges === v) return;
+    this.hasUnsavedChanges = v;
+    if (typeof this.onDirtyChange === 'function') this.onDirtyChange();
   }
 
   /** @private */
@@ -83,6 +109,7 @@ export class DistributionLogManager {
     };
     (Array.isArray(list) ? list : []).push(full);
     this._write(LOG_KEY, Array.isArray(list) ? list : [full]);
+    this._setDirty(true);
     return full;
   }
 
@@ -98,6 +125,7 @@ export class DistributionLogManager {
     if (idx !== -1) {
       list[idx] = { ...list[idx], ...patch };
       this._write(LOG_KEY, list);
+      this._setDirty(true);
     }
   }
 
@@ -108,7 +136,71 @@ export class DistributionLogManager {
   deleteEntry(id) {
     const list = this._read(LOG_KEY, []);
     if (!Array.isArray(list)) return;
-    this._write(LOG_KEY, list.filter(e => e.id !== id));
+    const next = list.filter(e => e.id !== id);
+    if (next.length !== list.length) {
+      this._write(LOG_KEY, next);
+      this._setDirty(true);
+    }
+  }
+
+  /**
+   * 別の履歴リストを id で突き合わせてマージします（同一 id は引数側で上書き、新規行は追加）。
+   * 起動時のファイル取り込み・手動の台帳読み込みの両方で使います。
+   * @param {DistributionEntry[]} incoming
+   * @returns {{added: number, updated: number}}
+   */
+  mergeEntries(incoming) {
+    if (!Array.isArray(incoming)) return { added: 0, updated: 0 };
+    const list = this._read(LOG_KEY, []);
+    const byId = new Map((Array.isArray(list) ? list : []).map(e => [e.id, e]));
+    let added = 0;
+    let updated = 0;
+    for (const e of incoming) {
+      if (!e || !e.id) continue;
+      if (byId.has(e.id)) {
+        byId.set(e.id, { ...byId.get(e.id), ...e });
+        updated++;
+      } else {
+        byId.set(e.id, e);
+        added++;
+      }
+    }
+    this._write(LOG_KEY, Array.from(byId.values()));
+    return { added, updated };
+  }
+
+  /**
+   * 共有ファイル（distribution-log.json）の中身を取り込みます。マージ方式。
+   * 起動時の fetch 結果や、手動で選んだファイルの JSON を渡します。
+   * 取り込み後は「保存済み」扱いにします（＝この時点でファイルと localStorage が一致）。
+   * @param {object|DistributionEntry[]} fileData - `{entries:[...]}` または素の配列
+   * @returns {{added: number, updated: number}}
+   */
+  applyFileData(fileData) {
+    const entries = Array.isArray(fileData)
+      ? fileData
+      : (fileData && Array.isArray(fileData.entries) ? fileData.entries : []);
+    const result = this.mergeEntries(entries);
+    // 取り込み直後は「保存する必要がない」状態にそろえる
+    this._setDirty(false);
+    return result;
+  }
+
+  /** 共有ファイルへ書き出したことを記録します（未保存フラグを下ろす）。 */
+  markSaved() {
+    this._setDirty(false);
+  }
+
+  /**
+   * 共有ファイル（distribution-log.json）に書き出す JSON 文字列を返します。
+   * @returns {string}
+   */
+  toFileJson() {
+    return JSON.stringify({
+      schema: 1,
+      savedAt: new Date().toISOString(),
+      entries: this.getEntries()
+    }, null, 2);
   }
 
   /**

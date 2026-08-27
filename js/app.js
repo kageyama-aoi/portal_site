@@ -17,7 +17,7 @@ import { WorkflowManager } from './workflowManager.js';
 import { WorkflowDialog } from './dialogs/workflowDialog.js';
 import { ThemeManager } from './themeManager.js';
 import { TagManager } from './tagManager.js';
-import { DistributionLogManager } from './distributionLog.js';
+import { DistributionLogManager, LEDGER_FILE_PATH } from './distributionLog.js';
 import { DistributionLogDialog } from './dialogs/distributionLogDialog.js';
 
 /**
@@ -130,6 +130,10 @@ document.addEventListener('DOMContentLoaded', async () => {
    */
   const distributionLog = new DistributionLogManager();
   ui.distributionLog = distributionLog;
+  // 未保存バッジ（発行履歴ボタンの●）を最新化する
+  distributionLog.onDirtyChange = () => {
+    if (ui && ui.viewMode === 'workflow') ui.render();
+  };
 
   /**
    * @type {DistributionLogDialog}
@@ -165,6 +169,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // データをロード（常に data/data.json から）
   const loadResult = await dataManager.load(activePortalId);
+
+  // 発行履歴の共有ファイル（data/distribution-log.json）があれば取り込む。
+  // 同一PC内なら、別ブラウザ・別ポートで開いても同じ履歴が見られるようにするため。
+  // ファイルが無い / file:// で開いている等で失敗しても、localStorage の作業コピーで動作を続ける。
+  try {
+    const ledgerRes = await fetch(LEDGER_FILE_PATH, { cache: 'no-store' });
+    if (ledgerRes.ok) {
+      distributionLog.applyFileData(await ledgerRes.json());
+    }
+  } catch (e) {
+    /* 共有ファイルが無い環境ではそのまま localStorage のみで動く */
+  }
 
   // ページタイトルとサブタイトルを設定
   ui.setPageTitle(activePortal.title, activePortal.subtitle);

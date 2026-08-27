@@ -99,3 +99,56 @@ describe('DistributionLogManager', () => {
     expect(noStore.getExportPrefs()).toEqual({ reviewDue: '', sourceHint: '' });
   });
 });
+
+describe('DistributionLogManager: 共有ファイル運用', () => {
+  let mgr;
+  beforeEach(() => { mgr = new DistributionLogManager(memoryStorage()); });
+
+  test('addEntry で hasUnsavedChanges が立ち、markSaved で下りる', () => {
+    expect(mgr.hasUnsavedChanges).toBe(false);
+    mgr.addEntry(baseEntry());
+    expect(mgr.hasUnsavedChanges).toBe(true);
+    mgr.markSaved();
+    expect(mgr.hasUnsavedChanges).toBe(false);
+  });
+
+  test('onDirtyChange は変化時のみ呼ばれる', () => {
+    let calls = 0;
+    mgr.onDirtyChange = () => { calls++; };
+    mgr.addEntry(baseEntry());   // false -> true
+    mgr.addEntry(baseEntry());   // true -> true（呼ばれない）
+    mgr.markSaved();             // true -> false
+    expect(calls).toBe(2);
+  });
+
+  test('mergeEntries: 同一idは引数側で上書き、新規は追加', () => {
+    const a = mgr.addEntry(baseEntry({ recipientNote: '旧メモ' }));
+    const res = mgr.mergeEntries([
+      { ...a, recipientNote: '新メモ' },
+      { id: 'dist_x', title: '外部', rev: 1, workflowId: 'wf_9', format: 'html', exportedAt: '2026-05-01T00:00:00Z' }
+    ]);
+    expect(res).toEqual({ added: 1, updated: 1 });
+    const byId = Object.fromEntries(mgr.getEntries().map(e => [e.id, e]));
+    expect(byId[a.id].recipientNote).toBe('新メモ');
+    expect(byId['dist_x'].title).toBe('外部');
+  });
+
+  test('applyFileData: {entries:[...]} と素の配列の両方を受け付け、取り込み後は保存済み扱い', () => {
+    mgr.addEntry(baseEntry());
+    expect(mgr.hasUnsavedChanges).toBe(true);
+    const r1 = mgr.applyFileData({ entries: [{ id: 'dist_f1', title: 'F1', rev: 2, workflowId: 'wf_1', format: 'pdf', exportedAt: '2026-06-01T00:00:00Z' }] });
+    expect(r1.added).toBe(1);
+    expect(mgr.hasUnsavedChanges).toBe(false);
+    const r2 = mgr.applyFileData([{ id: 'dist_f2', title: 'F2', rev: 1, workflowId: 'wf_1', format: 'html', exportedAt: '2026-06-02T00:00:00Z' }]);
+    expect(r2.added).toBe(1);
+  });
+
+  test('toFileJson は schema/savedAt/entries を持つ整形JSON', () => {
+    mgr.addEntry(baseEntry({ recipientNote: '田中さん' }));
+    const parsed = JSON.parse(mgr.toFileJson());
+    expect(parsed.schema).toBe(1);
+    expect(typeof parsed.savedAt).toBe('string');
+    expect(parsed.entries).toHaveLength(1);
+    expect(parsed.entries[0].recipientNote).toBe('田中さん');
+  });
+});

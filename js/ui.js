@@ -1090,8 +1090,9 @@ export class UI {
       const logBtn = document.createElement('button');
       logBtn.type = 'button';
       logBtn.className = 'secondary-btn';
-      logBtn.innerHTML = '<span class="icon icon-sm">history</span> 発行履歴';
-      logBtn.title = 'どの版をいつ誰に配ったかの記録（この端末内のみ）';
+      const unsaved = this.distributionLog && this.distributionLog.hasUnsavedChanges;
+      logBtn.innerHTML = `<span class="icon icon-sm">history</span> 発行履歴${unsaved ? '<span class="dist-dot" title="未保存の追記があります">●</span>' : ''}`;
+      logBtn.title = 'どの版をいつ誰に配ったかの記録';
       logBtn.style.cssText = 'font-size:0.85rem;';
       logBtn.addEventListener('click', () => this.distributionLogDialog.open());
       headerBtns.appendChild(logBtn);
@@ -1403,7 +1404,7 @@ export class UI {
 
       <div class="wf-export-meta">
         <label class="wf-export-field">
-          <span>配布先メモ <span class="wf-export-opt">（任意・この端末の記録だけに残ります）</span></span>
+          <span>配布先メモ <span class="wf-export-opt">（任意・発行履歴に記録／配布物には出ません）</span></span>
           <input type="text" id="wfExportRecipient" list="wfExportRecentList" autocomplete="off"
                  placeholder="誰に渡すか一言（例: 営業部 田中さん）">
           <datalist id="wfExportRecentList">${recentsOptions}</datalist>
