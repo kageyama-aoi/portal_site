@@ -1671,7 +1671,7 @@ export class UI {
       const wfTitleHtml = recEditable(wf.title);
       const wfDescHtml = wf.description ? recEditable(wf.description) : '';
 
-      const stepsHtml = wf.steps.map(step => {
+      const stepsHtml = wf.steps.map((step, stepIdx) => {
         let linkHtml = '';
         if (step.linkId) {
           const found = this.searchManager?.findLinkById(step.linkId);
@@ -1726,7 +1726,8 @@ export class UI {
         // 専用列にして、本文の開始位置と資料が同列に見えないようにする。
         // 資料は行の下端に揃え、複数ステップを見たときに資料だけが縦に
         // 並んだ落ち着いた一覧のように見えるようにする。
-        return `<div class="step">
+        return `<div class="step" data-si="${stepIdx}">
+          <label class="step-check"><input type="checkbox" class="step-checkbox" aria-label="このステップを完了にする"></label>
           <div class="step-num">${step.step}</div>
           <div class="step-body">
             <div class="step-title" data-editable contenteditable="false">${stepTitleHtml}</div>
@@ -1737,11 +1738,16 @@ export class UI {
         </div>`;
       }).join('');
 
-      return `<div class="workflow">
+      return `<div class="workflow" data-wf="${esc(wf.id)}">
         <div class="wf-header">
           <h2 data-editable contenteditable="false">${wfTitleHtml}</h2>
           ${freq ? `<span class="freq-badge">${freq}</span>` : ''}
           <span class="wf-version" title="配布バージョン（受領者との照合用）">v${rev} ・ ${esc(updatedDate)} ・ ${esc(code)}</span>
+          <div class="wf-progress" title="チェック済みステップの割合">
+            <svg viewBox="0 0 44 44"><circle class="wp-track" cx="22" cy="22" r="19"></circle><circle class="wp-bar" cx="22" cy="22" r="19"></circle></svg>
+            <span class="wp-pct">0%</span>
+            <button type="button" class="wp-reset" title="チェックをすべて外す" onclick="wfResetChecks(this)">↺</button>
+          </div>
         </div>
         ${wfDescHtml ? `<p class="wf-desc" data-editable contenteditable="false">${wfDescHtml}</p>` : ''}
         ${tags ? `<div class="wf-tags">${tags}</div>` : ''}
@@ -1803,8 +1809,19 @@ export class UI {
   .status-bar.editing { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
   .status-hint { font-weight: 400; opacity: 0.75; }
   .workflow { margin-top: 14px; background: #fff; border: 1px solid #DCE3DF; border-radius: 10px; overflow: hidden; }
-  .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: #EAF0EE; border-bottom: 1px solid #DCE3DF; }
-  .wf-header h2 { font-size: 1.1rem; flex: 1; outline: none; }
+  .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: #EAF0EE; border-bottom: 1px solid #DCE3DF; flex-wrap: wrap; }
+  .wf-header h2 { font-size: 1.1rem; flex: 1 1 40%; min-width: 0; outline: none; }
+  /* 円形プログレス（チェック済みステップの割合） */
+  .wf-progress { position: relative; width: 42px; height: 42px; flex-shrink: 0; margin-left: auto; display: inline-grid; place-items: center; }
+  .wf-progress svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+  .wf-progress .wp-track { stroke: #D6DFDA; fill: none; stroke-width: 5; }
+  .wf-progress .wp-bar { stroke: #10B981; fill: none; stroke-width: 5; stroke-linecap: round; transition: stroke-dashoffset .3s cubic-bezier(.2,.8,.2,1); }
+  .wf-progress .wp-pct { position: absolute; font-size: 0.6rem; font-weight: 700; color: #059669; }
+  .wf-progress.is-complete .wp-bar { stroke: #059669; }
+  .wf-progress.is-complete .wp-pct { color: #059669; }
+  .wf-progress .wp-reset { position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; display: none; align-items: center; justify-content: center; font-size: 11px; line-height: 1; border: 1px solid #C7D0CB; border-radius: 50%; background: #fff; color: #57645E; cursor: pointer; padding: 0; }
+  .wf-progress.has-progress .wp-reset { display: flex; }
+  body.wf-edit-mode .wf-progress { display: none; }
   .freq-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 10px; border-radius: 10px; background: #d1fae5; color: #059669; white-space: nowrap; }
   .wf-desc { padding: 6px 18px; font-size: 0.85rem; color: #57645E; border-bottom: 1px solid #E8EDEA; outline: none; }
   .wf-tags { padding: 4px 18px 6px; border-bottom: 1px solid #E8EDEA; }
@@ -1815,7 +1832,17 @@ export class UI {
      資料だけが縦に連なると落ち着いた一覧のように見える。 */
   .step { display: flex; align-items: flex-start; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #E8EDEA; }
   .step:last-child { border-bottom: none; }
-  .step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #1F5F4A; color: #fff; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .step-check { flex-shrink: 0; display: flex; align-items: flex-start; padding-top: 3px; cursor: pointer; }
+  .step-checkbox { width: 17px; height: 17px; margin: 0; cursor: pointer; accent-color: #10B981; }
+  body.wf-edit-mode .step-check { display: none; }
+  /* チェック済みステップは打ち消し線＋淡色（編集モード中は素の表示に戻す） */
+  .step.is-done .step-title, .step.is-done .step-memo { text-decoration: line-through; color: #9AA69F; }
+  .step.is-done .step-num { background: #10B981; }
+  .step.is-done .prompt-block, .step.is-done .step-resource { opacity: 0.5; }
+  body.wf-edit-mode .step.is-done .step-title, body.wf-edit-mode .step.is-done .step-memo { text-decoration: none; color: #1B2421; }
+  body.wf-edit-mode .step.is-done .step-num { background: #1F5F4A; }
+  body.wf-edit-mode .step.is-done .prompt-block, body.wf-edit-mode .step.is-done .step-resource { opacity: 1; }
+  .step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #1F5F4A; color: #fff; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background .2s; }
   .step-resource { flex: 0 0 auto; align-self: flex-end; width: 42%; min-width: 220px; max-width: 320px; }
   .step-body { flex: 1; min-width: 0; }
   .step-title { font-weight: 600; font-size: 1rem; outline: none; padding: 1px 0; }
@@ -2034,9 +2061,89 @@ function wfInitReviewNote() {
     note.textContent = '次回見直し予定: ' + due;
   }
 }
+// ── チェックリスト: 各ステップの完了チェックと円形プログレス ──
+function wfReadMeta() {
+  try {
+    var el = document.getElementById('wf-meta');
+    return el ? JSON.parse(el.textContent) : {};
+  } catch (e) { return {}; }
+}
+function wfCheckKey(wfEl) {
+  var id = wfEl.getAttribute('data-wf') || '';
+  var hash = '';
+  var meta = wfReadMeta();
+  (meta.workflows || []).forEach(function (w) { if (w.workflowId === id) hash = w.contentHash || ''; });
+  // 版（contentHash）が変わったら別キー＝進捗リセット
+  return 'wfcheck:' + id + ':' + hash;
+}
+function wfSaveChecks(wfEl, arr) {
+  try { localStorage.setItem(wfCheckKey(wfEl), JSON.stringify(arr)); } catch (e) {}
+}
+function wfUpdateProgress(wfEl) {
+  var boxes = wfEl.querySelectorAll('.step-checkbox');
+  var total = boxes.length;
+  var done = 0;
+  boxes.forEach(function (b) {
+    var step = b.closest('.step');
+    if (b.checked) { done++; if (step) step.classList.add('is-done'); }
+    else if (step) step.classList.remove('is-done');
+  });
+  var prog = wfEl.querySelector('.wf-progress');
+  if (!prog || !total) { if (prog) prog.style.display = 'none'; return; }
+  var frac = done / total;
+  var bar = prog.querySelector('.wp-bar');
+  var track = prog.querySelector('.wp-track');
+  var C = 2 * Math.PI * 19;
+  bar.setAttribute('stroke-dasharray', C);
+  track.setAttribute('stroke-dasharray', C);
+  bar.setAttribute('stroke-dashoffset', C * (1 - frac));
+  prog.querySelector('.wp-pct').textContent = Math.round(frac * 100) + '%';
+  prog.setAttribute('title', done + ' / ' + total + ' 完了');
+  prog.classList.toggle('has-progress', done > 0);
+  prog.classList.toggle('is-complete', done === total);
+}
+function wfInitChecklist() {
+  document.querySelectorAll('.workflow').forEach(function (wfEl) {
+    var boxes = [].slice.call(wfEl.querySelectorAll('.step-checkbox'));
+    var raw = null;
+    try { raw = localStorage.getItem(wfCheckKey(wfEl)); } catch (e) {}
+    if (raw !== null) {
+      var saved = [];
+      try { saved = JSON.parse(raw) || []; } catch (e) { saved = []; }
+      boxes.forEach(function (b, i) { b.checked = saved.indexOf(i) !== -1; });
+    } else {
+      // 初回: 配布時に焼き込まれた checked 属性を採用して保存する
+      var checked = [];
+      boxes.forEach(function (b, i) { if (b.checked) checked.push(i); });
+      if (checked.length) wfSaveChecks(wfEl, checked);
+    }
+    wfUpdateProgress(wfEl);
+  });
+}
+function wfPersistChecks(wfEl) {
+  var boxes = [].slice.call(wfEl.querySelectorAll('.step-checkbox'));
+  var checked = [];
+  boxes.forEach(function (b, i) { if (b.checked) checked.push(i); });
+  wfSaveChecks(wfEl, checked);
+}
+function wfResetChecks(btn) {
+  var wfEl = btn.closest('.workflow');
+  wfEl.querySelectorAll('.step-checkbox').forEach(function (b) { b.checked = false; });
+  wfPersistChecks(wfEl);
+  wfUpdateProgress(wfEl);
+}
+document.addEventListener('change', function (e) {
+  if (!e.target || !e.target.classList || !e.target.classList.contains('step-checkbox')) return;
+  var wfEl = e.target.closest('.workflow');
+  if (!wfEl) return;
+  wfPersistChecks(wfEl);
+  wfUpdateProgress(wfEl);
+});
+
 wfInitClamps();
 wfCheckIntegrity();
 wfInitReviewNote();
+wfInitChecklist();
 document.getElementById('wfEditToggle').addEventListener('change', function (e) {
   wfSetEditMode(e.target.checked);
 });
@@ -2056,6 +2163,11 @@ function wfSaveAsHtml() {
   document.querySelectorAll('.link-input').forEach(function (el) {
     el.setAttribute('value', el.value);
     el.setAttribute('readonly', 'readonly');
+  });
+  // 現在のチェック状態を属性として焼き込む（進捗つきで他人に渡せるようにする）
+  document.querySelectorAll('.step-checkbox').forEach(function (el) {
+    if (el.checked) el.setAttribute('checked', 'checked');
+    else el.removeAttribute('checked');
   });
   var html = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
   var blob = new Blob([html], { type: 'text/html' });

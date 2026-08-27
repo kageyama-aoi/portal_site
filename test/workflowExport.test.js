@@ -93,3 +93,74 @@ describe('作業フロー HTML 出力の配布バージョン管理', () => {
     expect(window.wfCheckIntegrity()).toBe(false);
   });
 });
+
+describe('作業フロー HTML 出力のチェックリスト機能', () => {
+  beforeEach(() => { try { localStorage.clear(); } catch (e) {} });
+
+  test('各ステップにチェックボックスがあり、初期は 0%', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const boxes = document.querySelectorAll('.step-checkbox');
+    expect(boxes).toHaveLength(sampleWorkflow.steps.length);
+    expect(document.querySelector('.wp-pct').textContent).toBe('0%');
+  });
+
+  test('チェックするとステップが is-done になり進捗％が更新され localStorage に保存される', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const box = document.querySelectorAll('.step-checkbox')[0];
+    box.checked = true;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+
+    expect(box.closest('.step').classList.contains('is-done')).toBe(true);
+    expect(document.querySelector('.wp-pct').textContent).toBe('50%'); // 2ステップ中1
+    expect(document.querySelector('.wf-progress').classList.contains('has-progress')).toBe(true);
+
+    const keys = Object.keys(localStorage).filter(k => k.startsWith('wfcheck:'));
+    expect(keys).toHaveLength(1);
+    expect(JSON.parse(localStorage.getItem(keys[0]))).toEqual([0]);
+  });
+
+  test('同じ内容を開き直すと localStorage からチェック状態が復元される', () => {
+    const html = exportHtml(sampleWorkflow, {});
+    loadIntoDom(html);
+    const box = document.querySelectorAll('.step-checkbox')[1];
+    box.checked = true;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+
+    loadIntoDom(html); // 開き直し
+    const boxes = document.querySelectorAll('.step-checkbox');
+    expect(boxes[0].checked).toBe(false);
+    expect(boxes[1].checked).toBe(true);
+    expect(document.querySelector('.wp-pct').textContent).toBe('50%');
+  });
+
+  test('リセットボタンで全チェックが外れる', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    document.querySelectorAll('.step-checkbox').forEach(b => {
+      b.checked = true;
+      b.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    expect(document.querySelector('.wp-pct').textContent).toBe('100%');
+    expect(document.querySelector('.wf-progress').classList.contains('is-complete')).toBe(true);
+
+    document.querySelector('.wp-reset').click();
+    expect(document.querySelector('.wp-pct').textContent).toBe('0%');
+    expect([...document.querySelectorAll('.step-checkbox')].some(b => b.checked)).toBe(false);
+  });
+
+  test('チェックは改変検知に影響しない', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const box = document.querySelectorAll('.step-checkbox')[0];
+    box.checked = true;
+    box.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(window.wfCheckIntegrity()).toBe(false);
+    expect(document.getElementById('wfIntegrityBadge').textContent).toContain('配布時のまま');
+  });
+
+  test('焼き込まれた checked 属性は localStorage が無いとき採用される', () => {
+    const html = exportHtml(sampleWorkflow, {})
+      .replace(/class="step-checkbox"/g, 'class="step-checkbox" checked="checked"');
+    loadIntoDom(html);
+    expect([...document.querySelectorAll('.step-checkbox')].every(b => b.checked)).toBe(true);
+    expect(document.querySelector('.wp-pct').textContent).toBe('100%');
+  });
+});
