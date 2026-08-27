@@ -6,22 +6,28 @@
 
 /**
  * @class DataManager
- * @brief アプリケーションのカテゴリとリンクのデータを管理するクラス。
- *        データの取得、追加、更新、削除、移動、保存（ダウンロード）、インポートなどの機能を提供します。
+ * @brief アプリケーションのリンクデータを管理するクラス。
+ *        データの取得、追加、更新、削除、保存（ダウンロード）、インポートなどの機能を提供します。
  */
 export class DataManager {
   /**
-   * @property {Array<Category>} data - 現在アクティブなポータルのカテゴリとリンクを保持する配列。
+   * @property {Array<Link>} data - 現在アクティブなポータルのリンクを保持するフラットな配列。
    */
   data = [];
   /**
-   * @property {object} allPortals - すべてのポータルのカテゴリデータを保持するオブジェクト。
+   * @property {object} allPortals - すべてのポータルのリンクデータを保持するオブジェクト。
    */
   allPortals = {};
   /**
    * @property {object} allWorkflows - すべてのポータルのワークフローデータを保持するオブジェクト。
    */
   allWorkflows = {};
+  /**
+   * @property {object} allTagRegistry - ポータルごとに事前登録された「まだリンク0件のタグ」を保持するオブジェクト。
+   *   リンクに実際に使われているタグは data 側から動的に集計されるため、
+   *   ここにはリンクとまだ紐づいていないタグ名のみを保持すれば十分。
+   */
+  allTagRegistry = {};
   /**
    * @property {boolean} hasUnsavedChanges - 未保存の変更があるかどうかを示すフラグ。
    */
@@ -40,31 +46,20 @@ export class DataManager {
   }
 
   /**
-   * すべてのカテゴリとリンクのデータを取得します。
-   * @returns {Array<Category>} すべてのデータ。
+   * すべてのリンクのデータを取得します。
+   * @returns {Array<Link>} すべてのデータ。
    */
   getData() {
     return JSON.parse(JSON.stringify(this.data));
   }
 
   /**
-   * 指定されたIDを持つカテゴリを取得します。
-   * @param {string} id - 取得するカテゴリのID。
-   * @returns {Category|undefined} 見つかったカテゴリ、または見つからなかった場合は `undefined`。
-   */
-  getCategory(id) {
-    return this.data.find(c => c.id === id);
-  }
-  
-  /**
-   * 指定されたカテゴリ内の指定されたIDを持つリンクを取得します。
-   * @param {string} catId - リンクが属するカテゴリのID。
+   * 指定されたIDを持つリンクを取得します。
    * @param {string} linkId - 取得するリンクのID。
-   * @returns {Link|null} 見つかったリンク、または見つからなかった場合は `null`。
+   * @returns {Link|undefined} 見つかったリンク、または見つからなかった場合は `undefined`。
    */
-  getLink(catId, linkId) {
-    const cat = this.getCategory(catId);
-    return cat ? cat.links.find(l => l.id === linkId) : undefined;
+  getLink(linkId) {
+    return this.data.find(l => l.id === linkId);
   }
 
   /**
@@ -76,7 +71,7 @@ export class DataManager {
       this.onDirty();
     }
   }
-  
+
   /**
    * 変更が保存されたことをマークします。
    */
@@ -87,7 +82,7 @@ export class DataManager {
   /**
    * ユニークなIDを生成します。
    * @private
-   * @param {string} prefix - IDのプレフィックス (例: 'cat', 'link')。
+   * @param {string} prefix - IDのプレフィックス (例: 'link')。
    * @returns {string} 生成されたユニークID。
    */
   _generateId(prefix) {
@@ -116,10 +111,44 @@ export class DataManager {
   }
 
   /**
-   * 常に data/data.json を fetch し、指定ポータルIDのカテゴリをロードします。
+   * 旧形式（カテゴリ配列: `[{id, title, isOpen, links: [...]}]`）のポータルデータを、
+   * 新形式（リンクのフラット配列、`tags`のみで分類）へ変換します。
+   * カテゴリのタイトルは、そのカテゴリに属していた各リンクの初期タグとして引き継がれます
+   * （既に同名タグを持つ場合は重複させません）。
+   * 既にフラット形式（要素が`.url`を持つ）の場合はそのまま返します。
+   * @private
+   * @param {Array<object>} portalArray - 1ポータル分のデータ配列。
+   * @returns {{data: Array<Link>, migrated: boolean}} 変換後のデータと、変換が発生したかどうか。
+   */
+  _migrateLegacyPortal(portalArray) {
+    if (!Array.isArray(portalArray) || portalArray.length === 0) {
+      return { data: portalArray ?? [], migrated: false };
+    }
+    // 配列の先頭要素だけで新旧形式を判定すると、旧形式（カテゴリ）と新形式（フラットな
+    // リンク）が混在する配列で、先頭以外の新形式リンクが `.links` を持たないために
+    // flatMap で無言で消えてしまう。要素ごとに個別判定することでこれを防ぐ。
+    const hasLegacyCategory = portalArray.some(entry => entry && Array.isArray(entry.links));
+    if (!hasLegacyCategory) {
+      return { data: portalArray, migrated: false };
+    }
+    const flatLinks = portalArray.flatMap(entry => {
+      if (entry && Array.isArray(entry.links)) {
+        return entry.links.map(link => ({
+          ...link,
+          tags: Array.from(new Set([...(link.tags || []), entry.title]))
+        }));
+      }
+      return entry ? [entry] : [];
+    });
+    return { data: flatLinks, migrated: true };
+  }
+
+  /**
+   * 常に data/data.json を fetch し、指定ポータルIDのリンクをロードします。
+   * 旧形式（カテゴリ配列）のポータルは自動的にタグ形式へ変換されます。
    * @async
    * @param {string} [portalId='default'] - ロードするポータルのID。
-   * @returns {Promise<{success: boolean, data?: Array<Category>, error?: Error}>}
+   * @returns {Promise<{success: boolean, data?: Array<Link>, error?: Error}>}
    */
   async load(portalId = 'default') {
     try {
@@ -132,9 +161,14 @@ export class DataManager {
       if (Array.isArray(parsed)) {
         this.allPortals = { default: parsed };
         this.allWorkflows = {};
+        this.allTagRegistry = {};
       } else {
         this.allPortals = parsed.portals || {};
         this.allWorkflows = parsed.workflows || {};
+        this.allTagRegistry = parsed.tagRegistry || {};
+      }
+      if (this._migratePortals()) {
+        this.markAsDirty();
       }
       this.data = this.allPortals[portalId] ?? [];
       return { success: true, data: this.data };
@@ -150,7 +184,7 @@ export class DataManager {
    * @async
    * @param {File} file - 読み込むファイルオブジェクト。
    * @param {string} [portalId='default'] - 対象ポータルID（旧形式の場合に使用）。
-   * @returns {Promise<Array<Category>>} 読み込まれたデータを含むPromise。
+   * @returns {Promise<Array<Link>>} 読み込まれたデータを含むPromise。
    */
   async loadFromFile(file, portalId = 'default') {
     try {
@@ -158,12 +192,15 @@ export class DataManager {
       if (json && typeof json === 'object' && !Array.isArray(json) && json.portals) {
         this.allPortals = json.portals;
         this.allWorkflows = json.workflows || {};
+        this.allTagRegistry = json.tagRegistry || {};
       } else if (Array.isArray(json)) {
         this.allPortals[portalId] = json;
         this.allWorkflows = {};
+        this.allTagRegistry = {};
       } else {
         throw new Error('Invalid data format.');
       }
+      this._migratePortals();
       this.data = this.allPortals[portalId] ?? [];
       return this.data;
     } catch (err) {
@@ -185,17 +222,35 @@ export class DataManager {
       if (json && typeof json === 'object' && !Array.isArray(json) && json.portals) {
         this.allPortals = json.portals;
         this.allWorkflows = json.workflows || {};
+        this.allTagRegistry = json.tagRegistry || {};
       } else if (Array.isArray(json)) {
         this.allPortals[portalId] = json;
         this.allWorkflows = {};
+        this.allTagRegistry = {};
       } else {
         throw new Error('Invalid data format.');
       }
+      this._migratePortals();
       this.data = this.allPortals[portalId] ?? [];
       this.markAsDirty();
     } catch (err) {
       throw err;
     }
+  }
+
+  /**
+   * `this.allPortals` の全ポータルに対して旧形式からの変換を適用します。
+   * @private
+   * @returns {boolean} いずれかのポータルで変換が発生した場合 true。
+   */
+  _migratePortals() {
+    let anyMigrated = false;
+    Object.keys(this.allPortals).forEach(portalId => {
+      const { data, migrated } = this._migrateLegacyPortal(this.allPortals[portalId]);
+      this.allPortals[portalId] = data;
+      if (migrated) anyMigrated = true;
+    });
+    return anyMigrated;
   }
 
   /**
@@ -205,7 +260,7 @@ export class DataManager {
    */
   save(portalId = 'default') {
     this.allPortals[portalId] = this.data;
-    const dataStr = JSON.stringify({ portals: this.allPortals, workflows: this.allWorkflows }, null, 2);
+    const dataStr = JSON.stringify({ portals: this.allPortals, workflows: this.allWorkflows, tagRegistry: this.allTagRegistry }, null, 2);
     const blob = new Blob([dataStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
 
@@ -221,139 +276,54 @@ export class DataManager {
   }
 
   /**
-   * 新しいカテゴリを追加します。
-   * @param {string} title - 新しいカテゴリのタイトル。
+   * 新しいリンクを追加します。
+   * @param {object} linkData - 追加するリンクのデータ（タイトル、URL、tagsなど）。
    */
-  addCategory(title) {
+  addLink(linkData) {
     this.data.push({
-      id: this._generateId('cat'),
-      title: title,
-      isOpen: true,
-      links: []
+      id: this._generateId('link'),
+      tags: [],
+      ...linkData
     });
     this.markAsDirty();
   }
-  
+
   /**
-   * 指定されたIDのカテゴリのタイトルを更新します。
-   * @param {string} id - 更新するカテゴリのID。
-   * @param {string} title - 新しいカテゴリのタイトル。
+   * 指定されたIDを持つリンクを更新します。
+   * @param {string} linkId - 更新するリンクのID。
+   * @param {object} linkData - 更新するリンクの新しいデータ。
    */
-  updateCategory(id, title) {
-    const cat = this.getCategory(id);
-    if (cat) {
-      cat.title = title;
+  updateLink(linkId, linkData) {
+    const link = this.getLink(linkId);
+    if (link) {
+      Object.assign(link, linkData);
       this.markAsDirty();
     }
   }
-  
+
   /**
-   * 指定されたIDのカテゴリを削除します。
-   * @param {string} id - 削除するカテゴリのID。
+   * 指定されたIDを持つリンクを削除します。
+   * @param {string} linkId - 削除するリンクのID。
    */
-  deleteCategory(id) {
+  deleteLink(linkId) {
     const initialLength = this.data.length;
-    this.data = this.data.filter(c => c.id !== id);
+    this.data = this.data.filter(l => l.id !== linkId);
     if (this.data.length < initialLength) {
       this.markAsDirty();
     }
   }
 
   /**
-   * カテゴリの順序を移動します。
-   * @param {number} fromIndex - 移動元カテゴリのインデックス。
-   * @param {number} toIndex - 移動先カテゴリのインデックス。
-   */
-  moveCategory(fromIndex, toIndex) {
-    // 境界チェック
-    if (fromIndex < 0 || fromIndex >= this.data.length || toIndex < 0 || toIndex > this.data.length) {
-      return;
-    }
-    const [item] = this.data.splice(fromIndex, 1); // 元の位置から削除
-    this.data.splice(toIndex, 0, item); // 新しい位置に挿入
-    this.markAsDirty();
-  }
-  
-  /**
-   * 指定されたカテゴリに新しいリンクを追加します。
-   * @param {string} catId - リンクを追加するカテゴリのID。
-   * @param {object} linkData - 追加するリンクのデータ（タイトル、URLなど）。
-   */
-  addLink(catId, linkData) {
-    const cat = this.getCategory(catId);
-    if (cat) {
-       cat.links.push({
-        id: this._generateId('link'),
-        ...linkData
-      });
-      this.markAsDirty();
-    }
-  }
-  
-  /**
-   * 指定されたカテゴリ内の指定されたIDを持つリンクを更新します。
-   * @param {string} catId - リンクが属するカテゴリのID。
-   * @param {string} linkId - 更新するリンクのID。
-   * @param {object} linkData - 更新するリンクの新しいデータ。
-   */
-  updateLink(catId, linkId, linkData) {
-     const cat = this.getCategory(catId);
-     if (cat) {
-       const link = cat.links.find(l => l.id === linkId);
-       if (link) {
-         Object.assign(link, linkData);
-         this.markAsDirty();
-       }
-     }
-  }
-
-  /**
-   * 指定されたカテゴリ内の指定されたIDを持つリンクを削除します。
-   * @param {string} catId - リンクが属するカテゴリのID。
-   * @param {string} linkId - 削除するリンクのID。
-   */
-  deleteLink(catId, linkId) {
-    const cat = this.getCategory(catId);
-    if (cat) {
-      const initialLinksLength = cat.links.length;
-      cat.links = cat.links.filter(l => l.id !== linkId);
-      if (cat.links.length < initialLinksLength) {
-        this.markAsDirty();
-      }
-    }
-  }
-
-  /**
-   * 指定されたカテゴリ内のリンクの順序を移動します。
-   * @param {number} catIndex - リンクが属するカテゴリのインデックス。
-   * @param {number} fromIndex - 移動元リンクのインデックス。
-   * @param {number} toIndex - 移動先リンクのインデックス。
-   */
-  moveLink(catIndex, fromIndex, toIndex) {
-    const cat = this.data[catIndex];
-    // 境界チェック
-    if (!cat || fromIndex < 0 || fromIndex >= cat.links.length || toIndex < 0 || toIndex > cat.links.length) {
-      return;
-    }
-    const [item] = cat.links.splice(fromIndex, 1); // 元の位置から削除
-    cat.links.splice(toIndex, 0, item); // 新しい位置に挿入
-    this.markAsDirty();
-  }
-
-  /**
-   * 指定されたカテゴリに複数のリンクを一括で追加します。
-   * @param {string} catId - リンクを追加するカテゴリのID。
+   * 複数のリンクを一括で追加します。
    * @param {Array<object>} links - 追加するリンクのデータ配列。
    */
-  addBulkLinks(catId, links) {
-    const cat = this.getCategory(catId);
-    if (cat) {
-      const newLinks = links.map(link => ({
-        id: this._generateId('link'),
-        ...link
-      }));
-      cat.links.push(...newLinks);
-      this.markAsDirty();
-    }
+  addBulkLinks(links) {
+    const newLinks = links.map(link => ({
+      id: this._generateId('link'),
+      tags: [],
+      ...link
+    }));
+    this.data.push(...newLinks);
+    this.markAsDirty();
   }
 }

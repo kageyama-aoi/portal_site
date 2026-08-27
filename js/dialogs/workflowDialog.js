@@ -4,6 +4,8 @@
  * @module WorkflowDialog
  */
 
+import { initTagsSuggest } from '../tagSuggest.js';
+
 /**
  * @class WorkflowDialog
  * @brief ワークフロー管理ダイアログを制御します。
@@ -18,22 +20,35 @@ export class WorkflowDialog {
   configManager;
   /** @property {function} renderCallback */
   renderCallback;
+  /** @property {SearchManager} searchManager - タグ候補の収集に使う。 */
+  searchManager;
+  /** @property {TagManager} tagManager - タグ候補の収集に使う。 */
+  tagManager;
   /** @property {HTMLDialogElement} dialog */
   dialog;
   /** @property {string|null} editingWorkflowId - 編集中のワークフローID */
   editingWorkflowId = null;
+  /**
+   * @property {string[]} _knownTagsCache - _renderEdit() のたびに計算し直すタグ候補一覧。
+   * キー入力のたびに全リンクを再スキャンしないよう、フォームを開いている間は使い回す。
+   */
+  _knownTagsCache = [];
 
   /**
    * @param {WorkflowManager} workflowManager
    * @param {DataManager} dataManager
    * @param {ConfigManager} configManager
    * @param {function} renderCallback
+   * @param {SearchManager} [searchManager]
+   * @param {TagManager} [tagManager]
    */
-  constructor(workflowManager, dataManager, configManager, renderCallback) {
+  constructor(workflowManager, dataManager, configManager, renderCallback, searchManager = null, tagManager = null) {
     this.workflowManager = workflowManager;
     this.dataManager = dataManager;
     this.configManager = configManager;
     this.renderCallback = renderCallback;
+    this.searchManager = searchManager;
+    this.tagManager = tagManager;
   }
 
   /**
@@ -142,14 +157,9 @@ export class WorkflowDialog {
     this.editingWorkflowId = workflowId;
 
     // 全リンクをセレクト用に収集
-    const allLinks = [];
-    this.dataManager.getData().forEach(cat => {
-      cat.links.forEach(link => {
-        allLinks.push({ id: link.id, title: link.title, catTitle: cat.title });
-      });
-    });
+    const allLinks = this.dataManager.getData();
     const linkOptions = allLinks.map(l =>
-      `<option value="${l.id}">${this._escape(l.catTitle)} / ${this._escape(l.title)}</option>`
+      `<option value="${l.id}">${this._escape((l.tags && l.tags[0]) || 'タグなし')} / ${this._escape(l.title)}</option>`
     ).join('');
 
     const content = document.getElementById('workflowDialogContent');
@@ -157,6 +167,9 @@ export class WorkflowDialog {
     const description = wf ? wf.description : '';
     const tags = wf ? (wf.tags || []).join(', ') : '';
     const freq = wf ? wf.freq : 'rare';
+    // 説明・タグは「既に何か入っている時だけ」開いておく。空なら畳んでおき、
+    // タイトル・頻度の1行だけでステップ欄がすぐ始まるようにする。
+    const metaExpanded = !!(description || tags);
 
     content.innerHTML = `
       <div class="wf-edit-header">
@@ -169,12 +182,6 @@ export class WorkflowDialog {
         <label>タイトル <span style="color:var(--danger)">*</span>
           <input type="text" id="wfTitleInput" value="${this._escape(title)}" placeholder="例: 確定申告フロー" required>
         </label>
-        <label>説明
-          <input type="text" id="wfDescInput" value="${this._escape(description)}" placeholder="例: 年1回の確定申告手順">
-        </label>
-        <label>タグ <span style="font-size:0.75rem;color:var(--text-sub)">（カンマ区切り）</span>
-          <input type="text" id="wfTagsInput" value="${this._escape(tags)}" placeholder="例: 確定申告, 年次, 税務">
-        </label>
         <label>頻度
           <select id="wfFreqInput">
             <option value="daily" ${freq === 'daily' ? 'selected' : ''}>毎日</option>
@@ -183,6 +190,20 @@ export class WorkflowDialog {
             <option value="rare" ${freq === 'rare' ? 'selected' : ''}>たまに（思い出し対象）</option>
           </select>
         </label>
+        <button type="button" id="wfMetaToggleBtn" class="wf-meta-toggle-btn">
+          <span class="icon icon-xs">${metaExpanded ? 'expand_less' : 'expand_more'}</span> 説明・タグ（省略可）
+        </button>
+        <div id="wfMetaDetails" class="wf-meta-details${metaExpanded ? ' wf-meta-expanded' : ''}">
+          <label class="full-row">説明
+            <input type="text" id="wfDescInput" value="${this._escape(description)}" placeholder="例: 年1回の確定申告手順">
+          </label>
+          <label class="full-row">タグ <span style="font-size:0.75rem;color:var(--text-sub)">（カンマ区切り、新規は自由入力・既存タグは候補から選択可）</span>
+            <div class="tag-input-wrap">
+              <input type="text" id="wfTagsInput" value="${this._escape(tags)}" placeholder="例: 確定申告, 年次, 税務" autocomplete="off">
+              <div id="wfTagsSuggest" class="tag-suggest-dropdown" style="display:none;"></div>
+            </div>
+          </label>
+        </div>
       </div>
 
       <div class="wf-steps-section">
@@ -206,16 +227,69 @@ export class WorkflowDialog {
     // ステップを描画
     const steps = wf ? JSON.parse(JSON.stringify(wf.steps)) : [];
     this._renderSteps(steps, linkOptions);
+    // タグ候補はフォームを開いている間キー入力のたびに再計算しないよう、ここで1回だけ計算する。
+    this._knownTagsCache = this._getKnownTags(portalId);
+    this._initTagsSuggest();
 
     // Events
     document.getElementById('wfBackBtn').addEventListener('click', () => this._renderList());
     document.getElementById('wfCancelEditBtn').addEventListener('click', () => this._renderList());
+    const metaToggleBtn = document.getElementById('wfMetaToggleBtn');
+    metaToggleBtn.addEventListener('click', () => {
+      const details = document.getElementById('wfMetaDetails');
+      const expanded = details.classList.toggle('wf-meta-expanded');
+      metaToggleBtn.querySelector('.icon').textContent = expanded ? 'expand_less' : 'expand_more';
+    });
     document.getElementById('wfAddStepBtn').addEventListener('click', () => {
-      steps.push({ step: steps.length + 1, title: '', memo: '', linkId: null });
+      steps.push({ step: steps.length + 1, title: '', memo: '', prompt: '', promptType: 'none', linkId: null });
       this._renderSteps(steps, linkOptions);
+      this._focusStepTitle(steps.length - 1);
     });
     document.getElementById('wfSaveBtn').addEventListener('click', () => {
       this._saveWorkflow(portalId, wf, steps, linkOptions);
+    });
+  }
+
+  /**
+   * @private - 指定インデックスのステップのタイトル欄にスクロール＆フォーカスします。
+   * ステップを次々追加していく作業を、クリックなしで続けられるようにするため。
+   * @param {number} index
+   */
+  _focusStepTitle(index) {
+    const rows = document.querySelectorAll('.wf-step-row');
+    const row = rows[index];
+    if (!row) return;
+    const titleInput = row.querySelector('.wf-step-title');
+    if (!titleInput) return;
+    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    titleInput.focus();
+  }
+
+  /**
+   * 現在のポータルで「既に使われているタグ」＋「まだリンク0件の事前登録タグ」を
+   * 合わせた候補一覧を返します（重複除去・ソート済み）。
+   * @private
+   * @param {string} portalId
+   * @returns {string[]}
+   */
+  _getKnownTags(portalId) {
+    if (!this.searchManager || !this.tagManager) return [];
+    const used = this.searchManager.getAllTags();
+    const registered = this.tagManager.getRegisteredTags(portalId);
+    return Array.from(new Set([...used, ...registered])).sort((a, b) => a.localeCompare(b, 'ja'));
+  }
+
+  /**
+   * ワークフローのタグ欄（カンマ区切り）に、リンク編集ダイアログと同じ
+   * サジェストドロップダウンを設定します（js/tagSuggest.js の共通実装を使用）。
+   * 候補一覧は _renderEdit() 時に this._knownTagsCache へキャッシュしたものを参照する。
+   * @private
+   */
+  _initTagsSuggest() {
+    initTagsSuggest({
+      inputEl: document.getElementById('wfTagsInput'),
+      boxEl: document.getElementById('wfTagsSuggest'),
+      getKnownTags: () => this._knownTagsCache
     });
   }
 
@@ -232,29 +306,72 @@ export class WorkflowDialog {
     }
 
     steps.forEach((step, i) => {
+      // メモ・プロンプト・リンクのいずれかが既に入っているステップだけ自動展開する。
+      // 空のステップまで一律展開すると、1行だけの単純な手順でも詳細欄が
+      // 常に表示されて縦に間延びしてしまうため（メイン画面の作業フロー表示と同じ対策）。
+      const hasDetails = !!(step.memo || step.prompt || step.linkId);
+
       const row = document.createElement('div');
-      row.className = 'wf-step-row';
+      row.className = 'wf-step-row' + (hasDetails ? ' wf-expanded' : '');
       row.innerHTML = `
-        <div class="wf-step-num">Step ${i + 1}</div>
-        <div class="wf-step-fields">
+        <div class="wf-step-header-row">
+          <div class="wf-step-num">Step ${i + 1}</div>
           <input type="text" class="wf-step-title" placeholder="ステップタイトル" value="${this._escape(step.title || '')}">
+          <button type="button" class="wf-step-expand-btn" title="メモ・プロンプト・リンクを表示/編集">
+            <span class="icon icon-xs">${hasDetails ? 'expand_less' : 'expand_more'}</span>
+          </button>
+          <button type="button" class="action-btn btn-delete wf-step-del-btn" data-index="${i}" title="削除">
+            <span class="icon icon-sm">delete</span>
+          </button>
+        </div>
+        <div class="wf-step-details">
           <input type="text" class="wf-step-memo" placeholder="補足メモ（省略可）" value="${this._escape(step.memo || '')}">
+          <div class="wf-step-prompt-row">
+            <select class="wf-step-prompt-type" title="本文の種類">
+              <option value="none">－ なし</option>
+              <option value="prompt">🤖 プロンプト</option>
+              <option value="code">💻 コード</option>
+              <option value="text">📝 テキスト</option>
+            </select>
+            <textarea class="wf-step-prompt" rows="2" placeholder="本文（省略可・出力時にコピーボタンが付きます）">${this._escape(step.prompt || '')}</textarea>
+          </div>
           <select class="wf-step-link">
             <option value="">-- リンクなし --</option>
             ${linkOptions}
           </select>
         </div>
-        <button type="button" class="action-btn btn-delete wf-step-del-btn" data-index="${i}" title="削除">
-          <span class="icon icon-sm">delete</span>
-        </button>
       `;
       // 選択済みリンクを復元
       const sel = row.querySelector('.wf-step-link');
       if (step.linkId) sel.value = step.linkId;
+      const typeSel = row.querySelector('.wf-step-prompt-type');
+      typeSel.value = step.promptType || 'prompt';
+
+      const expandBtn = row.querySelector('.wf-step-expand-btn');
+      expandBtn.addEventListener('click', () => {
+        const expanded = row.classList.toggle('wf-expanded');
+        expandBtn.querySelector('.icon').textContent = expanded ? 'expand_less' : 'expand_more';
+      });
 
       // 入力変更を steps 配列に反映
-      row.querySelector('.wf-step-title').addEventListener('input', e => { steps[i].title = e.target.value; });
+      const titleInput = row.querySelector('.wf-step-title');
+      titleInput.addEventListener('input', e => { steps[i].title = e.target.value; });
+      // 一番下のステップでEnterを押すと、クリックなしで次のステップを追加して続けて入力できる
+      // （ステップをたくさん追加したいときに、毎回「ステップ追加」ボタンを押しに行かなくて済むように）
+      titleInput.addEventListener('keydown', e => {
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        if (i === steps.length - 1) {
+          steps.push({ step: steps.length + 1, title: '', memo: '', prompt: '', promptType: 'none', linkId: null });
+          this._renderSteps(steps, linkOptions);
+          this._focusStepTitle(steps.length - 1);
+        } else {
+          this._focusStepTitle(i + 1);
+        }
+      });
       row.querySelector('.wf-step-memo').addEventListener('input', e => { steps[i].memo = e.target.value; });
+      row.querySelector('.wf-step-prompt').addEventListener('input', e => { steps[i].prompt = e.target.value; });
+      typeSel.addEventListener('change', e => { steps[i].promptType = e.target.value; });
       sel.addEventListener('change', e => { steps[i].linkId = e.target.value || null; });
 
       row.querySelector('.wf-step-del-btn').addEventListener('click', () => {
@@ -278,7 +395,7 @@ export class WorkflowDialog {
     }
     const description = document.getElementById('wfDescInput').value.trim();
     const tagsRaw = document.getElementById('wfTagsInput').value;
-    const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+    const tags = Array.from(new Set(tagsRaw.split(',').map(t => t.trim()).filter(Boolean)));
     const freq = document.getElementById('wfFreqInput').value;
 
     const workflowData = { title, description, tags, freq, steps: JSON.parse(JSON.stringify(steps)) };

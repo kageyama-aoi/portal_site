@@ -2,404 +2,1107 @@
   "portals": {
     "default": [
       {
-        "id": "cat_1769330300050_546",
-        "title": "総合サイト",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_1769330332885_63",
-            "title": "Endel",
-            "url": "https://app.endel.io/",
-            "icon": "headphones",
-            "iconColor": "#0d9488",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "tool",
-            "memo": "集中時の音楽"
-          },
-          {
-            "id": "link_1769334592318_846",
-            "title": "TCC",
-            "url": "https://taskchute.cloud/taskchute",
-            "icon": "timer",
-            "iconColor": "#f97316",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "tool",
-            "memo": "taskchute.cloud　時間記録用"
-          },
-          {
-            "id": "link_1769334683768_368",
-            "title": "学習ナレッジ集",
-            "url": "https://kageyama-aoi.github.io/knowledge-base/pages/",
-            "icon": "menu_book",
-            "iconColor": "#16a34a",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": "GitHubで公開しているナレッジ集"
-          },
-          {
-            "id": "link_1769860571516_892",
-            "title": "ナレッジ投入先",
-            "url": "https://github.com/kageyama-aoi/knowledge-base#",
-            "icon": "cloud_upload",
-            "iconColor": "#0ea5e9",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": "先頭日付つきのmdファイルを放り投げる"
-          },
-          {
-            "id": "link_1770774567321_129",
-            "title": "data_json格納先",
-            "url": "https://github.com/kageyama-aoi/portal_site/tree/main/data",
-            "icon": "data_object",
-            "iconColor": "#6366f1",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": "まだ自動化に完全成功はしていない"
-          }
+        "id": "link_1769330332885_63",
+        "title": "Endel",
+        "url": "https://app.endel.io/",
+        "icon": "headphones",
+        "iconColor": "#0d9488",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "tool",
+        "memo": "集中時の音楽",
+        "tags": [
+          "総合サイト"
         ]
       },
       {
-        "id": "cat_1769328009642_28",
-        "title": "YMK学習サイト",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_1769328111728_297",
-            "title": "Asonowa",
-            "url": "https://morning-glory-web.vercel.app/dashboard",
-            "icon": "light_mode",
-            "iconColor": "#f59e0b",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "portal",
-            "memo": "朝4～9時に立ち上げポータルサイト"
-          },
-          {
-            "id": "link_1769328185487_93",
-            "title": "IMC Q&A",
-            "url": "https://imc-qa-system.web.app/shared-questions",
-            "icon": "quiz",
-            "iconColor": "#9333ea",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "portal",
-            "memo": "Q&A"
-          },
-          {
-            "id": "link_1769328301984_393",
-            "title": "chatwork",
-            "url": "https://www.chatwork.com/",
-            "icon": "chat",
-            "iconColor": "#10b981",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "sns",
-            "memo": "YMKさんからのメッセージ"
-          },
-          {
-            "id": "link_1769334710204_462",
-            "title": "iPad学習ポータルサイト",
-            "url": "https://utage-system.com/members/JHV6T1KC9v29/login",
-            "icon": "school",
-            "iconColor": "#3b82f6",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "portal",
-            "memo": "まとめサイト"
-          }
+        "id": "link_1769334592318_846",
+        "title": "TCC",
+        "url": "https://taskchute.cloud/taskchute",
+        "icon": "timer",
+        "iconColor": "#f97316",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "tool",
+        "memo": "taskchute.cloud　時間記録用",
+        "tags": [
+          "総合サイト"
         ]
       },
       {
-        "id": "cat_1769334811917_970",
-        "title": "n8n学習",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_1769334893984_445",
-            "title": "ローカルサーバー内のサイト",
-            "url": "https://computational-nonhyperbolically-irena.ngrok-free.dev/workflow/tu09zXAmuQWYeRJG",
-            "icon": "hub",
-            "iconColor": "#ea580c",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "cloud",
-            "memo": "n8n開発サイト"
-          }
+        "id": "link_1769334683768_368",
+        "title": "学習ナレッジ集",
+        "url": "https://kageyama-aoi.github.io/knowledge-base/pages/",
+        "icon": "menu_book",
+        "iconColor": "#16a34a",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "GitHubで公開しているナレッジ集",
+        "tags": [
+          "総合サイト"
         ]
       },
       {
-        "id": "cat_1769384118315_73",
-        "title": "いけとも学習_20260125",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_1769384264329_585",
-            "title": "Claude for Excel",
-            "url": "https://x.com/claudeai/status/2014834616889475508?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
-            "icon": "new_releases",
-            "iconColor": "#ef4444",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "news",
-            "memo": "Claude for ExcelがProプランでも利用可能に"
-          },
-          {
-            "id": "link_1769384264329_116",
-            "title": "Everything Claude Code",
-            "url": "https://x.com/the_agi_way/status/2012903113213292547?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
-            "icon": "newspaper",
-            "iconColor": "#64748b",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "news",
-            "memo": "Anthropicハッカソン優勝者の「Everything Claude Code」"
-          },
-          {
-            "id": "link_1769384264329_235",
-            "title": "Microsof社",
-            "url": "https://www.theverge.com/tech/865689/microsoft-claude-code-anthropic-partnership-notepad",
-            "icon": "newspaper",
-            "iconColor": "#1d4ed8",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "news",
-            "memo": "Microsoft、Anthropicの「Claude Code」を社内で大規模導入"
-          },
-          {
-            "id": "link_1769384264329_855",
-            "title": "組織編制",
-            "url": "https://note.com/gimupop/n/n5bbdf9720bdb",
-            "icon": "article",
-            "iconColor": "#8b5cf6",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "news",
-            "memo": "「AIに働かされる」が正解？事業責任者が考える組織図の変化"
-          },
-          {
-            "id": "link_1770761063631_702",
-            "title": "いけともスライド",
-            "url": "https://www.dropbox.com/scl/fo/joomf60cyjck41tesp6xd/AHZnLQaX7dGH8T6_ryYWB2Y?rlkey=b44jprzxmu7fsae2u5plvgkos&st=nbff73gr&dl=0",
-            "icon": "slideshow",
-            "iconColor": "#db2777",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": "毎週ニュースの記事"
-          },
-          {
-            "id": "link_1770761131698_847",
-            "title": "codexアプリ",
-            "url": "https://openai.com/ja-JP/index/introducing-the-codex-app/",
-            "icon": "code",
-            "iconColor": "#4f46e5",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
-          }
+        "id": "link_1769860571516_892",
+        "title": "ナレッジ投入先",
+        "url": "https://github.com/kageyama-aoi/knowledge-base#",
+        "icon": "cloud_upload",
+        "iconColor": "#0ea5e9",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "code",
+        "memo": "先頭日付つきのmdファイルを放り投げる",
+        "tags": [
+          "総合サイト"
         ]
       },
       {
-        "id": "cat_1770774039834_510",
-        "title": "API関連設定",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_1770774078857_771",
-            "title": "LINE developers",
-            "url": "https://developers.line.biz/console/provider/2004842581",
-            "icon": "api",
-            "iconColor": "#16a34a",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "cloud",
-            "memo": "LINEとの連携"
-          },
-          {
-            "id": "link_1770774150223_840",
-            "title": "openai利用状況",
-            "url": "https://platform.openai.com/settings/organization/usage",
-            "icon": "analytics",
-            "iconColor": "#06b6d4",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "cloud",
-            "memo": "API利用制限とか金額チェック"
-          },
-          {
-            "id": "link_1770774263756_914",
-            "title": "Slack API",
-            "url": "https://api.slack.com/apps",
-            "icon": "api",
-            "iconColor": "#7c3aed",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "cloud",
-            "memo": "アプリからできずweb対応"
-          },
-          {
-            "id": "link_1771970374389_908",
-            "title": "claude_ai_利用状況",
-            "url": "https://claude.ai/settings/billing",
-            "icon": "payments",
-            "iconColor": "#f59e0b",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "cloud",
-            "memo": ""
-          }
+        "id": "link_1770774567321_129",
+        "title": "data_json格納先",
+        "url": "https://github.com/kageyama-aoi/portal_site/tree/main/data",
+        "icon": "data_object",
+        "iconColor": "#6366f1",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "code",
+        "memo": "まだ自動化に完全成功はしていない",
+        "tags": [
+          "総合サイト"
+        ]
+      },
+      {
+        "id": "link_1769328111728_297",
+        "title": "Asonowa",
+        "url": "https://morning-glory-web.vercel.app/dashboard",
+        "icon": "light_mode",
+        "iconColor": "#f59e0b",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "portal",
+        "memo": "朝4～9時に立ち上げポータルサイト",
+        "tags": [
+          "YMK学習サイト"
+        ]
+      },
+      {
+        "id": "link_1769328185487_93",
+        "title": "IMC Q&A",
+        "url": "https://imc-qa-system.web.app/shared-questions",
+        "icon": "quiz",
+        "iconColor": "#9333ea",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "portal",
+        "memo": "Q&A",
+        "tags": [
+          "YMK学習サイト"
+        ]
+      },
+      {
+        "id": "link_1769328301984_393",
+        "title": "chatwork",
+        "url": "https://www.chatwork.com/",
+        "icon": "chat",
+        "iconColor": "#10b981",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "sns",
+        "memo": "YMKさんからのメッセージ",
+        "tags": [
+          "YMK学習サイト"
+        ]
+      },
+      {
+        "id": "link_1769334710204_462",
+        "title": "iPad学習ポータルサイト",
+        "url": "https://utage-system.com/members/JHV6T1KC9v29/login",
+        "icon": "school",
+        "iconColor": "#3b82f6",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "portal",
+        "memo": "まとめサイト",
+        "tags": [
+          "YMK学習サイト"
+        ]
+      },
+      {
+        "id": "link_1769334893984_445",
+        "title": "ローカルサーバー内のサイト",
+        "url": "https://computational-nonhyperbolically-irena.ngrok-free.dev/workflow/tu09zXAmuQWYeRJG",
+        "icon": "hub",
+        "iconColor": "#ea580c",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "cloud",
+        "memo": "n8n開発サイト",
+        "tags": [
+          "n8n学習"
+        ]
+      },
+      {
+        "id": "link_1769384264329_585",
+        "title": "Claude for Excel",
+        "url": "https://x.com/claudeai/status/2014834616889475508?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
+        "icon": "new_releases",
+        "iconColor": "#ef4444",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "news",
+        "memo": "Claude for ExcelがProプランでも利用可能に",
+        "tags": [
+          "いけとも学習_20260125"
+        ]
+      },
+      {
+        "id": "link_1769384264329_116",
+        "title": "Everything Claude Code",
+        "url": "https://x.com/the_agi_way/status/2012903113213292547?s=46&t=7EV2qEI5WaAwZ_LRUSz4oQ",
+        "icon": "newspaper",
+        "iconColor": "#64748b",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "news",
+        "memo": "Anthropicハッカソン優勝者の「Everything Claude Code」",
+        "tags": [
+          "いけとも学習_20260125"
+        ]
+      },
+      {
+        "id": "link_1769384264329_235",
+        "title": "Microsof社",
+        "url": "https://www.theverge.com/tech/865689/microsoft-claude-code-anthropic-partnership-notepad",
+        "icon": "newspaper",
+        "iconColor": "#1d4ed8",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "news",
+        "memo": "Microsoft、Anthropicの「Claude Code」を社内で大規模導入",
+        "tags": [
+          "いけとも学習_20260125"
+        ]
+      },
+      {
+        "id": "link_1769384264329_855",
+        "title": "組織編制",
+        "url": "https://note.com/gimupop/n/n5bbdf9720bdb",
+        "icon": "article",
+        "iconColor": "#8b5cf6",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "news",
+        "memo": "「AIに働かされる」が正解？事業責任者が考える組織図の変化",
+        "tags": [
+          "いけとも学習_20260125"
+        ]
+      },
+      {
+        "id": "link_1770761063631_702",
+        "title": "いけともスライド",
+        "url": "https://www.dropbox.com/scl/fo/joomf60cyjck41tesp6xd/AHZnLQaX7dGH8T6_ryYWB2Y?rlkey=b44jprzxmu7fsae2u5plvgkos&st=nbff73gr&dl=0",
+        "icon": "slideshow",
+        "iconColor": "#db2777",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "cloud",
+        "memo": "毎週ニュースの記事",
+        "tags": [
+          "いけとも学習_20260125"
+        ]
+      },
+      {
+        "id": "link_1770761131698_847",
+        "title": "codexアプリ",
+        "url": "https://openai.com/ja-JP/index/introducing-the-codex-app/",
+        "icon": "code",
+        "iconColor": "#4f46e5",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "いけとも学習_20260125"
+        ]
+      },
+      {
+        "id": "link_1770774078857_771",
+        "title": "LINE developers",
+        "url": "https://developers.line.biz/console/provider/2004842581",
+        "icon": "api",
+        "iconColor": "#16a34a",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "cloud",
+        "memo": "LINEとの連携",
+        "tags": [
+          "API関連設定"
+        ]
+      },
+      {
+        "id": "link_1770774150223_840",
+        "title": "openai利用状況",
+        "url": "https://platform.openai.com/settings/organization/usage",
+        "icon": "analytics",
+        "iconColor": "#06b6d4",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "cloud",
+        "memo": "API利用制限とか金額チェック",
+        "tags": [
+          "API関連設定"
+        ]
+      },
+      {
+        "id": "link_1770774263756_914",
+        "title": "Slack API",
+        "url": "https://api.slack.com/apps",
+        "icon": "api",
+        "iconColor": "#7c3aed",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "cloud",
+        "memo": "アプリからできずweb対応",
+        "tags": [
+          "API関連設定"
+        ]
+      },
+      {
+        "id": "link_1771970374389_908",
+        "title": "claude_ai_利用状況",
+        "url": "https://claude.ai/settings/billing",
+        "icon": "payments",
+        "iconColor": "#f59e0b",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "cloud",
+        "memo": "",
+        "tags": [
+          "API関連設定"
         ]
       }
     ],
     "portal_1772359690865": [
       {
-        "id": "cat_1772360683195_244",
-        "title": "クレカ明細",
-        "isOpen": true,
-        "links": [
+        "id": "link_1772360827399_107",
+        "title": "三井住友カード",
+        "url": "https://www.smbc-card.com/memx/web_meisai/top/index.html?p01=202603#info2",
+        "icon": "payments",
+        "iconColor": "#059669",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "クレカ明細"
+        ]
+      },
+      {
+        "id": "link_1772360963092_207",
+        "title": "エポスカード",
+        "url": "https://www.eposcard.co.jp/memberservice/pc/paymentamountreference/disp_use_detail_preload.do",
+        "icon": "payments",
+        "iconColor": "#dc2626",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "クレカ明細"
+        ]
+      },
+      {
+        "id": "link_1772360754971_772",
+        "title": "仕訳帳",
+        "url": "https://accounting.moneyforward.com/books?cti=1Lg75YBi7T3iMMSaFKnSDw&recognized_at_from=2025%2F01%2F01&recognized_at_to=2025%2F12%2F31&page=2&per_page=50&search_timestamp=1772260356343&value_range_check=false&has_only_blank_remark=false",
+        "icon": "table_chart",
+        "iconColor": "#2563eb",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "MoneyForwardMe"
+        ]
+      },
+      {
+        "id": "link_1772360802917_82",
+        "title": "仕訳簡易入力",
+        "url": "https://accounting.moneyforward.com/simple_journals/new?cti=JvnUlD_B4d_MI7uuvCQeEw",
+        "icon": "edit",
+        "iconColor": "#0d9488",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "MoneyForwardMe"
+        ]
+      },
+      {
+        "id": "link_1772361501459_115",
+        "title": "クラウドBox",
+        "url": "https://box.moneyforward.com/files?page=1",
+        "icon": "cloud",
+        "iconColor": "#0ea5e9",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "MoneyForwardMe"
+        ]
+      },
+      {
+        "id": "link_1772369133258_676",
+        "title": "個人家計簿CSVダウンロード",
+        "url": "https://moneyforward.com/cf",
+        "icon": "cloud_download",
+        "iconColor": "#4338ca",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "MoneyForwardMe"
+        ]
+      },
+      {
+        "id": "link_1772369182942_694",
+        "title": "国税庁 確定申告書等作成コーナー",
+        "url": "https://www.keisan.nta.go.jp/kyoutu/ky/sm/top#bsctrl",
+        "icon": "receipt",
+        "iconColor": "#dc2626",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "国税庁"
+        ]
+      },
+      {
+        "id": "link_1772369209640_368",
+        "title": "楽天ふるさと納税",
+        "url": "https://event.rakuten.co.jp/furusato/guide/tax/tax-return_data/?l-id=furusato_pc_guide_sidemenu_tax_finalreturn",
+        "icon": "volunteer_activism",
+        "iconColor": "#e11d48",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "ふるさと納税"
+        ]
+      },
+      {
+        "id": "link_1772361558437_838",
+        "title": "株式会社28 報酬明細",
+        "url": "https://drive.google.com/drive/u/0/folders/1SNJC1V1HGsEH5ndcMnUAmV_54jpyBH0x",
+        "icon": "receipt",
+        "iconColor": "#16a34a",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "drive",
+        "memo": "",
+        "tags": [
+          "ドライブ保管先"
+        ]
+      },
+      {
+        "id": "link_1772369268174_118",
+        "title": "国税庁送信データ",
+        "url": "https://drive.google.com/drive/u/2/folders/1FNmgTh0igrGdQh5iAm2I1TtEhLBBEWYl",
+        "icon": "cloud_upload",
+        "iconColor": "#2563eb",
+        "iconSize": "large",
+        "iconWeight": 500,
+        "badge": "drive",
+        "memo": "",
+        "tags": [
+          "ドライブ保管先"
+        ]
+      }
+    ],
+    "portal_1772089003552": [
+      {
+        "id": "link_1774404445685_963",
+        "title": "【社内】内部向け_作業進捗管理表",
+        "url": "https://docs.google.com/spreadsheets/d/1nbAHJDTAbptv0g9VeeNuuk_nmj4YNvpwwUnlGkOixwg/edit?gid=1896537059#gid=1896537059",
+        "icon": "checklist",
+        "iconColor": "#16a34a",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774404914476_600",
+        "title": "【共同】UAT課題管理表",
+        "url": "https://docs.google.com/spreadsheets/d/1VcQ6KyFigMMZdJ_s9r9JnEfXbUGbnvXEq9pNWWh_vzE/edit?gid=0#gid=0&fvid=1352515309",
+        "icon": "assignment",
+        "iconColor": "#f59e0b",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "2社間で使うメインコミュニケーション管理表",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [
+          "UAT"
+        ],
+        "freq": "daily"
+      },
+      {
+        "id": "link_1774404972538_800",
+        "title": "【社内】レビュー依頼表",
+        "url": "https://docs.google.com/spreadsheets/d/1N8QOdT-4lybQ9BKGpXCXWAebcD9ZNQ3eWm-6kRiA4YI/edit?gid=0#gid=0",
+        "icon": "rate_review",
+        "iconColor": "#8b5cf6",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "設計書の確認依頼表",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [
+          "レビュー"
+        ],
+        "freq": null
+      },
+      {
+        "id": "link_1774405027439_572",
+        "title": "【社内】環境一覧",
+        "url": "https://docs.google.com/spreadsheets/d/1JyL1JdPsmtDA0nWGp5M3cg9sJHNDJmMtzaxaesx11_E/edit?gid=931322403#gid=931322403",
+        "icon": "dns",
+        "iconColor": "#0ea5e9",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "自分用の環境一覧",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774405518686_22",
+        "title": "設計書（JP）",
+        "url": "opendir:G:\\.shortcut-targets-by-id\\1zn8aWqqs4R3t1zaPqJ-EbyXnDecmJKAZ\\001.Customers(AN)\\1477_島村楽器\\08_詳細設計",
+        "icon": "folder_open",
+        "iconColor": "#b45309",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "local",
+        "memo": "ローカルのExploerとドライブ連携",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774405542294_155",
+        "title": "設計書（PH）",
+        "url": "https://drive.google.com/drive/folders/1Z4lvTdECFQKEpqgSg0B44bXmMmINfOJF",
+        "icon": "folder",
+        "iconColor": "#ca8a04",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "drive",
+        "memo": "あまり使用しないのでグーグルドライブ",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774419640854_313",
+        "title": "リリース関連資料",
+        "url": "opendir:G:\\.shortcut-targets-by-id\\1zn8aWqqs4R3t1zaPqJ-EbyXnDecmJKAZ\\001.Customers(AN)\\1477_島村楽器\\06_設計資料\\073_リリース資料",
+        "icon": "deployed_code",
+        "iconColor": "#059669",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "local",
+        "memo": "事前事後一覧、リリース一覧などの内部資料",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774492274728_494",
+        "title": "【社内】機能一覧",
+        "url": "https://docs.google.com/spreadsheets/d/1k6-HzwiDqZvzUeL9O-qp4SBaaBMlOqwVGU-sbri-JJM/edit?gid=0#gid=0",
+        "icon": "inventory",
+        "iconColor": "#0d9488",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "",
+        "tags": [
+          "開発サポート"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774405674136_639",
+        "title": "【SMS利用者】店舗コード・ユーザーアカウント",
+        "url": "https://docs.google.com/spreadsheets/d/1rmd3l1i_Utx5byZdQOfNPiwVI6HndQaJ9154dGiGmi4/edit?gid=1578886677#gid=1578886677",
+        "icon": "manage_accounts",
+        "iconColor": "#7c3aed",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "店舗コードやユーザーアカウントの管理",
+        "tags": [
+          "データ管理表"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774405808800_521",
+        "title": "【共同】IPアドレス管理表",
+        "url": "https://docs.google.com/spreadsheets/d/1nlXlttzZuoW5TCaJ75OWXgpzO2odP2rD/edit?gid=798045820#gid=798045820",
+        "icon": "router",
+        "iconColor": "#0284c7",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "TCN担当者のIPアドレス増えた場合\n\nAPサーバー（アプリケーションサーバー）\n\nIPアドレスの追加申請・管理が必要\nFW（ファイアウォール）ルールに対象IPを追加することでアクセス許可される\nつまり、ホワイトリスト形式でIPを登録する運用",
+        "tags": [
+          "データ管理表"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774417738123_933",
+        "title": "【社内】PJコード一覧",
+        "url": "https://docs.google.com/spreadsheets/d/1R5XrLPTuxNdczjnVkNG5e5DlCbRQQGe8KBuzFGwSP5Y/edit?gid=407156077#gid=407156077&fvid=2083521083",
+        "icon": "category",
+        "iconColor": "#6366f1",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "",
+        "tags": [
+          "データ管理表"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774417698414_107",
+        "title": "【社内】本番環境実行クエリ管理表",
+        "url": "https://docs.google.com/spreadsheets/d/1vGkE1xm8dBo2jSvDBwmSmWo2V8gsDeap/edit?gid=1702416002#gid=1702416002",
+        "icon": "terminal",
+        "iconColor": "#1e293b",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "実行SQLをすべて列挙",
+        "tags": [
+          "DB更新/開発環境"
+        ],
+        "keywords": [],
+        "freq": "monthly"
+      },
+      {
+        "id": "link_1774417832945_535",
+        "title": "【顧客用】実行SQL集",
+        "url": "https://docs.google.com/spreadsheets/d/1xn2JbVqtYJaJVMndkg2InNY8CkCfcYv5Y3NAg424zY8/edit?gid=1202509976#gid=1202509976",
+        "icon": "terminal",
+        "iconColor": "#64748b",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "TCNはあくまで参照のみ",
+        "tags": [
+          "DB更新/開発環境"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774419391328_352",
+        "title": "phpMyadmin",
+        "url": "https://tcns.shimamura.co.jp/phpMyAdmin/",
+        "icon": "storage",
+        "iconColor": "#ea580c",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "website",
+        "memo": "本番、開発環境とURLは一緒である",
+        "tags": [
+          "DB更新/開発環境"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774419529352_628",
+        "title": "SMS(testgcp)",
+        "url": "https://tcns.shimamura.co.jp/testgcp/index.php?action=Login&module=Users",
+        "icon": "science",
+        "iconColor": "#c026d3",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "website",
+        "memo": "よく使うテスト環境",
+        "tags": [
+          "DB更新/開発環境"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774419095949_993",
+        "title": "スクレイピングTool",
+        "url": "opendir:C:\\Users\\kageyama\\Tools\\Python\\02_スクレイピング（勤怠・TR)\\scripts",
+        "icon": "build",
+        "iconColor": "#7c3aed",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "local",
+        "memo": "勤怠入力やTRの更新系を行えるTool",
+        "tags": [
+          "自作補助Tool"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774419172965_244",
+        "title": "エビデンス作成補助Tool",
+        "url": "opendir:C:\\Users\\kageyama\\Tools\\マクロ2",
+        "icon": "bolt",
+        "iconColor": "#eab308",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "local",
+        "memo": "",
+        "tags": [
+          "自作補助Tool"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1774421474483_5",
+        "title": "新規参画者向け資料",
+        "url": "opendir:G:\\.shortcut-targets-by-id\\1zn8aWqqs4R3t1zaPqJ-EbyXnDecmJKAZ\\001.Customers(AN)\\1477_島村楽器\\02_プロジェクト資源\\020_新規参画者向け資料",
+        "icon": "groups",
+        "iconColor": "#0ea5e9",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "local",
+        "memo": "",
+        "tags": [
+          "必要に応じて参照"
+        ],
+        "keywords": [],
+        "freq": "rare"
+      },
+      {
+        "id": "link_1774421608565_588",
+        "title": "サポート業務ノウハウ",
+        "url": "opendir:G:\\.shortcut-targets-by-id\\1zn8aWqqs4R3t1zaPqJ-EbyXnDecmJKAZ\\001.Customers(AN)\\1477_島村楽器\\80_サポート業務",
+        "icon": "help",
+        "iconColor": "#14b8a6",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "local",
+        "memo": "銀行追加、シーズへの連絡など",
+        "tags": [
+          "必要に応じて参照"
+        ],
+        "keywords": [],
+        "freq": "rare"
+      },
+      {
+        "id": "link_1775007187879_335",
+        "title": "96293_Mon作成資料",
+        "url": "https://docs.google.com/spreadsheets/d/1mI0PhjOK3kf375R4X5UaythqC0lFFI4L/edit?gid=620095063#gid=620095063",
+        "icon": "description",
+        "iconColor": "#64748b",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "spreadsheet",
+        "memo": "",
+        "tags": [
+          "Tframe"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1775007209639_943",
+        "title": "対象4TR抽出",
+        "url": "https://taskreport.e-school.jp/bugfix.php?load=1&idbug=96293&who=tframe&priority=All&search_closed=&owner=&status=All&orderC=when&owner=&bugsearch=%E5%85%B1%E9%80%9A%E5%8C%96&",
+        "icon": "bug_report",
+        "iconColor": "#dc2626",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "Tframe"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1775007306925_862",
+        "title": "塾のtest(202604)",
+        "url": "https://newsms.e-school.jp/test/",
+        "icon": "science",
+        "iconColor": "#db2777",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "website",
+        "memo": "",
+        "tags": [
+          "Tframe"
+        ],
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1786942985981_681",
+        "tags": [
+          "開発サポート"
+        ],
+        "title": "Notebook_各種設計書(島村)",
+        "url": "https://notebook.google.com/notebook/027a495f-bc64-4778-ad9f-d2f321d49bd3",
+        "icon": "menu_book",
+        "iconColor": "#4f46e5",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "website",
+        "memo": "",
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1786943028916_741",
+        "tags": [
+          "開発サポート"
+        ],
+        "title": "Notebook_SQL作成補助(島村)",
+        "url": "https://notebook.google.com/notebook/65cb9e54-274b-4f13-860e-1ec7473dedaf",
+        "icon": "menu_book",
+        "iconColor": "#7c3aed",
+        "iconFill": 0,
+        "iconWeight": 500,
+        "iconSize": "large",
+        "badge": "website",
+        "memo": "",
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1786943107278_149",
+        "tags": [
+          "島村案件"
+        ],
+        "title": "ー",
+        "url": "ー",
+        "icon": "link",
+        "iconColor": "",
+        "iconFill": 0,
+        "iconWeight": 400,
+        "iconSize": "normal",
+        "badge": "doc",
+        "memo": "",
+        "keywords": [],
+        "freq": null
+      },
+      {
+        "id": "link_1786952445687_90",
+        "tags": [],
+        "title": "ANA課題管理コピー",
+        "url": "https://docs.google.com/spreadsheets/d/1uDW-sUky8OIluyY7HEHKDQIQpcVUJxql_W0w0iTLpfA/edit?gid=385727214#gid=385727214",
+        "icon": "assignment",
+        "badge": "spreadsheet",
+        "memo": "これはサンプルです",
+        "iconColor": "#f59e0b",
+        "iconSize": "large",
+        "iconWeight": 500
+      }
+    ]
+  },
+  "workflows": {
+    "portal_1772089003552": [
+      {
+        "id": "wf_1774404250604_625",
+        "title": "開発サイクル",
+        "description": "開発時の決まりきったサイクル",
+        "tags": [],
+        "freq": "monthly",
+        "steps": [
           {
-            "id": "link_1772360827399_107",
-            "title": "三井住友カード",
-            "url": "https://www.smbc-card.com/memx/web_meisai/top/index.html?p01=202603#info2",
-            "icon": "payments",
-            "iconColor": "#059669",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 1,
+            "title": "UAT課題参照",
+            "memo": "顧客とのやりとり",
+            "linkId": "link_1774404914476_600"
           },
           {
-            "id": "link_1772360963092_207",
-            "title": "エポスカード",
-            "url": "https://www.eposcard.co.jp/memberservice/pc/paymentamountreference/disp_use_detail_preload.do",
-            "icon": "payments",
-            "iconColor": "#dc2626",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 2,
+            "title": "設計書修正",
+            "memo": "日付を新しく切って作成",
+            "linkId": "link_1774405518686_22"
+          },
+          {
+            "step": 3,
+            "title": "レビュー依頼",
+            "memo": "依頼表に記載",
+            "linkId": "link_1774404972538_800"
+          },
+          {
+            "step": 4,
+            "title": "設計書UP",
+            "memo": "PH向けに設計書UP依頼",
+            "linkId": "link_1774405542294_155"
+          },
+          {
+            "step": 5,
+            "title": "TR作成",
+            "memo": "TRを素早く作成",
+            "linkId": "link_1774419095949_993"
+          },
+          {
+            "step": 6,
+            "title": "TRマージ依頼",
+            "memo": "マージの文面を対象キーワードにヒットしたTRに一括登録",
+            "linkId": "link_1774419095949_993"
+          },
+          {
+            "step": 7,
+            "title": "リリース準備",
+            "memo": "資料の作成　設計書の格納",
+            "linkId": "link_1774419640854_313"
+          },
+          {
+            "step": 8,
+            "title": "完了の旨記載",
+            "memo": "リリース日とか",
+            "linkId": "link_1774404914476_600"
           }
         ]
       },
       {
-        "id": "cat_1772360695745_630",
-        "title": "MoneyForwardMe",
-        "isOpen": true,
-        "links": [
+        "id": "wf_1774406301049_325",
+        "title": "DB更新",
+        "description": "DB更新する際の流れ",
+        "tags": [
+          "DB"
+        ],
+        "freq": "rare",
+        "steps": [
           {
-            "id": "link_1772360754971_772",
-            "title": "仕訳帳",
-            "url": "https://accounting.moneyforward.com/books?cti=1Lg75YBi7T3iMMSaFKnSDw&recognized_at_from=2025%2F01%2F01&recognized_at_to=2025%2F12%2F31&page=2&per_page=50&search_timestamp=1772260356343&value_range_check=false&has_only_blank_remark=false",
-            "icon": "table_chart",
-            "iconColor": "#2563eb",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 1,
+            "title": "実行SQL作成",
+            "memo": "",
+            "linkId": null,
+            "promptType": "code"
           },
           {
-            "id": "link_1772360802917_82",
-            "title": "仕訳簡易入力",
-            "url": "https://accounting.moneyforward.com/simple_journals/new?cti=JvnUlD_B4d_MI7uuvCQeEw",
-            "icon": "edit",
-            "iconColor": "#0d9488",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 2,
+            "title": "実行SQL検証",
+            "memo": "",
+            "linkId": null
           },
           {
-            "id": "link_1772361501459_115",
-            "title": "クラウドBox",
-            "url": "https://box.moneyforward.com/files?page=1",
-            "icon": "cloud",
-            "iconColor": "#0ea5e9",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 3,
+            "title": "実行SQL管理表起票",
+            "memo": "",
+            "linkId": "link_1774417698414_107",
+            "promptType": "text"
           },
           {
-            "id": "link_1772369133258_676",
-            "title": "個人家計簿CSVダウンロード",
-            "url": "https://moneyforward.com/cf",
-            "icon": "cloud_download",
-            "iconColor": "#4338ca",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 4,
+            "title": "対象環境サイト",
+            "memo": "",
+            "linkId": "link_1774419529352_628"
+          },
+          {
+            "step": 5,
+            "title": "対象環境DB",
+            "memo": "",
+            "linkId": "link_1774419391328_352"
+          },
+          {
+            "step": 6,
+            "title": "対象環境資料確認",
+            "memo": "",
+            "linkId": "link_1774405027439_572"
           }
         ]
       },
       {
-        "id": "cat_1772360709077_179",
-        "title": "国税庁",
-        "isOpen": true,
-        "links": [
+        "id": "wf_1786945398248_119",
+        "title": "テストシナリオ作成（データ変化対応）",
+        "description": "データパターンを作成補助やレビュー実施（Gemini　Notebook 活用しながら）",
+        "tags": [],
+        "freq": "rare",
+        "steps": [
           {
-            "id": "link_1772369182942_694",
-            "title": "国税庁 確定申告書等作成コーナー",
-            "url": "https://www.keisan.nta.go.jp/kyoutu/ky/sm/top#bsctrl",
-            "icon": "receipt",
-            "iconColor": "#dc2626",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
-          }
-        ]
-      },
-      {
-        "id": "cat_1772360984047_71",
-        "title": "ふるさと納税",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_1772369209640_368",
-            "title": "楽天ふるさと納税",
-            "url": "https://event.rakuten.co.jp/furusato/guide/tax/tax-return_data/?l-id=furusato_pc_guide_sidemenu_tax_finalreturn",
-            "icon": "volunteer_activism",
-            "iconColor": "#e11d48",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
-          }
-        ]
-      },
-      {
-        "id": "cat_1772361536963_661",
-        "title": "ドライブ保管先",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_1772361558437_838",
-            "title": "株式会社28 報酬明細",
-            "url": "https://drive.google.com/drive/u/0/folders/1SNJC1V1HGsEH5ndcMnUAmV_54jpyBH0x",
-            "icon": "receipt",
-            "iconColor": "#16a34a",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 1,
+            "title": "GeminiNotebookの準備",
+            "memo": "テーブル定義を読み込ませ対応済み",
+            "prompt": "",
+            "promptType": "none",
+            "linkId": "link_1786942985981_681"
           },
           {
-            "id": "link_1772369268174_118",
-            "title": "国税庁送信データ",
-            "url": "https://drive.google.com/drive/u/2/folders/1FNmgTh0igrGdQh5iAm2I1TtEhLBBEWYl",
-            "icon": "cloud_upload",
-            "iconColor": "#2563eb",
-            "iconSize": "large",
-            "iconWeight": 500,
-            "badge": "doc",
-            "memo": ""
+            "step": 2,
+            "title": "PDF化設計書の登録",
+            "memo": "Step1で準備したGeminiNotebookに、PDF化した設計書を登録",
+            "prompt": "",
+            "promptType": "none",
+            "linkId": "link_1774405518686_22"
+          },
+          {
+            "step": 3,
+            "title": "データパターンに書き出すべき項目列挙",
+            "memo": "GeminiNotebookに対してプロンプトを打ち、データパターンに書き出すべき項目を列挙させる。  出力されたものが正しいかは、人間の目で確認する必要がある。",
+            "prompt": "# 役割\nあなたは、複雑な業務システムのデータ移行や外部システム連携（IF機能）に精通した「データ解析およびQA（品質保証）の専門家」です。\n\n# 目的\n提供された「システム設計書」と「データベース（DB）テーブル定義」を緻密に解析し、開発者が実装ミスをしやすく、テスト時に1円のズレやバグが発生しやすい箇所を特定します。\nその上で、テストデータの準備や比較検証がスムーズに行える「Excelコピペ用のテスト検証データ（TSV形式）」および分析レポートを自動生成してください。\n\n---\n\n### 【最重要】出力フォーマット・レイアウトの厳密なルール\n\n1. **「全項目の横並び（1つの巨大な表化）」の絶対禁止**\n   インプットやアウトプットの各項目を、1つの巨大な横長テーブルに統合しないでください。\n\n2. **対象（テーブル/ファイル）単位での縦方向分離出力**\n   インプット（DBテーブルなど）やアウトプット（処理結果）ごとに**表を完全に独立させ、縦（上下）に並べて出力**してください。\n\n3. **【重要】共通カラム（id, deleted）の配置ルール**\n   各テーブル・出力の定義に `id` および `deleted` （論理削除フラグ）が存在する場合、必ず表の左端から順に以下のように配置してください。\n   - 1列目：`id`\n   - 2列目：`deleted`\n   - 3列目以降：その他のカラム\n   ※存在しない場合は、仕様書等の定義に沿って配置してください。\n\n4. **【最重要】同一テーブルにおけるINPUT/OUTPUT間のカラム完全一致ルール**\n   インプットとアウトプット（更新後データなど）の両方で「全く同じテーブル」を扱う場合、データの比較検証（Before/After）を容易にするため、**両者の表のカラム数、カラム名、および並び順を完全に一致**させてください。\n   - 片方のフェーズ（例: インプット時）では特に影響がない、または値が指定されない項目であっても列を省略しないでください。代わりに値として「影響なし」「任意」「変更なし」「-」などのテキストを入れて、表のレイアウト・構造を維持してください。\n\n5. **各対象の記述構造（TSV / タブ区切り形式）**\n   ExcelのA1セル等に貼り付けた際に自動でセル分割されるよう、コードブロック内は必ず「タブ区切り（TSV）」で出力してください。\n   各表は以下の4要素で構成してください：\n   - 1行目：【対象名】（例: [INPUT] sms_fee, [OUTPUT] sms_fee (更新後), [OUTPUT] 1280仕訳CSV）\n   - 2行目：【ヘッダー行】（例: id [tab] deleted [tab] status ...）\n   - 3行目以降：【データ・期待値行】\n   - 末尾：【空行（改行）を1行挟んで次の対象へ】\n\n6. **アウトプット（期待値）の汎用化**\n   アウトプットはCSVに限定されません。仕様書から読み取れる最終的な出力結果（同一DBテーブルへのUpdate、別DBテーブルへのInsert、CSV、固定長ファイルなど）を、インプットと同様に独立した表として作成してください。\n\n---\n\n# 1. あなた（AI）が実行する解析タスク\n\n### タスク①：インプットデータの逆引き特定\n資料に記載されている「出力ロジック」や「SQL（参考SQL）」から、大元のデータベース側の【どのテーブルのどのカラム】が参照されているかを、全ての出力パターン（条件分岐を含む）について逆引きして漏れなく列挙してください。\nマスタ情報（顧客マスタ、講師マスタ、講座マスタ、区分定義など）も結合キー（JOIN条件）から推論してすべて抽出すること。\n\n### タスク②：アウトプットデータ項目の列挙\n出力レイアウト仕様（DB Update、CSV、固定長ファイル等）から、出力される全ての【項目名、物理カラム名、型、条件】を列挙してください。\n\n### タスク③：ビジネスルール・計算ロジックの解剖\nインプットからアウトプットへ至る過程で発生するロジックを、以下の5つの観点で整理・解剖してください。\n1. **単純マッピング**: DBの値をそのまま、またはゼロ埋め/スペース埋めで出力するもの。\n2. **条件分岐・コード変換**: DBのコード値（01、05など）を別の値（1、5など）や正式な日本語名にデコードするもの。\n3. **文字列結合**: 摘要欄などで、複数のDBカラムや固定文字を結合しているもの（SUBSTR切り出しやゼロサプレス処理含む）。\n4. **複雑な計算・端数処理**: 税込から税抜（÷1.1）、源泉税（10.21%）の掛け算、小数点以下の丸め処理（切り捨て、四捨五入など）が発生するもの。\n5. **動的集約・貸借一致**: 複数レコードを特定キーで合算（サマリ）するルールや、仕訳データのように「貸方と借方の左右の金額をピッタリ一致させるための自動調整行」の算出ロジック。\n\n### タスク④：不整合・仕様矛盾の自律検出（バグの罠）\n設計書の記述（日本語の説明、SQL文、サンプル値）と、データベースの定義（型、実データ状態）を突き合わせ、**「仕様の矛盾」「開発者が100%実装ミスをする罠（記述漏れ、参照カラム指定ミス、SUBSTRによる文字切り出しの桁ズレリスク、非課税/課税の扱いミスなど）」**を自律的に見つけ出し、警告としてレポートしてください。\n\n---\n\n### 【TSV出力フォーマットの例（比較検証しやすい構成イメージ）】\n\n```tsv\n[INPUT] sms_fee\nid\tdeleted\tstatus\tbasic_fee\tsalesno\tupdate_date\n****1\t0\t未処理\t429000\t影響なし\t任意\n****2\t0\t未処理\t1880\t影響なし\t任意\n\n[OUTPUT] sms_fee (更新後)\nid\tdeleted\tstatus\tbasic_fee\tsalesno\tupdate_date\n****1\t0\t処理済\t変更なし\tS-10001\t2026-05-31\n****2\t0\t処理済\t変更なし\tS-10002\t2026-05-31\n\n[INPUT] accounts\nid\tdeleted\tname\tbilling_code\n0011000001\t0\t田中産業株式会社\tE7BT000442\n\n[OUTPUT: 1280仕訳CSV 期待値]\n会社コード\t仮仕訳番号\t伝票日付\t貸借\t勘定コード\t金額(円貨)\t摘要\nE7\t10001\t20260531\tC(貸方)\t5561201\t389000\t自動結合値\n```\n\n---\n\n# 2. 期待する出力フォーマット\n\n解析完了後、以下の3つの成果物を出力してください。\n\n#### 成果物1：テスト検証データ（TSV形式）\n- 上記の最重要ルールを守り、Excelにそのまま貼り付け可能なTSV形式で出力してください。\n- 同一テーブルのインプット/アウトプット比較時は、必ず列数・列順を統一させてください。\n\n#### 成果物2：ビジネスルール・計算フローの解説\n- タスク③で解剖した、金額やコードが決定していく順番（ロジックのフロー）をステップバイステップで解説してください。\n\n#### 成果物3：不整合・警戒バグの指摘レポート\n- タスク④で検出した、設計書の不備や開発・テスト時に警戒すべき罠（バグの引き金）をレポートしてください。",
+            "promptType": "prompt",
+            "linkId": null
+          },
+          {
+            "step": 4,
+            "title": "TSVファイルをスプシなどに貼り付け",
+            "memo": "GeminiNotebookのプロンプト欄に出てきたTSVの結果をコピー。「Ctrl + Shift + V」などを使ってスプシに貼り付ければ表形式で記載された状態で転記できる",
+            "prompt": "",
+            "promptType": "none",
+            "linkId": null
+          },
+          {
+            "step": 5,
+            "title": "GASで表記を見やすく",
+            "memo": "",
+            "prompt": "使えそうであれば配布します",
+            "promptType": "code",
+            "linkId": null
+          },
+          {
+            "step": 6,
+            "title": "データパターン作成",
+            "memo": "ここは人力で頑張ってください",
+            "prompt": "",
+            "promptType": "none",
+            "linkId": null
+          },
+          {
+            "step": 7,
+            "title": "データパターン検証",
+            "memo": "Notebookに、設計書＋テストシナリオを渡して、レビュー！",
+            "prompt": "\"# 役割\nあなたは、システム連携やバッチ処理における「インプットデータ」と「アウトプットデータ」の1文字・1円の不整合も許さない「超精密なシニアQA（品質保証）デバッガー」です。\n\n# 目的\nNotebook内のソース（詳細設計書およびテーブル定義）とデータパターン（INPUT/OUTPUTの値）を突き合わせ、計算の丸め誤差、文字列操作の不整合、設計書側の考慮漏れや矛盾を徹底的に洗い出す「相互ダブルチェックレビュー」を実行してください。\n\n---\n\n# 1. 参照ソースの指定\n以下のNotebook内のソースに書かれている仕様・定義をベースにしてレビューを行ってください。\n1. 詳細設計書ソース: 「1280_TechnoSMS【ANAビジネスソリューション様】_仕訳データ出力_20260806.pdf」\n2. データパターンソース: 「テーブル定義（20260805_Upload）」\n\n---\n\n# 2. レビュータスク\n\n### タスク1：物理制約と仕様の整合性チェック\n提供するデータパターンのINPUT/OUTPUT値が、データベースのデータ型（char、varchar、int等）、桁数制限（文字溢れ）、NULL許容や必須制約と矛盾していないか確認してください。\n\n### タスク2：データ加工・文字変形操作の突き合わせ\n大元データから出力データへの変形処理（文字列の結合、位置指定切り出し[SUBSTR等]、不要文字の除去[REPLACE等]、パディング[ゼロ埋め/スペース埋め]）が、データパターンのOUTPUT値に正しく施されているか確認してください。\n\n### タスク3：コード変換・区分値の条件分岐チェック\nインプットに置いたコード値が、仕様書通りのコード読み替えルール、マスタ結合ルール、フラグ条件によって、OUTPUT側のコードや日本語名へ正確に変換されているか確認してください。\n\n### タスク4：集約ルールおよび「自動調整項目」の整合性チェック\n複数レコードが特定のキー（顧客IDや費用科目等）で正しく合算（サマリ）されているか、また全体の辻褄を合わせるためにシステムが動的に算出・挿入する「自動調整レコード/自動調整項目」の算出ロジックが1円/1単位の誤差もなく合致しているか再計算してください。\n\n### タスク5：仕様書・定義書の考慮漏れ・矛盾の検出\nデータパターンとの突き合わせを行う中で発見された「設計書側のロジック考慮漏れ」「仕様記述の矛盾」「例外パターンの未定義」を抽出してください。\n\n---\n\n# 3. 出力フォーマット\n\n以下の形式で検証結果を出力してください。\n\n## 1. 検証結果サマリ\n* 総チェック項目数、検出された不整合・不備の件数、および全体評価（合格/要修正）を簡潔に記述してください。\n\n## 2. 不整合・エラー指摘一覧（テーブル形式）\n| No | 該当タスク | 対象項目/キー | 設計書/定義上の定義 | 実際のデータ値 (IN/OUT) | 検出された問題・差異 | 参照ソース名・箇所 |\n|---|---|---|---|---|---|---|\n| 1 | タスク1 | 顧客名 | varchar(20) | OUT: 21文字の文字列 | 桁数オーバーによる溢れ | 設計書 P.5 / 項目No.12 |\n\n※問題が検出されなかったタスクについては、「不整合なし」と明記してください。\n\n## 3. 仕様書・設計書側の課題・考慮漏れ（該当がある場合）\n* **該当箇所:** （仕様書名およびページ/項目）\n* **問題内容:** （ロジックの矛盾、境界値の未定義など）\n* **推奨される対策:** \n\n## 4. 総評・アドバイス\n* 全体的なデータパターンの精度や、テストケースとして不足している観点があれば箇条書きで提示してください。\"",
+            "promptType": "prompt",
+            "linkId": null
+          },
+          {
+            "step": 8,
+            "title": "【番外】エラーチェックの順番や種類が複雑な場合に",
+            "memo": "エラーチェックの実装方法の相談にのってくれます！言ってくれたことを全部やらなくてもいいと思いますが、参考意見としてはありかなと",
+            "prompt": "\"# 役割\nあなたは、Webシステムおよびバッチ処理の「品質保証（QA）」と「ユーザビリティ（UX）」を極限まで高める「シニア・システムアーキテクト」です。\n\n# 目的\n提供された設計書内の「エラーチェック仕様（バリデーション）」を分析・診断してください。\nエラーチェックの記載が十分な場合は「ハイブリッド型」への改善案を提示し、**エラーチェックの記載が無い・または不十分な場合は「最低限組み込むべき必須のエラーチェック」をプラスアルファでアドバイス**してください。\n\n---\n\n# 1. 参照範囲\n* 診断対象の機能: 【 例: 講師謝礼追加 / 会員退会処理 / クラス会員登録 】\n\n---\n\n# 2. 診断・出力タスク\n\n以下の4つの見出しに沿って診断結果を出力してください。\n\n### 1. 現状のエラーチェック仕様の評価\n* 対象機能のエラーチェックの記載状況を評価してください。\n  * **【パターンA：十分な定義あり】** ➔ 記載されているチェックが「即時中断型」「一括出力型」「ハイブリッド型」のどれにあたるか判定してください。\n  * **【パターンB：無し・または非常に薄い】** ➔ エラー制御がほぼ記載されていない、または基本的な入力チェック程度にとどまっている旨を指摘してください。\n\n### 2. 現状設計のリスクとデメリット\n* **パターンAの場合**：現行の挙動によるユーザーの使い勝手悪化（モグラ叩きストレス等）やシステム負荷のリスクを記述してください。\n* **パターンBの場合**：エラーチェックが無いことで発生する**「致命的な業務事故」**（例：不正データの登録、後続の計算バッチのクラッシュ、確定済みデータの上書きなど）のリスクを具体的に提示してください。\n\n### 3. プラスアルファの提案（最低限必要なエラーチェック ＆ ハイブリッド化）\n※細かすぎるチェック（英数制限など）は除外し、**「業務・システム運用上、絶対に外せない最低限の防波堤」**に絞って提案してください。\n\n* **【フェーズ1：前提チェック（即時中断型で実装すべきもの）】**\n  * 例: ファイル形式違い、対象データの未選択、既に処理済/退会済みのステータス、過去日付の不正設定など\n  * 挙動: 該当した時点で後続処理を即時中断（break）し、手前でガードする。\n* **【フェーズ2：データ項目・整合性チェック（一括出力型で実装すべきもの）】**\n  * 例: 必須漏れ、期間の重複、相関関係の矛盾（例: 計上日と対象月の矛盾）、重複登録など\n  * 挙動: データを全件チェックし、エラーがあれば画面にまとめて全件提示する。\n\n### 4. 設計書修正・追記用の文面案（そのまま転記できるレベル）\n* 設計書の「エラー処理仕様」の欄へそのまま追記できる形で、上記3で提案したチェックロジックを簡潔な文章（または箇条書き）で記述してください。\"",
+            "promptType": "prompt",
+            "linkId": null
+          },
+          {
+            "step": 9,
+            "title": "【追加】TSVで出力したものをINSERT用SQLを生成するプロンプト",
+            "memo": "Step4の後",
+            "prompt": "# 役割\nあなたは、データ移行やDB検証に精通した「QA（品質保証）の専門家」です。\n\n# 目的\n直前のやり取りで作成した「テスト検証データ（TSV形式）」を元に、実際にDBへ投入できる「INSERT文」を生成してください。\nテーブル定義はすでに読み込み済みの前提で進めてください。\n\n---\n\n### 【最重要】INSERT文生成のルール\n\n1. **対象範囲**\n   直前に出力した全てのTSVブロック（[INPUT]・[OUTPUT]問わず、実際にテーブルへ投入され得るデータ）を対象に、テーブルごとにINSERT文を作成してください。\n\n2. **カラム構成の整合性**\n   INSERT文のカラム順・カラム名・型は、読み込み済みの「テーブル定義」の内容と完全に一致させてください。\n   TSVはテスト観点に必要な項目のみに絞られているため、テーブル定義上は存在するがTSVには含まれていない項目（NOT NULL制約のあるカラムなど）がある場合は、テーブル定義を参照して妥当なデフォルト値・ダミー値を補完してください。\n\n3. **_id系カラムの扱い（要注意コメント）**\n   `customer_id`、`course_id` など `_id` で終わるカラム（外部キーを想定）や、それに準ずる紐付けキー（`salesno` 等）は、既存DBに実在する値を使いたいケースがあるため、値をそのまま採番せず、**各テーブルのINSERT文の直前（先頭）**に、以下の形式でまとめてコメントを記載してください。\n```sql\n   -- ⚠️ id系項目は要注意: 以下の項目は既存DBの実データに合わせて値を書き換えてください\n   --   - customer_id\n   --   - course_id\n```\n   - コメント内には、そのテーブルで該当すると予想される項目名を、テーブル定義とTSVを突き合わせて漏れなく列挙してください。\n\n4. **user_name等の識別用ダミーデータの命名規則**\n   `user_name` や、その他人物名・識別子として使うテスト用データ（氏名、ログインIDなど）は、テストデータであることが一目でわかるよう、以下の命名規則で生成してください。\n   - 形式：`test_MMDD_名前`（例：`test_0827_taro`、`test_0827_hanako`）\n   - MMDDにはテストデータ作成日（本プロンプト実行日）の月日を使用してください。\n\n5. **出力構成**\n   テーブルごとにSQLブロックを完全に分離し、縦（上下）に並べて出力してください。1つの巨大なSQLブロックに複数テーブルを混在させないでください。\n\n---\n\n### 【出力フォーマットの例】\n\n```sql\n-- ⚠️ id系項目は要注意: 以下の項目は既存DBの実データに合わせて値を書き換えてください\n--   - customer_id\n--   - salesno（他テーブルとの紐付けキーとして使用されている場合）\n-- [INSERT] sms_fee\nINSERT INTO sms_fee (id, deleted, status, basic_fee, salesno, update_date)\nVALUES\n(90001, 0, '未処理', 429000, 'S-10001', '2026-08-27'),\n(90002, 0, '未処理', 1880, 'S-10002', '2026-08-27');\n\n-- ⚠️ id系項目は要注意: 以下の項目は既存DBの実データに合わせて値を書き換えてください\n--   - customer_id\n-- [INSERT] accounts\nINSERT INTO accounts (id, deleted, name, billing_code, customer_id)\nVALUES\n(9011000001, 0, 'test_0827_taro', 'E7BT000442', 5001);\n```\n\n---\n\n# 出力してほしいもの\n上記ルールに沿って、直前のTSV全対象分のINSERT文を、テーブルごとに分けて出力してください。",
+            "promptType": "prompt",
+            "linkId": null
+          }
+        ]
+      },
+      {
+        "id": "wf_1786951554644_455",
+        "title": "ANA課題管理表運用方法",
+        "description": "",
+        "tags": [],
+        "freq": "rare",
+        "steps": [
+          {
+            "step": 1,
+            "title": "課題管理表準備",
+            "memo": "",
+            "prompt": "",
+            "promptType": "none",
+            "linkId": "link_1786952445687_90"
+          },
+          {
+            "step": 2,
+            "title": "メール⇒スプシに転記用（GASをアドオンで実行）",
+            "memo": "アドオンを選択し、対象のメールを開いた状態にすると、右ウィンドウ内のボタンを押下することで、対象のスプシに、メールの件名とスレッドURLを転記する",
+            "prompt": "別途配布",
+            "promptType": "code",
+            "linkId": null
+          },
+          {
+            "step": 3,
+            "title": "課題管理表に、メールのURLを転記（手動対応）",
+            "memo": "",
+            "prompt": "",
+            "promptType": "none",
+            "linkId": null
+          },
+          {
+            "step": 4,
+            "title": "スプシにメールの内容を転記（GASをメニューから実行）",
+            "memo": "スプレットシート上の右上にショートカットが作成されますので　メール転記＞未読のメールを取り込む",
+            "prompt": "別途配布",
+            "promptType": "code",
+            "linkId": null
+          },
+          {
+            "step": 5,
+            "title": "AI関数の実行結果を更新",
+            "memo": "メール内容を転記されたセルをインプットにして、各課題の状況把握した結果を出す",
+            "prompt": "=AI(\"【概要】を書いたうえで、【ステータス】着手前/対応中/完了/その他　のいずれかに振り分けた上で記載、【現在の状況】を時間軸も含めながら説明して,【残タスク】箇条書き、人物名と期限を含めて\",T269)",
+            "promptType": "prompt",
+            "linkId": null
           }
         ]
       }
@@ -533,5 +1236,5 @@
       }
     ]
   },
-  "workflows": {}
+  "tagRegistry": {}
 }

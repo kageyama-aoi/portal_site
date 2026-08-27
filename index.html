@@ -5,6 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Study Portal - 勉強用リンク集</title>
   <link rel="icon" href="data:,"> <!-- ファビコンエラー防止 -->
+  <script>
+    // ダークモード適用前の一瞬のライト画面フラッシュを防ぐため、
+    // CSS読み込み前に data-theme 属性を即時セットする
+    (function () {
+      try {
+        var saved = localStorage.getItem('portalTheme');
+        var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme', theme);
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
@@ -43,7 +54,16 @@
               <span class="icon icon-sm">account_tree</span>
             </button>
           </div>
+          <div class="expand-btn-group" id="expandBtnGroup">
+            <button id="openAll" class="secondary-btn view-btn" title="すべて開く">
+              <span class="icon icon-sm">unfold_more</span>
+            </button>
+            <button id="closeAll" class="secondary-btn view-btn" title="すべて閉じる">
+              <span class="icon icon-sm">unfold_less</span>
+            </button>
+          </div>
           <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理"><span class="icon icon-md">settings</span></button>
+          <button id="themeToggleBtn" class="secondary-btn" title="ダークモードに切り替え"><span class="icon icon-md">dark_mode</span></button>
           <label class="toggle-switch">
             <input type="checkbox" id="editModeToggle">
             <span class="slider"></span>
@@ -60,15 +80,20 @@
       <!-- 検索・タグフィルタパネル -->
       <div id="searchPanel" class="search-panel">
         <div class="search-input-row">
+          <span class="tag-filter-label search-label">検索:</span>
           <span class="icon icon-md search-icon">search</span>
-          <input type="text" id="searchInput" class="search-input" placeholder="タイトル・タグ・キーワード">
+          <input type="text" id="searchInput" class="search-input" placeholder="キーワードを入力" title="タイトル・タグ・メモ・検索キーワードから探します">
           <button type="button" id="searchClearBtn" class="search-clear-btn" title="クリア" style="display:none;">
             <span class="icon icon-sm">close</span>
           </button>
         </div>
+        <div class="search-hint">タイトル・タグ・メモ・検索キーワードから探せます</div>
         <div id="tagFilterRow" class="tag-filter-row" style="display:none;">
           <span class="tag-filter-label">タグ:</span>
           <div id="tagFilterChips" class="tag-filter-chips"></div>
+          <button type="button" id="tagAddBtn" class="tag-add-btn" title="新しいタグを作成（まだリンクを付けなくてもOK）" style="display:none;">
+            <span class="icon icon-xs">add</span> タグ作成
+          </button>
           <button type="button" id="tagFilterClearBtn" class="secondary-btn tag-filter-clear" style="display:none; font-size:0.75rem; padding:2px 8px;">クリア</button>
         </div>
         <div id="freqFilterRow" class="freq-filter-row">
@@ -83,11 +108,9 @@
         </div>
       </div>
 
-      <!-- カテゴリ操作 -->
+      <!-- 表示・追加操作 -->
       <div class="controls">
-        <button id="openAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_more</span> すべて開く</button>
-        <button id="closeAll" class="bulk-action-btn"><span class="icon icon-sm">unfold_less</span> すべて閉じる</button>
-        <button id="addCategoryBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">create_new_folder</span> カテゴリ追加</button>
+        <button id="addLinkBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">add_link</span> リンク追加</button>
         <button id="bulkAddLinkBtn" class="bulk-action-btn" style="display:none;"><span class="icon icon-sm">playlist_add</span> 一括追加</button>
       </div>
 
@@ -122,32 +145,21 @@
   </div>
 </div>
 
-<!-- カテゴリ編集ダイアログ -->
-<dialog id="categoryDialog">
-  <form method="dialog">
-    <h3>カテゴリ編集</h3>
-    <label>タイトル: <input type="text" id="catTitleInput" required></label>
-    <div class="dialog-buttons">
-      <button value="cancel" formnovalidate>キャンセル</button>
-      <button value="save" class="primary-btn">決定</button>
-    </div>
-  </form>
-</dialog>
-
 <!-- リンク編集ダイアログ -->
 <dialog id="linkDialog">
-  <form method="dialog">
+  <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
+  <form method="dialog" class="link-form-grid">
     <h3>リンク編集</h3>
-    <label>タイトル: <input type="text" id="linkTitleInput" required></label>
-    <label class="opendir-checkbox-label">
+    <label class="full-row">タイトル: <input type="text" id="linkTitleInput" required></label>
+    <label class="opendir-checkbox-label full-row">
       <input type="checkbox" id="linkIsLocalInput">
       <span class="icon icon-xs" style="color:var(--color-local)">folder_open</span>
       ローカルフォルダを開く（opendir:）
     </label>
-    <label>URL:
+    <label class="full-row">URL:
       <input type="text" id="linkUrlInput" required placeholder="https://example.com">
     </label>
-    <label>アイコン:
+    <label class="full-row">アイコン:
       <div style="display:flex; gap: 8px; align-items:center;">
         <div id="linkIconPreview" style="width:40px; height:40px; display:flex; align-items:center; justify-content:center; border:1px solid var(--card-border); border-radius:6px; background:var(--bg); flex-shrink:0;">
           <span class="icon icon-lg" id="linkIconDisplay">link</span>
@@ -158,7 +170,7 @@
         <button type="button" id="resetIconColorBtn" class="secondary-btn" title="デフォルト色に戻す" style="flex-shrink:0; padding:6px 8px;"><span class="icon icon-sm">format_color_reset</span></button>
       </div>
     </label>
-    <label>アイコンスタイル:
+    <label class="full-row">アイコンスタイル:
       <div class="icon-style-row">
         <input type="hidden" id="linkIconFillInput" value="0">
         <input type="hidden" id="linkIconWeightInput" value="400">
@@ -185,27 +197,23 @@
     </label>
     <label>バッジ:
       <select id="linkBadgeInput">
-        <option value="doc">Docs (緑)</option>
-        <option value="video">Video (赤)</option>
-        <option value="article">Article (黄)</option>
-        <option value="portal">Portal (紫)</option>
-        <option value="code">Code (灰)</option>
-        <option value="tool">Tool (青)</option>
-        <option value="sns">SNS (水)</option>
-        <option value="cloud">Cloud (橙)</option>
-        <option value="local">Local (茶)</option>
-        <option value="money">Money (金)</option>
-        <option value="news">News (インディゴ)</option>
-        <option value="idea">Idea (シアン)</option>
-        <option value="company">Company (ピンク)</option>
+        <option value="doc">Docs（ドキュメント・青）</option>
+        <option value="spreadsheet">Sheet（表計算・緑）</option>
+        <option value="website">Web（ウェブサイト・灰）</option>
+        <option value="drive">Drive（Googleドライブ・金）</option>
+        <option value="video">Video（動画・赤）</option>
+        <option value="article">Article（記事・黄）</option>
+        <option value="portal">Portal（ポータル・紫）</option>
+        <option value="code">Code（コード・灰）</option>
+        <option value="tool">Tool（ツール・青）</option>
+        <option value="sns">SNS（SNS・水）</option>
+        <option value="cloud">Cloud（クラウド・橙）</option>
+        <option value="local">Local（ローカル・茶）</option>
+        <option value="money">Money（お金・金）</option>
+        <option value="news">News（ニュース・インディゴ）</option>
+        <option value="idea">Idea（アイデア・シアン）</option>
+        <option value="company">Company（会社・ピンク）</option>
       </select>
-    </label>
-    <label>メモ: <textarea id="linkMemoInput" rows="3"></textarea></label>
-    <label>タグ <span style="font-size:0.75rem;color:var(--text-sub)">（カンマ区切り、思い出しに使う）</span>
-      <input type="text" id="linkTagsInput" placeholder="例: 確定申告, 年次, 税務">
-    </label>
-    <label>検索キーワード <span style="font-size:0.75rem;color:var(--text-sub)">（補助ワード、カンマ区切り）</span>
-      <input type="text" id="linkKeywordsInput" placeholder="例: 税金, 収支, 帳簿">
     </label>
     <label>使用頻度
       <select id="linkFreqInput">
@@ -216,7 +224,17 @@
         <option value="rare">たまに（思い出し対象）</option>
       </select>
     </label>
-    <div class="dialog-buttons">
+    <label>タグ <span style="font-size:0.75rem;color:var(--text-sub)">（カンマ区切り、新規は自由入力・既存タグは候補から選択可）</span>
+      <div class="tag-input-wrap">
+        <input type="text" id="linkTagsInput" placeholder="例: 確定申告, 年次, 税務" autocomplete="off">
+        <div id="linkTagsSuggest" class="tag-suggest-dropdown" style="display:none;"></div>
+      </div>
+    </label>
+    <label>検索キーワード <span style="font-size:0.75rem;color:var(--text-sub)">（補助ワード、カンマ区切り）</span>
+      <input type="text" id="linkKeywordsInput" placeholder="例: 税金, 収支, 帳簿">
+    </label>
+    <label class="full-row">メモ: <textarea id="linkMemoInput" rows="2"></textarea></label>
+    <div class="dialog-buttons full-row">
       <button value="cancel" formnovalidate>キャンセル</button>
       <button value="save" class="primary-btn">決定</button>
     </div>
@@ -225,10 +243,11 @@
 
 <!-- リンク一括追加ダイアログ -->
 <dialog id="bulkLinkDialog" class="bulk-dialog">
+  <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
   <form method="dialog">
     <h3>リンク一括追加</h3>
-    <label>追加先カテゴリ:
-      <select id="bulkLinkCategorySelect" required></select>
+    <label>タグ <span style="font-size:0.75rem;color:var(--text-sub)">（カンマ区切り、省略可・このバッチ全体に付与されます）</span>
+      <input type="text" id="bulkLinkTagsInput" placeholder="例: 資料, 参考">
     </label>
     <label>リンクデータ:</label>
     <div id="bulk-link-input-area">
@@ -248,6 +267,7 @@
 
 <!-- アイコンピッカーダイアログ -->
 <dialog id="iconPickerDialog">
+  <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
   <h3>アイコンを選択</h3>
   <input type="text" id="iconSearchInput" placeholder="例: 動画、code、メモ、cloud …">
   <div id="iconCategoryFilter" class="icon-category-filter">
@@ -263,6 +283,7 @@
 
 <!-- ポータル管理ダイアログ -->
 <dialog id="portalDialog" class="bulk-dialog">
+  <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
   <form>
     <h2>ポータル管理</h2>
 
@@ -302,7 +323,16 @@
 
 <!-- ワークフロー管理ダイアログ -->
 <dialog id="workflowDialog" class="bulk-dialog workflow-dialog">
+  <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
   <div id="workflowDialogContent">
+    <!-- JSで動的に描画されます -->
+  </div>
+</dialog>
+
+<!-- ワークフロー出力（PDF/HTML）対象選択ダイアログ -->
+<dialog id="wfExportDialog" class="bulk-dialog workflow-dialog">
+  <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
+  <div id="wfExportDialogContent">
     <!-- JSで動的に描画されます -->
   </div>
 </dialog>

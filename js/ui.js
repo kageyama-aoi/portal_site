@@ -4,16 +4,6 @@
  * @module UI
  */
 
-import { CategoryDialog } from './dialogs/categoryDialog.js';
-
-/**
- * @typedef {object} Category
- * @property {string} id - カテゴリのユニークID。
- * @property {string} title - カテゴリのタイトル。
- * @property {boolean} isOpen - カテゴリが展開されているかどうか。
- * @property {Array<Link>} links - カテゴリ内のリンクの配列。
- */
-
 /**
  * @typedef {object} Link
  * @property {string} id - リンクのユニークID。
@@ -22,14 +12,7 @@ import { CategoryDialog } from './dialogs/categoryDialog.js';
  * @property {string} icon - リンクのアイコン（絵文字など）。
  * @property {string} badge - リンクのバッジタイプ。
  * @property {string} memo - リンクのメモ。
- */
-
-/**
- * @typedef {object} DragInfo
- * @property {'category'|'link'} type - ドラッグ中の要素のタイプ。
- * @property {number} index - ドラッグ中の要素のインデックス。
- * @property {number} [catIndex] - リンクの場合、親カテゴリのインデックス。
- * @property {'before'|'after'} [dropPosition] - ドロップ位置がターゲットの前か後か。
+ * @property {string[]} tags - リンクが属するタグ（グルーピングの唯一の手段。0件以上）。
  */
 
 /**
@@ -67,25 +50,9 @@ export class UI {
    */
   isEditMode = false;
   /**
-   * @property {CategoryDialog} categoryDialog - カテゴリ編集ダイアログのインスタンス。
-   */
-  categoryDialog;
-  /**
-   * @property {string|null} editingCategoryId - 編集中のカテゴリのID。
-   */
-  editingCategoryId = null;
-  /**
    * @property {string|null} editingLinkId - 編集中のリンクのID。
    */
   editingLinkId = null;
-  /**
-   * @property {DragInfo|null} draggedInfo - ドラッグ中の要素に関する情報。
-   */
-  draggedInfo = null;
-  /**
-   * @property {HTMLElement|null} placeholder - ドラッグアンドドロップ操作中に表示されるプレースホルダー要素。
-   */
-  placeholder = null;
   /**
    * @property {'card'|'table'} viewMode - 現在のビューモード。
    */
@@ -108,6 +75,10 @@ export class UI {
    */
   workflowDialog = null;
   /**
+   * @property {TagManager|null} tagManager
+   */
+  tagManager = null;
+  /**
    * @property {string} searchQuery - 現在の検索キーワード
    */
   searchQuery = '';
@@ -115,6 +86,12 @@ export class UI {
    * @property {string[]} selectedTags - 選択中のタグフィルタ
    */
   selectedTags = [];
+  /**
+   * @property {Set<string>} collapsedTagGroups - ユーザーが手動で折りたたんだタグ別グループの
+   * ラベル（タグ名／「タグなし」）。render() のたびに details.open を毎回 true にリセットせず、
+   * ここを参照して直前の開閉状態を復元する。
+   */
+  collapsedTagGroups = new Set();
   /**
    * @property {string} freqFilter - 選択中の頻度フィルタ
    */
@@ -124,14 +101,12 @@ export class UI {
    * UIの新しいインスタンスを作成します。
    * @param {DataManager} dataManager - データ管理オブジェクト。
    * @param {ConfigManager} configManager - 設定管理オブジェクト。
-   * @param {CategoryDialog} categoryDialog - カテゴリ編集ダイアログオブジェクト。
    * @param {LinkDialog} linkDialog - リンク編集ダイアログオブジェクト。
    * @param {BulkLinkDialog} bulkLinkDialog - リンク一括追加ダイアログオブジェクト。
    */
-  constructor(dataManager, configManager, categoryDialog, linkDialog, bulkLinkDialog) {
+  constructor(dataManager, configManager, linkDialog, bulkLinkDialog) {
     this.dataManager = dataManager;
     this.configManager = configManager;
-    this.categoryDialog = categoryDialog; // 引数から受け取る
     this.linkDialog = linkDialog;
     this.bulkLinkDialog = bulkLinkDialog;
     this.isEditMode = false;
@@ -259,7 +234,8 @@ export class UI {
     document.getElementById('editModeToggle').addEventListener('change', (e) => {
       this.isEditMode = e.target.checked;
       this.render();
-      document.getElementById('addCategoryBtn').style.display = this.isEditMode ? 'block' : 'none';
+      this._updateTagPanel();
+      document.getElementById('addLinkBtn').style.display = this.isEditMode ? 'block' : 'none';
       document.getElementById('bulkAddLinkBtn').style.display = this.isEditMode ? 'block' : 'none';
     });
 
@@ -352,11 +328,7 @@ export class UI {
       }
     });
 
-    document.getElementById('addCategoryBtn').addEventListener('click', () => this.categoryDialog.open());
-
-
-
-
+    document.getElementById('addLinkBtn').addEventListener('click', () => this.linkDialog.open());
 
     document.getElementById('bulkAddLinkBtn').addEventListener('click', () => this.bulkLinkDialog.open());
 
@@ -393,33 +365,19 @@ export class UI {
 
 
 
-  openCategoryDialog(categoryId = null) {
-    this.editingCategoryId = categoryId;
-    const dialog = document.getElementById('categoryDialog');
-    const titleInput = document.getElementById('catTitleInput');
-    
-    if (categoryId) {
-      const cat = this.dataManager.getCategory(categoryId);
-      titleInput.value = cat.title;
-    } else {
-      titleInput.value = '';
-    }
-    dialog.showModal();
-  }
-
-
-
-
 
   toggleAll(isOpen) {
     const details = document.querySelectorAll('details');
     details.forEach(d => d.open = isOpen);
-    this.dataManager.getData().forEach(cat => cat.isOpen = isOpen);
   }
 
-  openCategoryLinks(category) {
+  /**
+   * 与えられたリンク一覧を新規タブでまとめて開きます（タググループの「一括で開く」ボタンから使用）。
+   * @param {Array<object>} links
+   */
+  openGroupLinks(links) {
     let blockedCount = 0;
-    category.links.forEach(link => {
+    links.forEach(link => {
       if (link.url) {
         const win = window.open(link.url, '_blank');
         if (!win || win.closed || typeof win.closed == 'undefined') {
@@ -437,6 +395,9 @@ export class UI {
     const map = {
       video: 'Video',
       doc: 'Docs',
+      spreadsheet: 'Sheet',
+      website: 'Web',
+      drive: 'Drive',
       portal: 'Portal',
       article: 'Article',
       code: 'Code',
@@ -457,22 +418,34 @@ export class UI {
    */
   _updateTagPanel() {
     if (!this.searchManager) return;
-    const tags = this.searchManager.getAllTags();
+    const portalId = this.configManager.getActivePortalId();
+    const usedTags = this.searchManager.getAllTags();
+    const registeredTags = this.tagManager ? this.tagManager.getRegisteredTags(portalId) : [];
+    // リンクにまだ紐づいていない（登録だけ済んだ）タグは見た目を区別する
+    const emptyTagSet = new Set(registeredTags.filter(t => !usedTags.includes(t)));
+    const tags = Array.from(new Set([...usedTags, ...registeredTags])).sort((a, b) => a.localeCompare(b, 'ja'));
+
     const row = document.getElementById('tagFilterRow');
     const chips = document.getElementById('tagFilterChips');
     const clearBtn = document.getElementById('tagFilterClearBtn');
+    const addBtn = document.getElementById('tagAddBtn');
 
-    if (tags.length === 0) {
+    addBtn.style.display = this.isEditMode ? 'inline-flex' : 'none';
+
+    // 編集モード中は「タグ作成」ボタンを出したいので、タグが0件でも行自体は隠さない
+    if (tags.length === 0 && !this.isEditMode) {
       row.style.display = 'none';
       return;
     }
     row.style.display = 'flex';
     chips.innerHTML = '';
     tags.forEach(tag => {
+      const isEmpty = emptyTagSet.has(tag);
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'tag-chip' + (this.selectedTags.includes(tag) ? ' active' : '');
+      btn.className = 'tag-chip' + (this.selectedTags.includes(tag) ? ' active' : '') + (isEmpty ? ' tag-chip-empty' : '');
       btn.textContent = tag;
+      if (isEmpty) btn.title = 'まだリンクが紐づいていないタグです';
       btn.addEventListener('click', () => {
         if (this.selectedTags.includes(tag)) {
           this.selectedTags = this.selectedTags.filter(t => t !== tag);
@@ -493,6 +466,17 @@ export class UI {
         this.selectedTags = [];
         this._updateTagPanel();
         this.render();
+      });
+    }
+
+    if (!addBtn._hasListener) {
+      addBtn._hasListener = true;
+      addBtn.addEventListener('click', () => {
+        const name = prompt('新しいタグ名を入力してください（まだリンクを付けなくても作成できます）:');
+        if (name && this.tagManager) {
+          const added = this.tagManager.addTag(this.configManager.getActivePortalId(), name);
+          if (added) this._updateTagPanel();
+        }
       });
     }
   }
@@ -520,88 +504,8 @@ export class UI {
       return;
     }
 
-    const data = this.dataManager.getData(); // 最新のデータを取得
-
-    data.forEach((category, catIndex) => {
-      const details = document.createElement('details');
-      details.open = category.isOpen;
-      
-      details.addEventListener('toggle', () => {
-        category.isOpen = details.open;
-      });
-
-      // D&D for Categories
-      if (this.isEditMode) {
-        details.draggable = true;
-        details.addEventListener('dragstart', (e) => this._handleDragStart(e, { type: 'category', index: catIndex }));
-        details.addEventListener('dragover', (e) => this._handleDragOver(e));
-        details.addEventListener('drop', (e) => this._handleDrop(e, { type: 'category', index: catIndex }));
-        details.addEventListener('dragend', (e) => this._handleDragEnd(e));
-      }
-
-      const summary = document.createElement('summary');
-      const summaryContent = document.createElement('div');
-      summaryContent.className = 'summary-content';
-      summaryContent.textContent = category.title;
-
-      const groupActions = document.createElement('div');
-      groupActions.className = 'group-actions';
-
-      if (this.isEditMode) {
-        if (catIndex > 0) {
-          const upBtn = this._createActionButton('<span class="icon icon-sm">arrow_upward</span>', 'action-btn btn-move', () => this.dataManager.moveCategory(catIndex, catIndex - 1), 'カテゴリを上に移動');
-          groupActions.appendChild(upBtn);
-        }
-        if (catIndex < data.length - 1) {
-          const downBtn = this._createActionButton('<span class="icon icon-sm">arrow_downward</span>', 'action-btn btn-move', () => this.dataManager.moveCategory(catIndex, catIndex + 1), 'カテゴリを下に移動');
-          groupActions.appendChild(downBtn);
-        }
-        const editBtn = this._createActionButton('<span class="icon icon-sm">edit</span>', 'action-btn btn-edit', () => this.categoryDialog.open(category.id), 'カテゴリを編集');
-        const deleteBtn = this._createActionButton('<span class="icon icon-sm">delete</span>', 'action-btn btn-delete', () => {
-          if (confirm(`カテゴリ「${category.title}」と中のリンクをすべて削除しますか？`)) {
-            this.dataManager.deleteCategory(category.id);
-            this.render();
-          }
-        }, 'カテゴリを削除');
-        groupActions.appendChild(editBtn);
-        groupActions.appendChild(deleteBtn);
-      } else {
-        const openBtn = this._createActionButton('<span class="icon icon-sm">open_in_new</span> 一括で開く', 'action-btn btn-open', () => this.openCategoryLinks(category));
-        openBtn.title = 'このカテゴリのリンクをすべて開く';
-        groupActions.appendChild(openBtn);
-      }
-
-      summaryContent.appendChild(groupActions);
-      summary.appendChild(summaryContent);
-
-      const chevron = document.createElement('span');
-      chevron.className = 'icon icon-lg summary-chevron';
-      chevron.textContent = 'expand_more';
-      summary.appendChild(chevron);
-
-      details.appendChild(summary);
-
-      const linkList = document.createElement('div');
-      linkList.className = this.viewMode === 'table' ? 'link-list link-list-table' : 'link-list';
-
-      category.links.forEach((link, linkIndex) => {
-        const el = this.viewMode === 'table'
-          ? this._createTableRow(link, category.id, catIndex, linkIndex)
-          : this._createLinkCard(link, category.id, catIndex, linkIndex);
-        linkList.appendChild(el);
-      });
-
-      if (this.isEditMode) {
-        const addPlaceholder = document.createElement('div');
-        addPlaceholder.className = 'add-link-placeholder';
-        addPlaceholder.innerHTML = '<span class="icon icon-md">add_link</span> リンクを追加';
-        addPlaceholder.addEventListener('click', () => this.linkDialog.open(category.id));
-        linkList.appendChild(addPlaceholder);
-      }
-
-      details.appendChild(linkList);
-      this.container.appendChild(details);
-    });
+    this._renderModeHeader();
+    this._renderGroupedByTag(this.dataManager.getData());
   }
 
   /**
@@ -631,23 +535,11 @@ export class UI {
    * 個々のリンクカード要素を作成します。
    * @private
    * @param {Link} link - リンクデータオブジェクト。
-   * @param {string} catId - 親カテゴリのID。
-   * @param {number} catIndex - 親カテゴリのインデックス。
-   * @param {number} linkIndex - リンクのインデックス。
    * @returns {HTMLDivElement} 作成されたリンクカードのラッパー要素。
    */
-  _createLinkCard(link, catId, catIndex, linkIndex) {
+  _createLinkCard(link) {
       const wrapper = document.createElement('div');
       wrapper.className = 'link-card-wrapper';
-
-      // リンクのドラッグアンドドロップ設定
-      if (this.isEditMode) {
-        wrapper.draggable = true;
-        wrapper.addEventListener('dragstart', (e) => this._handleDragStart(e, { type: 'link', catIndex, index: linkIndex }));
-        wrapper.addEventListener('dragover', (e) => this._handleDragOver(e));
-        wrapper.addEventListener('drop', (e) => this._handleDrop(e, { type: 'link', catIndex, index: linkIndex }));
-        wrapper.addEventListener('dragend', (e) => this._handleDragEnd(e));
-      }
 
       const isLocal = link.url && link.url.startsWith('opendir:');
       const a = document.createElement('a');
@@ -681,6 +573,7 @@ export class UI {
       const titleSpan = document.createElement('span');
       titleSpan.className = 'link-title';
       titleSpan.textContent = link.title;
+      if (this.isEditMode) this._makeTitleEditable(titleSpan, link);
       const badgeSpan = document.createElement('span');
       badgeSpan.className = `badge badge-${link.badge}`;
       badgeSpan.textContent = this.getBadgeLabel(link.badge);
@@ -728,22 +621,11 @@ export class UI {
       if (this.isEditMode) {
         const cardActions = document.createElement('div');
         cardActions.className = 'card-actions';
-        
-        // リンク移動ボタン
-        if (linkIndex > 0) {
-           const upBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_upward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex - 1), 'リンクを上に移動');
-           cardActions.appendChild(upBtn);
-        }
-        if (linkIndex < this.dataManager.getCategory(catId).links.length - 1) {
-          const downBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_downward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex + 1), 'リンクを下に移動');
-          cardActions.appendChild(downBtn);
-        }
 
-        // リンク編集・削除ボタン
-        const editBtn = this._createCardActionButton('<span class="icon icon-sm">edit</span>', () => this.linkDialog.open(catId, link.id), 'リンクを編集');
+        const editBtn = this._createCardActionButton('<span class="icon icon-sm">edit</span>', () => this.linkDialog.open(link.id), 'リンクを編集');
         const delBtn = this._createCardActionButton('<span class="icon icon-sm">delete</span>', () => {
            if (confirm(`リンク「${link.title}」を削除しますか？`)) {
-             this.dataManager.deleteLink(catId, link.id);
+             this.dataManager.deleteLink(link.id);
              this.render();
            }
         }, 'リンクを削除');
@@ -792,6 +674,11 @@ export class UI {
     document.getElementById('viewTableBtn').classList.toggle('active', this.viewMode === 'table');
     document.getElementById('viewMemoryBtn').classList.toggle('active', this.viewMode === 'memory');
     document.getElementById('viewWorkflowBtn').classList.toggle('active', this.viewMode === 'workflow');
+    // 「すべて開く/閉じる」は <details> で開閉するグループがある表示（タグ別グループの
+    // card/table表示、ワークフローカードのworkflow表示）にのみ意味を持つ。
+    // 思い出しモードは <details> を使わない固定セクションなので対象外。
+    const hasCollapsibleGroups = this.viewMode === 'card' || this.viewMode === 'table' || this.viewMode === 'workflow';
+    document.getElementById('expandBtnGroup').style.display = hasCollapsibleGroups ? 'inline-flex' : 'none';
   }
 
   // ─────────────────────────────────────────────────────────
@@ -799,7 +686,7 @@ export class UI {
   // ─────────────────────────────────────────────────────────
 
   /**
-   * 検索結果をフラットなカードリストで描画します。
+   * 検索結果をタグ別グループで描画します。
    * @private
    */
   _renderSearchResults() {
@@ -827,30 +714,164 @@ export class UI {
       return;
     }
 
-    // カテゴリごとにグループ化して表示
-    const grouped = {};
-    results.forEach(r => {
-      if (!grouped[r.catTitle]) grouped[r.catTitle] = [];
-      grouped[r.catTitle].push(r);
+    this._renderGroupedByTag(results.map(r => r.link));
+  }
+
+  // ─────────────────────────────────────────────────────────
+  // カード表示・テーブル表示: タグ別グループ描画（共通）
+  // ─────────────────────────────────────────────────────────
+
+  /**
+   * カード/テーブル表示共通のヘッダー（何を表示しているかの案内）を描画します。
+   * @private
+   */
+  _renderModeHeader() {
+    const isTable = this.viewMode === 'table';
+    const header = document.createElement('div');
+    header.className = 'table-mode-header';
+    header.innerHTML = `
+      <div class="table-mode-header-text">
+        <span class="icon icon-md" style="color:var(--primary)">${isTable ? 'table_rows' : 'grid_view'}</span>
+        <div>
+          <div class="table-mode-title">${isTable ? 'テーブル表示' : 'カード表示'}</div>
+          <div class="table-mode-hint">タグごとに整理されたリンク集です。タグはリンク編集画面の「タグ」欄で設定でき、1つのリンクを複数のタグに登録すると、それぞれのグループに表示されます。</div>
+        </div>
+      </div>
+    `;
+    if (this.isEditMode) {
+      const addBtn = this._createActionButton(
+        '<span class="icon icon-sm">add_link</span> リンク追加',
+        'action-btn btn-add table-mode-add-btn',
+        () => this.linkDialog.open(),
+        'このビューに新しいリンクを追加'
+      );
+      header.appendChild(addBtn);
+    }
+    this.container.appendChild(header);
+  }
+
+  /**
+   * リンク配列をタグ単位にグループ化します。
+   * @private
+   * @param {Array<object>} links
+   * @returns {{grouped: Map<string, object[]>, untagged: object[]}}
+   */
+  _groupLinksByTag(links) {
+    const grouped = new Map();
+    const untagged = [];
+    links.forEach(link => {
+      // 同じタグを誤って重複入力していても（コピペミス等）、同じグループに
+      // 同じリンクを二重表示しないよう重複を除いておく。
+      const tags = Array.from(new Set(link.tags || []));
+      if (tags.length === 0) {
+        untagged.push(link);
+      } else {
+        tags.forEach(tag => {
+          if (!grouped.has(tag)) grouped.set(tag, []);
+          grouped.get(tag).push(link);
+        });
+      }
+    });
+    return { grouped, untagged };
+  }
+
+  /**
+   * 与えられたリンク一覧をタグ単位に再グループ化して描画します。
+   * 複数のタグを持つリンクは複数のグループに重複して表示されます。
+   * カード/テーブルどちらの見た目にするかは現在の viewMode に従います。
+   * @private
+   * @param {Array<object>} links
+   */
+  _renderGroupedByTag(links) {
+    if (links.length === 0) return;
+
+    const { grouped, untagged } = this._groupLinksByTag(links);
+
+    if (grouped.size === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'table-group-empty';
+      empty.innerHTML = `
+        <span class="icon" style="font-size:2rem;color:var(--text-sub)">sell</span>
+        <p>タグが設定されたリンクがまだありません。<br>リンク編集画面の「タグ」欄で設定すると、ここにグループとして表示されます。</p>
+      `;
+      this.container.appendChild(empty);
+      return;
+    }
+
+    const sortedTags = Array.from(grouped.keys()).sort((a, b) => a.localeCompare(b, 'ja'));
+    sortedTags.forEach(tag => {
+      this._renderTagGroupSection(tag, grouped.get(tag));
     });
 
-    Object.entries(grouped).forEach(([catTitle, items]) => {
-      const section = document.createElement('div');
-      section.className = 'search-result-section';
-      const catLabel = document.createElement('div');
-      catLabel.className = 'search-result-cat-label';
-      catLabel.textContent = catTitle;
-      section.appendChild(catLabel);
+    if (untagged.length > 0) {
+      this._renderTagGroupSection('タグなし', untagged, true);
+    }
+  }
 
-      const grid = document.createElement('div');
-      grid.className = 'link-list';
-      items.forEach(({ link, catId }) => {
-        const el = this._createLinkCard(link, catId, 0, 0);
-        grid.appendChild(el);
-      });
-      section.appendChild(grid);
-      this.container.appendChild(section);
+  /**
+   * タグ別グループの1グループ分（見出し + カード/テーブル行）を描画します。
+   * @private
+   * @param {string} label - グループ見出し（タグ名）。
+   * @param {Array<object>} links - グループに属するリンク。
+   * @param {boolean} [isUntagged=false] - タグなしグループかどうか。
+   */
+  _renderTagGroupSection(label, links, isUntagged = false) {
+    const details = document.createElement('details');
+    details.open = !this.collapsedTagGroups.has(label);
+    details.className = 'tag-group-section';
+    // ユーザーが手動で開閉した状態（クリック操作、または toggleAll() による
+    // 一括開閉のどちらでも 'toggle' イベントは発火する）を記憶しておき、
+    // 次の render() で details.open を勝手に戻さないようにする。
+    details.addEventListener('toggle', () => {
+      if (details.open) {
+        this.collapsedTagGroups.delete(label);
+      } else {
+        this.collapsedTagGroups.add(label);
+      }
     });
+
+    const summary = document.createElement('summary');
+    const summaryContent = document.createElement('div');
+    summaryContent.className = 'summary-content';
+    summaryContent.innerHTML = `
+      <span class="icon icon-sm" style="color:${isUntagged ? 'var(--text-sub)' : 'var(--color-portal)'}">${isUntagged ? 'label_off' : 'sell'}</span>
+      ${this._escapeHtml(label)}
+      <span class="tag-group-count">${links.length}件</span>
+    `;
+
+    const groupActions = document.createElement('div');
+    groupActions.className = 'group-actions';
+    if (!this.isEditMode) {
+      const openBtn = this._createActionButton('<span class="icon icon-sm">open_in_new</span> 一括で開く', 'action-btn btn-open', () => this.openGroupLinks(links));
+      openBtn.title = 'このグループのリンクをすべて開く';
+      groupActions.appendChild(openBtn);
+    } else {
+      const addBtn = this._createActionButton(
+        '<span class="icon icon-sm">add_link</span> このグループに追加',
+        'action-btn btn-add',
+        () => this.linkDialog.open(null, isUntagged ? null : label)
+      );
+      addBtn.title = isUntagged ? '新しいリンクを追加' : `「${label}」タグ付きで新しいリンクを追加`;
+      groupActions.appendChild(addBtn);
+    }
+    summaryContent.appendChild(groupActions);
+    summary.appendChild(summaryContent);
+
+    const chevron = document.createElement('span');
+    chevron.className = 'icon icon-lg summary-chevron';
+    chevron.textContent = 'expand_more';
+    summary.appendChild(chevron);
+    details.appendChild(summary);
+
+    const list = document.createElement('div');
+    list.className = this.viewMode === 'table' ? 'link-list link-list-table' : 'link-list';
+    links.forEach(link => {
+      const el = this.viewMode === 'table' ? this._createTableRow(link) : this._createLinkCard(link);
+      list.appendChild(el);
+    });
+    details.appendChild(list);
+
+    this.container.appendChild(details);
   }
 
   // ─────────────────────────────────────────────────────────
@@ -904,15 +925,14 @@ export class UI {
       'lightbulb',
       '#10b981',
       rareLinks.map(r => r.link),
-      () => 'rare',
-      rareLinks.map(r => r.catTitle)
+      () => 'rare'
     );
   }
 
   /**
    * @private - 思い出しモードのセクションを描画します。
    */
-  _renderMemorySection(title, icon, color, links, subLabelFn, catTitles = []) {
+  _renderMemorySection(title, icon, color, links, subLabelFn) {
     const section = document.createElement('div');
     section.className = 'memory-section';
 
@@ -935,11 +955,10 @@ export class UI {
     } else {
       const grid = document.createElement('div');
       grid.className = 'memory-card-grid';
-      links.forEach((link, i) => {
+      links.forEach((link) => {
         if (!link) return;
-        const catTitle = catTitles[i] || '';
         const subLabel = subLabelFn(link);
-        const card = this._createMemoryCard(link, subLabel, catTitle);
+        const card = this._createMemoryCard(link, subLabel);
         grid.appendChild(card);
       });
       section.appendChild(grid);
@@ -961,7 +980,7 @@ export class UI {
   /**
    * @private - 思い出しモード用のコンパクトカードを作成します。
    */
-  _createMemoryCard(link, subLabel, catTitle) {
+  _createMemoryCard(link, subLabel) {
     const card = document.createElement('a');
     card.className = 'memory-card';
     card.href = link.url;
@@ -985,12 +1004,6 @@ export class UI {
 
     const meta = document.createElement('div');
     meta.className = 'memory-card-meta';
-    if (catTitle) {
-      const catEl = document.createElement('span');
-      catEl.className = 'memory-card-cat';
-      catEl.textContent = catTitle;
-      meta.appendChild(catEl);
-    }
     const subEl = document.createElement('span');
     subEl.className = 'memory-card-sub';
     subEl.textContent = subLabel;
@@ -1050,8 +1063,17 @@ export class UI {
     pdfBtn.className = 'secondary-btn';
     pdfBtn.innerHTML = '<span class="icon icon-sm">picture_as_pdf</span> PDF出力';
     pdfBtn.style.cssText = 'font-size:0.85rem;';
-    pdfBtn.addEventListener('click', () => this._exportWorkflowAsPdf());
+    pdfBtn.addEventListener('click', () => this._openExportSelectDialog('pdf'));
     headerBtns.appendChild(pdfBtn);
+
+    const htmlBtn = document.createElement('button');
+    htmlBtn.type = 'button';
+    htmlBtn.className = 'secondary-btn';
+    htmlBtn.innerHTML = '<span class="icon icon-sm">html</span> HTML出力';
+    htmlBtn.title = 'サーバー不要・コピー/リンクボタン付きの単体HTMLとして書き出します';
+    htmlBtn.style.cssText = 'font-size:0.85rem;';
+    htmlBtn.addEventListener('click', () => this._openExportSelectDialog('html'));
+    headerBtns.appendChild(htmlBtn);
 
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
@@ -1084,10 +1106,10 @@ export class UI {
       return;
     }
 
-    const freqOrder = { rare: 0, monthly: 1, weekly: 2, daily: 3 };
-    const sorted = [...workflows].sort((a, b) => (freqOrder[a.freq] ?? 9) - (freqOrder[b.freq] ?? 9));
-
-    sorted.forEach(wf => {
+    // 並び順は WorkflowManager.getWorkflows() 側でタイトルの五十音順に統一済み。
+    // ここで独自に頻度順などへ並べ替えないことで、フロー管理ダイアログや
+    // 出力先選択ダイアログと表示順が食い違わないようにする。
+    workflows.forEach(wf => {
       const card = document.createElement('details');
       card.className = 'workflow-card';
       card.open = true;
@@ -1100,12 +1122,10 @@ export class UI {
       summary.innerHTML = `
         <div class="workflow-card-title">
           <span class="icon icon-sm" style="color:var(--primary)">account_tree</span>
-          ${this._escapeHtml(wf.title)}
+          <span class="workflow-card-title-text">${this._escapeHtml(wf.title)}</span>
           <span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel}</span>
-        </div>
-        <div class="workflow-card-meta">
-          ${wf.description ? `<span style="color:var(--text-sub);font-size:0.8rem">${this._escapeHtml(wf.description)}</span>` : ''}
-          ${tags ? `<div class="wf-tags-row" style="margin-top:4px">${tags}</div>` : ''}
+          ${wf.description ? `<span class="workflow-card-desc">${this._escapeHtml(wf.description)}</span>` : ''}
+          ${tags ? `<div class="wf-tags-row">${tags}</div>` : ''}
         </div>
         <span class="icon icon-lg summary-chevron">expand_more</span>
       `;
@@ -1192,9 +1212,11 @@ export class UI {
           }
           titleRow.appendChild(stepTitle);
 
-          // メモ展開ボタン（メモあり or 編集モード）
-          if (step.memo || this.isEditMode) {
-            const expandBtn = document.createElement('button');
+          // メモ展開ボタン（メモ・プロンプトあり or 編集モード）
+          let expandBtn = null;
+          const hasVisiblePrompt = step.prompt && (step.promptType || 'prompt') !== 'none';
+          if (step.memo || hasVisiblePrompt || this.isEditMode) {
+            expandBtn = document.createElement('button');
             expandBtn.type = 'button';
             expandBtn.className = 'workflow-step-expand-btn';
             expandBtn.innerHTML = '<span class="icon icon-xs">expand_more</span>';
@@ -1206,7 +1228,10 @@ export class UI {
             });
             titleRow.appendChild(expandBtn);
 
-            if (this.isEditMode) {
+            // 編集モードでも、既にメモ/プロンプトがあるステップだけ自動展開する。
+            // 空のステップまで一律展開すると、1行だけの単純な手順でも
+            // 空のメモ入力欄・2行のプロンプト欄が常に表示されて縦に間延びしてしまうため。
+            if (this.isEditMode && (step.memo || step.prompt)) {
               stepRow.classList.add('wf-expanded');
               expandBtn.querySelector('.icon').textContent = 'expand_less';
             }
@@ -1228,11 +1253,59 @@ export class UI {
               this.workflowManager.updateStep(portalId, wf.id, stepIndex, { memo: memoInput.value });
             });
             detailsPanel.appendChild(memoInput);
-          } else if (step.memo) {
-            const memo = document.createElement('div');
-            memo.className = 'workflow-step-memo';
-            memo.innerHTML = `<span class="icon icon-xs">lightbulb</span> ${this._escapeHtml(step.memo)}`;
-            detailsPanel.appendChild(memo);
+
+            const promptInput = document.createElement('textarea');
+            promptInput.className = 'workflow-step-prompt-input';
+            promptInput.rows = 2;
+            promptInput.placeholder = 'AIプロンプト（省略可・出力時にコピーボタンが付きます）';
+            promptInput.value = step.prompt || '';
+            promptInput.addEventListener('blur', () => {
+              this.workflowManager.updateStep(portalId, wf.id, stepIndex, { prompt: promptInput.value });
+            });
+            detailsPanel.appendChild(promptInput);
+          } else {
+            if (step.memo) {
+              const memo = document.createElement('div');
+              memo.className = 'workflow-step-memo';
+              memo.innerHTML = `<span class="icon icon-xs">lightbulb</span> ${this._escapeHtml(step.memo)}`;
+              detailsPanel.appendChild(memo);
+            }
+            if (hasVisiblePrompt) {
+              const typeMeta = this._promptTypeMeta(step.promptType);
+              const promptBlock = document.createElement('div');
+              promptBlock.className = `workflow-step-prompt ${typeMeta.cls}`;
+              promptBlock.innerHTML = `
+                <div class="workflow-step-prompt-header">
+                  <span class="icon icon-xs">${typeMeta.icon}</span> ${typeMeta.label}
+                  <button type="button" class="wf-copy-btn" title="${typeMeta.label}をコピー">
+                    <span class="icon icon-xs">content_copy</span> コピー
+                  </button>
+                </div>
+                <pre class="workflow-step-prompt-text wf-clamp"></pre>
+                <button type="button" class="wf-prompt-toggle-btn" style="display:none;">▼ 続きを見る</button>
+              `;
+              const promptTextEl = promptBlock.querySelector('.workflow-step-prompt-text');
+              promptTextEl.textContent = step.prompt;
+              const copyBtn = promptBlock.querySelector('.wf-copy-btn');
+              copyBtn.addEventListener('click', () => this._copyToClipboard(step.prompt, copyBtn));
+              const clampToggleBtn = promptBlock.querySelector('.wf-prompt-toggle-btn');
+              clampToggleBtn.addEventListener('click', () => {
+                const stillClamped = promptTextEl.classList.toggle('wf-clamp');
+                clampToggleBtn.textContent = stillClamped ? '▼ 続きを見る' : '▲ 折りたたむ';
+              });
+              // 折りたたみパネルは初期状態で非表示のため、展開された時点で長さを判定する
+              if (expandBtn) {
+                expandBtn.addEventListener('click', () => {
+                  if (stepRow.classList.contains('wf-expanded') && promptTextEl.scrollHeight > promptTextEl.clientHeight + 1) {
+                    clampToggleBtn.style.display = 'inline-block';
+                  }
+                });
+              }
+              if (stepRow.classList.contains('wf-expanded') && promptTextEl.scrollHeight > promptTextEl.clientHeight + 1) {
+                clampToggleBtn.style.display = 'inline-block';
+              }
+              detailsPanel.appendChild(promptBlock);
+            }
           }
 
           content.appendChild(detailsPanel);
@@ -1268,14 +1341,73 @@ export class UI {
   }
 
   /**
+   * PDF/HTML出力の対象とする作業フローを選択するダイアログを開きます。
+   * 「どの作業フローを出力するか」を指定しないまま全件出力すると
+   * 配布資料としての意味が薄くなるため、出力前に必ず対象を選ばせます。
+   * @private
+   * @param {'pdf'|'html'} format
+   */
+  _openExportSelectDialog(format) {
+    const portalId = this.configManager.getActivePortalId();
+    const workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
+
+    if (workflows.length === 0) {
+      alert('エクスポートするワークフローがありません。');
+      return;
+    }
+
+    const dialog = document.getElementById('wfExportDialog');
+    const content = document.getElementById('wfExportDialogContent');
+    const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
+    const formatLabel = format === 'pdf' ? 'PDF' : 'HTML';
+
+    const itemsHtml = workflows.map((wf, i) => `
+      <label class="wf-export-item">
+        <input type="radio" name="wfExportRadio" class="wf-export-check" value="${wf.id}" ${i === 0 ? 'checked' : ''}>
+        <span class="wf-export-item-title">${this._escapeHtml(wf.title)}</span>
+        <span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel[wf.freq] || ''}</span>
+      </label>
+    `).join('');
+
+    content.innerHTML = `
+      <h3 style="margin:0 0 4px;">${formatLabel}出力する作業フローを選択</h3>
+      <p style="margin:0 0 12px;font-size:0.82rem;color:var(--text-sub);">出力できるのは1つの作業フローのみです。</p>
+      <div class="wf-export-list">${itemsHtml}</div>
+      <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
+        <button type="button" id="wfExportCancelBtn" class="secondary-btn">キャンセル</button>
+        <button type="button" id="wfExportConfirmBtn" class="primary-btn">${formatLabel}を出力</button>
+      </div>
+    `;
+
+    document.getElementById('wfExportCancelBtn').addEventListener('click', () => dialog.close());
+    document.getElementById('wfExportConfirmBtn').addEventListener('click', () => {
+      const checked = content.querySelector('.wf-export-check:checked');
+      if (!checked) {
+        alert('出力する作業フローを1つ選択してください。');
+        return;
+      }
+      dialog.close();
+      if (format === 'pdf') {
+        this._exportWorkflowAsPdf([checked.value]);
+      } else {
+        this._exportWorkflowAsHtml([checked.value]);
+      }
+    });
+
+    dialog.showModal();
+  }
+
+  /**
    * ワークフロービューの内容をPDFエクスポート用HTMLとして新規ウィンドウで開きます。
    * ブラウザの印刷機能でPDFとして保存可能です。
    * @private
+   * @param {string[]} [selectedIds] - 出力対象のワークフローID。省略時は全件。
    */
-  _exportWorkflowAsPdf() {
+  _exportWorkflowAsPdf(selectedIds) {
     const portalId = this.configManager.getActivePortalId();
     const portal = this.configManager.getActivePortal();
-    const workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
+    let workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
+    if (selectedIds) workflows = workflows.filter(w => selectedIds.includes(w.id));
 
     if (workflows.length === 0) {
       alert('エクスポートするワークフローがありません。');
@@ -1290,6 +1422,8 @@ export class UI {
       const tags = (wf.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
 
       const stepsHtml = wf.steps.map(step => {
+        // 手順書としては「手順名」が主役なので、リンクは資料名を控えめに示す程度に留める。
+        // ローカルパスも生のパスをそのまま前面に出さず、資料名を主表示・パスは小さい補足にする。
         let linkHtml = '';
         if (step.linkId) {
           const found = this.searchManager?.findLinkById(step.linkId);
@@ -1297,9 +1431,9 @@ export class UI {
             const isLocal = found.link.url?.startsWith('opendir:');
             if (isLocal) {
               const path = found.link.url.replace('opendir:', '');
-              linkHtml = `<span class="link-local">📁 ${esc(path)}</span>`;
+              linkHtml = `<div class="link-name">📁 ${esc(found.link.title)}</div><div class="link-path">${esc(path)}</div>`;
             } else {
-              linkHtml = `<a href="${esc(found.link.url)}" class="link-url">${esc(found.link.title)}</a>`;
+              linkHtml = `<div class="link-name">🔗 <a href="${esc(found.link.url)}" class="link-url">${esc(found.link.title)}</a></div>`;
             }
           }
         }
@@ -1308,8 +1442,8 @@ export class UI {
           <td class="step-body">
             <div class="step-title">${esc(step.title)}</div>
             ${step.memo ? `<div class="step-memo">${esc(step.memo)}</div>` : ''}
-            ${linkHtml ? `<div class="step-link">${linkHtml}</div>` : ''}
           </td>
+          <td class="step-resource">${linkHtml}</td>
         </tr>`;
       }).join('');
 
@@ -1335,27 +1469,31 @@ export class UI {
   <title>${esc(title)} - 作業フロー</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; font-size: 11pt; color: #1e293b; background: #fff; padding: 20mm 15mm; }
+    body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; font-size: 11pt; color: #1B2421; background: #fff; padding: 20mm 15mm; }
     h1 { font-size: 18pt; margin-bottom: 4px; }
-    .subtitle { font-size: 10pt; color: #64748b; margin-bottom: 6px; }
-    .export-date { font-size: 9pt; color: #94a3b8; margin-bottom: 24px; }
-    .workflow { margin-bottom: 24px; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
-    .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    .subtitle { font-size: 10pt; color: #57645E; margin-bottom: 6px; }
+    .export-date { font-size: 9pt; color: #8B968F; margin-bottom: 24px; }
+    .workflow { margin-bottom: 24px; border: 1px solid #DCE3DF; border-radius: 8px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
+    .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #EAF0EE; border-bottom: 1px solid #DCE3DF; }
     .wf-header h2 { font-size: 13pt; flex: 1; }
     .freq-badge { font-size: 8pt; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #d1fae5; color: #059669; white-space: nowrap; }
-    .wf-desc { padding: 6px 14px; font-size: 10pt; color: #475569; border-bottom: 1px solid #f1f5f9; }
-    .wf-tags { padding: 4px 14px 6px; border-bottom: 1px solid #f1f5f9; }
-    .tag { display: inline-block; font-size: 8.5pt; padding: 1px 6px; border-radius: 8px; background: #e2e8f0; color: #475569; margin-right: 4px; }
-    .steps-table { width: 100%; border-collapse: collapse; }
-    .step-num { width: 36px; text-align: center; font-weight: 700; font-size: 10pt; color: #fff; background: #6366f1; vertical-align: top; padding: 10px 4px; }
-    .step-body { padding: 10px 14px; vertical-align: top; border-bottom: 1px solid #f1f5f9; }
+    .wf-desc { padding: 6px 14px; font-size: 10pt; color: #57645E; border-bottom: 1px solid #E8EDEA; }
+    .wf-tags { padding: 4px 14px 6px; border-bottom: 1px solid #E8EDEA; }
+    .tag { display: inline-block; font-size: 8.5pt; padding: 1px 6px; border-radius: 8px; background: #DCE3DF; color: #57645E; margin-right: 4px; }
+    .steps-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    .step-num { width: 36px; text-align: center; font-weight: 700; font-size: 10pt; color: #fff; background: #1F5F4A; vertical-align: top; padding: 10px 4px; }
+    .step-body { padding: 10px 14px; vertical-align: top; border-bottom: 1px solid #E8EDEA; }
+    /* 手順名・説明は左詰めの本文欄、資料（リンク）は右側の専用列にして
+       本文と資料が同じ開始位置に並んで見えないようにする。資料は行の下端に揃える。 */
+    .step-resource { width: 40%; padding: 10px 14px; vertical-align: bottom; border-bottom: 1px solid #E8EDEA; text-align: left; }
     .steps-table tr:last-child .step-body,
-    .steps-table tr:last-child .step-num { border-bottom: none; }
+    .steps-table tr:last-child .step-num,
+    .steps-table tr:last-child .step-resource { border-bottom: none; }
     .step-title { font-weight: 600; font-size: 11pt; }
-    .step-memo { font-size: 9.5pt; color: #64748b; margin-top: 3px; }
-    .step-link { margin-top: 5px; }
-    .link-url { color: #2563eb; text-decoration: underline; font-size: 10pt; }
-    .link-local { font-size: 9.5pt; color: #92400e; background: #fef3c7; padding: 2px 6px; border-radius: 4px; font-family: monospace; }
+    .step-memo { font-size: 10pt; font-weight: 400; color: #1B2421; margin-top: 3px; }
+    .link-name { font-size: 9.5pt; color: #57645E; }
+    .link-name .link-url { color: #57645E; text-decoration: none; }
+    .link-path { font-size: 8pt; color: #9AA69F; font-family: monospace; margin-top: 1px; }
     @media print {
       body { padding: 0; }
       @page { margin: 15mm; size: A4; }
@@ -1379,6 +1517,415 @@ export class UI {
   }
 
   /**
+   * ワークフローをサーバー不要・単体で動作するHTMLファイルとして書き出します。
+   * プロンプトのコピー、リンクへの移動、内容の直接編集＋再保存に対応します。
+   * @private
+   * @param {string[]} [selectedIds] - 出力対象のワークフローID。省略時は全件。
+   */
+  _exportWorkflowAsHtml(selectedIds) {
+    const portalId = this.configManager.getActivePortalId();
+    const portal = this.configManager.getActivePortal();
+    let workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
+    if (selectedIds) workflows = workflows.filter(w => selectedIds.includes(w.id));
+
+    if (workflows.length === 0) {
+      alert('エクスポートするワークフローがありません。');
+      return;
+    }
+
+    const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
+    const esc = (s) => this._escapeHtml(s);
+
+    const workflowsHtml = workflows.map(wf => {
+      const freq = freqLabel[wf.freq] || '';
+      const tags = (wf.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+
+      const stepsHtml = wf.steps.map(step => {
+        let linkHtml = '';
+        if (step.linkId) {
+          const found = this.searchManager?.findLinkById(step.linkId);
+          if (found && found.link.url) {
+            const isLocal = found.link.url.startsWith('opendir:');
+            // ローカルパスは opendir: を付けたままコピーすると、PowerShell等の
+            // ターミナルに貼り付けた際にプロトコルURIとして解釈されず構文エラーになる
+            // （かっこ等を含むフォルダ名だと特に顕著）。コピー・表示は生パスにし、
+            // 「開く」を押したときだけ opendir: を付けてプロトコルハンドラに渡す。
+            const displayValue = isLocal ? found.link.url.replace('opendir:', '') : found.link.url;
+            // 手順書としては「手順名」が主役なので、資料名を控えめなラベルとして主表示にし、
+            // 生のパス／URLとコピー・開くボタンはその下に一段小さく添える。
+            linkHtml = `
+              <div class="link-block${isLocal ? ' link-block-local' : ''}">
+                <div class="link-name"><span class="icon-txt">${isLocal ? '📁' : '🔗'}</span> ${esc(found.link.title)}</div>
+                <div class="link-controls">
+                  <input type="text" class="link-input" value="${esc(displayValue)}" spellcheck="false" readonly ${isLocal ? 'data-scheme="opendir:"' : ''}>
+                  <button type="button" class="mini-btn open-btn" onclick="wfOpenLink(this)">開く</button>
+                  <button type="button" class="mini-btn copy-btn" onclick="wfCopyLink(this)">コピー</button>
+                </div>
+              </div>`;
+          }
+        }
+        const hasVisiblePrompt = step.prompt && (step.promptType || 'prompt') !== 'none';
+        let promptHtml = '';
+        if (hasVisiblePrompt) {
+          const ptMeta = {
+            prompt: { icon: '🤖', label: 'プロンプト', cls: '' },
+            code: { icon: '💻', label: 'コード', cls: 'pt-code' },
+            text: { icon: '📝', label: 'テキスト', cls: 'pt-text' }
+          }[step.promptType] || { icon: '🤖', label: 'プロンプト', cls: '' };
+          // 折りたたみ/展開ボタンをテキスト末尾ではなくヘッダーに置く。
+          // プロンプトが長いと、末尾のボタンを押すためだけに毎回一番下まで
+          // スクロールする必要があり、閉じる時も同様に不便だったため。
+          promptHtml = `
+              <div class="prompt-block ${ptMeta.cls}">
+                <div class="prompt-header">
+                  <span>${ptMeta.icon} ${ptMeta.label}</span>
+                  <div class="prompt-header-actions">
+                    <button type="button" class="mini-btn prompt-toggle-btn" onclick="wfToggleClamp(this)" style="display:none;">▼ 続きを見る</button>
+                    <button type="button" class="mini-btn copy-btn" onclick="wfCopyPrompt(this)">📋 コピー</button>
+                  </div>
+                </div>
+                <div class="prompt-text wf-clamp" data-editable contenteditable="false" data-placeholder="${ptMeta.label}を入力/貼り付け...">${esc(step.prompt || '')}</div>
+              </div>`;
+        }
+        // 本文（タイトル・説明・プロンプト）は左詰めの列、資料（リンク）は右側の
+        // 専用列にして、本文の開始位置と資料が同列に見えないようにする。
+        // 資料は行の下端に揃え、複数ステップを見たときに資料だけが縦に
+        // 並んだ落ち着いた一覧のように見えるようにする。
+        return `<div class="step">
+          <div class="step-num">${step.step}</div>
+          <div class="step-body">
+            <div class="step-title" data-editable contenteditable="false">${esc(step.title)}</div>
+            <div class="step-memo" data-editable contenteditable="false" data-placeholder="補足メモ">${esc(step.memo || '')}</div>
+            ${promptHtml}
+          </div>
+          ${linkHtml ? `<div class="step-resource">${linkHtml}</div>` : ''}
+        </div>`;
+      }).join('');
+
+      return `<div class="workflow">
+        <div class="wf-header">
+          <h2 data-editable contenteditable="false">${esc(wf.title)}</h2>
+          ${freq ? `<span class="freq-badge">${freq}</span>` : ''}
+        </div>
+        ${wf.description ? `<p class="wf-desc" data-editable contenteditable="false">${esc(wf.description)}</p>` : ''}
+        ${tags ? `<div class="wf-tags">${tags}</div>` : ''}
+        <div class="steps">${stepsHtml}</div>
+      </div>`;
+    }).join('');
+
+    const title = portal?.title || '作業フロー';
+    const subtitle = portal?.subtitle || '';
+    const today = new Date().toLocaleDateString('ja-JP');
+    const baseFileName = `${title}_workflow_${new Date().toISOString().slice(0, 10)}`;
+    const baseFileNameJs = JSON.stringify(baseFileName).replace(/<\/script/gi, '<\\/script');
+
+    const html = `<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>${esc(title)} - 作業フロー</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; font-size: 15px; color: #1B2421; background: #F3F5F3; padding: 24px 16px 64px; line-height: 1.45; }
+  .page { max-width: 760px; margin: 0 auto; }
+  .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
+  h1 { font-size: 1.5rem; margin-bottom: 4px; }
+  .subtitle { font-size: 0.9rem; color: #57645E; margin-bottom: 4px; }
+  .export-date, .export-note { font-size: 0.78rem; color: #8B968F; }
+  .edit-toggle { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding-top: 2px; }
+  .edit-toggle-label { font-size: 0.8rem; font-weight: 600; color: #57645E; white-space: nowrap; }
+  .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch .slider { position: absolute; inset: 0; background: #C7D0CB; border-radius: 22px; cursor: pointer; transition: 0.15s; }
+  .switch .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.15s; }
+  .switch input:checked + .slider { background: #dc2626; }
+  .switch input:checked + .slider:before { transform: translateX(18px); }
+  .status-bar { display: inline-flex; align-items: center; gap: 5px; margin: 8px 0 12px; padding: 3px 11px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; cursor: help; }
+  .status-bar.locked { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+  .status-bar.editing { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+  .status-hint { font-weight: 400; opacity: 0.75; }
+  .workflow { margin-top: 14px; background: #fff; border: 1px solid #DCE3DF; border-radius: 10px; overflow: hidden; }
+  .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: #EAF0EE; border-bottom: 1px solid #DCE3DF; }
+  .wf-header h2 { font-size: 1.1rem; flex: 1; outline: none; }
+  .freq-badge { font-size: 0.72rem; font-weight: 600; padding: 2px 10px; border-radius: 10px; background: #d1fae5; color: #059669; white-space: nowrap; }
+  .wf-desc { padding: 6px 18px; font-size: 0.85rem; color: #57645E; border-bottom: 1px solid #E8EDEA; outline: none; }
+  .wf-tags { padding: 4px 18px 6px; border-bottom: 1px solid #E8EDEA; }
+  .tag { display: inline-block; font-size: 0.75rem; padding: 2px 8px; border-radius: 8px; background: #DCE3DF; color: #57645E; margin-right: 4px; }
+  .steps { }
+  /* 本文（番号・タイトル・説明）は左詰めのまま上揃え、資料（.step-resource）だけ
+     行の右側・下端に寄せる。本文の開始位置と資料が同じ列に並んで見えないようにし、
+     資料だけが縦に連なると落ち着いた一覧のように見える。 */
+  .step { display: flex; align-items: flex-start; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #E8EDEA; }
+  .step:last-child { border-bottom: none; }
+  .step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #1F5F4A; color: #fff; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .step-resource { flex: 0 0 auto; align-self: flex-end; width: 42%; min-width: 220px; max-width: 320px; }
+  .step-body { flex: 1; min-width: 0; }
+  .step-title { font-weight: 600; font-size: 1rem; outline: none; padding: 1px 0; }
+  .step-title[contenteditable]:focus, .step-memo[contenteditable]:focus, .prompt-text[contenteditable]:focus { background: #E7F1EC; border-radius: 4px; }
+  .step-memo { font-size: 0.9rem; font-weight: 400; color: #1B2421; margin-top: 1px; outline: none; padding: 1px 0; min-height: 1.2em; }
+  /* メモが空のときは、PDF出力と同じく枠ごと場所を取らないようにする。
+     「クリックして追加」のプレースホルダーは、実際に編集できる編集モード中だけ出す。 */
+  .step-memo:empty { min-height: 0; margin-top: 0; padding: 0; }
+  body.wf-edit-mode .step-memo:empty { min-height: 1.2em; margin-top: 1px; padding: 1px 0; }
+  body.wf-edit-mode .step-memo:empty:before { content: attr(data-placeholder); color: #AEB8B2; }
+  .prompt-block { margin-top: 6px; border: 1px dashed #9EC6B4; border-radius: 8px; overflow: hidden; background: #E7F1EC; }
+  .prompt-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 10px; font-size: 0.75rem; font-weight: 600; color: #164A38; background: #D7EAE1; }
+  .prompt-header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .prompt-text { padding: 6px 10px; font-family: 'Consolas', 'Menlo', monospace; font-size: 0.82rem; white-space: pre-wrap; outline: none; color: #1C3226; min-height: 1.4em; }
+  .prompt-text:empty:before { content: attr(data-placeholder); color: #9EC6B4; }
+  .prompt-text.wf-clamp { display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  /* 折りたたみ/展開ボタンはヘッダー内の他ボタンと同じ mini-btn の見た目に揃える
+     （プロンプトの色テーマに合わせた着色はせず、コピーボタンと同じ中立トーンにする）。 */
+  .prompt-block.pt-code { border-color: #94a3b8; background: #DCE3DF; }
+  .prompt-block.pt-code .prompt-header { color: #334155; background: #CBD5D1; }
+  .prompt-block.pt-code .prompt-text { color: #1B2421; }
+  .prompt-block.pt-text { border-color: #6ee7b7; background: #d1fae5; }
+  .prompt-block.pt-text .prompt-header { color: #047857; background: #a7f3d0; }
+  .prompt-block.pt-text .prompt-text { color: #064e3b; font-family: inherit; }
+  /* 資料名（link-name）を主表示にし、生のパス／URL（link-controls）は
+     コピー・開くのために残しつつ、一段小さく控えめな見た目にする。 */
+  .link-block { margin-top: 8px; }
+  .link-name { font-size: 0.82rem; font-weight: 500; color: #57645E; margin-bottom: 4px; display: flex; align-items: center; gap: 5px; }
+  .link-controls { display: flex; align-items: center; gap: 6px; }
+  .icon-txt { font-size: 0.9rem; flex-shrink: 0; }
+  .link-input { flex: 1; min-width: 0; font-size: 0.76rem; padding: 4px 7px; border: 1px solid #E8EDEA; border-radius: 5px; font-family: 'Consolas', 'Menlo', monospace; }
+  .link-input:read-only { background: #F3F5F3; color: #8B968F; }
+  .mini-btn { flex-shrink: 0; font-size: 0.72rem; padding: 4px 9px; border-radius: 6px; border: 1px solid #DCE3DF; background: #fff; color: #57645E; cursor: pointer; }
+  .mini-btn:hover { background: #E7F1EC; color: #1F5F4A; }
+  .mini-btn.copied { background: #1F5F4A; color: #fff; border-color: #1F5F4A; }
+  .footer-bar { max-width: 760px; margin: 24px auto 0; display: flex; justify-content: flex-end; }
+  #saveHtmlBtn { font-size: 0.85rem; padding: 9px 16px; border-radius: 8px; border: none; background: #1F5F4A; color: #fff; cursor: pointer; }
+  #saveHtmlBtn:hover { background: #164A38; }
+  #saveHtmlBtn:disabled { background: #C7D0CB; cursor: not-allowed; }
+  .origin-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem; font-weight: 700; padding: 2px 9px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
+  .origin-badge.origin-original { background: #dbeafe; color: #1e40af; }
+  .origin-badge.origin-copy { background: #fef3c7; color: #92400e; }
+  [data-editable]:not([contenteditable="true"]) { cursor: default; }
+  body.wf-edit-mode [data-editable][contenteditable="true"] { cursor: text; }
+  body.wf-edit-mode [data-editable][contenteditable="true"]:hover { background: #EAF0EE; border-radius: 4px; }
+  @media (max-width: 600px) {
+    .step { flex-wrap: wrap; }
+    .step-resource { align-self: stretch; width: 100%; max-width: none; margin-left: 38px; }
+    .link-controls { flex-wrap: wrap; }
+    .link-input { flex-basis: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1 data-editable contenteditable="false">${esc(title)}</h1>
+      ${subtitle ? `<div class="subtitle" data-editable contenteditable="false">${esc(subtitle)}</div>` : ''}
+      <div class="export-date">出力日: ${today} <span id="wfOriginBadge" class="origin-badge origin-original">📄 原本</span></div>
+    </div>
+    <label class="edit-toggle">
+      <span class="edit-toggle-label">編集する</span>
+      <span class="switch"><input type="checkbox" id="wfEditToggle"><span class="slider"></span></span>
+    </label>
+  </div>
+  <div class="status-bar locked" id="wfStatusBar" title="タイトル・メモ・プロンプト・リンク先のURLやパスは、右上の「編集する」をONにすると直接書き換えられます。書き換えた内容は下部の「保存」ボタンで新しいHTMLファイルとして書き出せます（このファイル自体は上書きされません）。">
+    <span id="wfStatusIcon">🔒</span><span id="wfStatusText">編集ロック中</span><span class="status-hint">（詳細はここにカーソル）</span>
+  </div>
+  ${workflowsHtml}
+</div>
+<div class="footer-bar">
+  <button type="button" id="saveHtmlBtn" onclick="wfSaveAsHtml()" disabled title="「編集する」をONにすると使えます">💾 この内容をHTMLとして保存</button>
+</div>
+<script>
+var wfBaseFileName = ${baseFileNameJs};
+function wfShowFeedback(btn, ok) {
+  var orig = btn.textContent;
+  btn.textContent = ok ? '✓ コピー済' : '× 失敗';
+  btn.classList.toggle('copied', ok);
+  setTimeout(function () { btn.textContent = orig; btn.classList.remove('copied'); }, 1400);
+}
+function wfCopyText(btn, text) {
+  function done(ok) { wfShowFeedback(btn, ok); }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(function () { done(true); }, function () { wfFallbackCopy(text, done); });
+  } else {
+    wfFallbackCopy(text, done);
+  }
+}
+function wfFallbackCopy(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  done(ok);
+}
+function wfCopyPrompt(btn) {
+  var block = btn.closest('.prompt-block');
+  var text = block.querySelector('.prompt-text').innerText;
+  wfCopyText(btn, text);
+}
+function wfCopyLink(btn) {
+  var input = btn.parentElement.querySelector('.link-input');
+  wfCopyText(btn, input.value);
+}
+function wfOpenLink(btn) {
+  var input = btn.parentElement.querySelector('.link-input');
+  if (!input.value) return;
+  var scheme = input.dataset.scheme || '';
+  window.open(scheme + input.value, '_blank');
+}
+function wfUpdateClampToggle(text, btn) {
+  if (!text || !btn) return;
+  btn.textContent = '▼ 続きを見る';
+  btn.style.display = (text.scrollHeight > text.clientHeight + 1) ? 'inline-block' : 'none';
+}
+function wfToggleClamp(btn) {
+  var text = btn.closest('.prompt-block').querySelector('.prompt-text');
+  var stillClamped = text.classList.toggle('wf-clamp');
+  btn.textContent = stillClamped ? '▼ 続きを見る' : '▲ 折りたたむ';
+}
+function wfInitClamps() {
+  document.querySelectorAll('.prompt-block').forEach(function (block) {
+    wfUpdateClampToggle(block.querySelector('.prompt-text'), block.querySelector('.prompt-toggle-btn'));
+  });
+}
+function wfSetEditMode(on) {
+  document.querySelectorAll('[data-editable]').forEach(function (el) {
+    el.setAttribute('contenteditable', on ? 'true' : 'false');
+  });
+  document.querySelectorAll('.link-input').forEach(function (el) {
+    el.readOnly = !on;
+  });
+  document.body.classList.toggle('wf-edit-mode', on);
+  var saveBtn = document.getElementById('saveHtmlBtn');
+  if (saveBtn) saveBtn.disabled = !on;
+  var statusBar = document.getElementById('wfStatusBar');
+  if (statusBar) {
+    statusBar.classList.toggle('locked', !on);
+    statusBar.classList.toggle('editing', on);
+    document.getElementById('wfStatusIcon').textContent = on ? '✏️' : '🔒';
+    document.getElementById('wfStatusText').textContent = on ? '編集モード中' : '編集ロック中';
+  }
+  // 編集中はプロンプト全文が見えるよう展開し、ロックに戻したら折りたたみ状態を再計算する
+  document.querySelectorAll('.prompt-block').forEach(function (block) {
+    var text = block.querySelector('.prompt-text');
+    var btn = block.querySelector('.prompt-toggle-btn');
+    if (!text) return;
+    if (on) {
+      text.classList.remove('wf-clamp');
+      if (btn) btn.style.display = 'none';
+    } else {
+      text.classList.add('wf-clamp');
+      wfUpdateClampToggle(text, btn);
+    }
+  });
+}
+wfInitClamps();
+document.getElementById('wfEditToggle').addEventListener('change', function (e) {
+  wfSetEditMode(e.target.checked);
+});
+function wfSaveAsHtml() {
+  // 配布事故防止のため、保存する内容は必ず「編集不可」状態に戻してから書き出す
+  var toggle = document.getElementById('wfEditToggle');
+  if (toggle) toggle.checked = false;
+  wfSetEditMode(false);
+  // 原本と複製を一目で見分けられるようバッジを差し替える
+  var badge = document.getElementById('wfOriginBadge');
+  if (badge) {
+    badge.textContent = '📄 複製';
+    badge.classList.remove('origin-original');
+    badge.classList.add('origin-copy');
+  }
+  document.querySelectorAll('.link-input').forEach(function (el) {
+    el.setAttribute('value', el.value);
+    el.setAttribute('readonly', 'readonly');
+  });
+  var html = '<!DOCTYPE html>\\n' + document.documentElement.outerHTML;
+  var blob = new Blob([html], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  var now = new Date();
+  var hh = String(now.getHours()).padStart(2, '0');
+  var mm = String(now.getMinutes()).padStart(2, '0');
+  a.download = wfBaseFileName + '_複製_' + hh + mm + '.html';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+<\/script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${baseFileName}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * step.promptType に応じたアイコン・ラベル・修飾クラスを返します。
+   * @private
+   * @param {string} [type] - 'prompt'|'code'|'text'（省略時は'prompt'扱い）
+   */
+  _promptTypeMeta(type) {
+    const map = {
+      prompt: { icon: 'smart_toy', label: 'プロンプト', cls: '' },
+      code: { icon: 'code', label: 'コード', cls: 'wf-pt-code' },
+      text: { icon: 'notes', label: 'テキスト', cls: 'wf-pt-text' }
+    };
+    return map[type] || map.prompt;
+  }
+
+  /**
+   * プロンプト等の文字列をクリップボードへコピーします（アプリ内UI用）。
+   * @private
+   * @param {string} text
+   * @param {HTMLElement} btn - フィードバック表示対象のボタン要素
+   */
+  _copyToClipboard(text, btn) {
+    const showResult = (ok) => {
+      if (!btn) return;
+      const orig = btn.innerHTML;
+      btn.innerHTML = ok
+        ? '<span class="icon icon-xs">check</span> コピー済'
+        : '<span class="icon icon-xs">close</span> 失敗';
+      setTimeout(() => { btn.innerHTML = orig; }, 1400);
+    };
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(text).then(() => showResult(true), () => this._fallbackCopy(text, showResult));
+    } else {
+      this._fallbackCopy(text, showResult);
+    }
+  }
+
+  /**
+   * @private - Clipboard APIが使えない環境向けのフォールバックコピー処理。
+   */
+  _fallbackCopy(text, callback) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    let ok = false;
+    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+    document.body.removeChild(ta);
+    callback(ok);
+  }
+
+  /**
    * @private - HTML特殊文字をエスケープします。
    */
   _escapeHtml(str) {
@@ -1392,22 +1939,11 @@ export class UI {
    * テーブルビュー用のリンク行要素を作成します。
    * @private
    * @param {Link} link - リンクデータオブジェクト。
-   * @param {string} catId - 親カテゴリのID。
-   * @param {number} catIndex - 親カテゴリのインデックス。
-   * @param {number} linkIndex - リンクのインデックス。
    * @returns {HTMLDivElement} 作成されたラッパー要素。
    */
-  _createTableRow(link, catId, catIndex, linkIndex) {
+  _createTableRow(link) {
     const wrapper = document.createElement('div');
     wrapper.className = 'table-row-wrapper';
-
-    if (this.isEditMode) {
-      wrapper.draggable = true;
-      wrapper.addEventListener('dragstart', (e) => this._handleDragStart(e, { type: 'link', catIndex, index: linkIndex }));
-      wrapper.addEventListener('dragover', (e) => this._handleDragOver(e));
-      wrapper.addEventListener('drop', (e) => this._handleDrop(e, { type: 'link', catIndex, index: linkIndex }));
-      wrapper.addEventListener('dragend', (e) => this._handleDragEnd(e));
-    }
 
     const isLocalRow = link.url && link.url.startsWith('opendir:');
     const a = document.createElement('a');
@@ -1435,6 +1971,7 @@ export class UI {
     const titleCell = document.createElement('span');
     titleCell.className = 'link-title-cell';
     titleCell.textContent = link.title;
+    if (this.isEditMode) this._makeTitleEditable(titleCell, link);
 
     const badgeSpan = document.createElement('span');
     badgeSpan.className = `badge badge-cell badge-${link.badge}`;
@@ -1449,19 +1986,10 @@ export class UI {
       const cardActions = document.createElement('div');
       cardActions.className = 'card-actions';
 
-      if (linkIndex > 0) {
-        const upBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_upward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex - 1), 'リンクを上に移動');
-        cardActions.appendChild(upBtn);
-      }
-      if (linkIndex < this.dataManager.getCategory(catId).links.length - 1) {
-        const downBtn = this._createCardActionButton('<span class="icon icon-sm">arrow_downward</span>', () => this.dataManager.moveLink(catIndex, linkIndex, linkIndex + 1), 'リンクを下に移動');
-        cardActions.appendChild(downBtn);
-      }
-
-      const editBtn = this._createCardActionButton('<span class="icon icon-sm">edit</span>', () => this.linkDialog.open(catId, link.id), 'リンクを編集');
+      const editBtn = this._createCardActionButton('<span class="icon icon-sm">edit</span>', () => this.linkDialog.open(link.id), 'リンクを編集');
       const delBtn = this._createCardActionButton('<span class="icon icon-sm">delete</span>', () => {
         if (confirm(`リンク「${link.title}」を削除しますか？`)) {
-          this.dataManager.deleteLink(catId, link.id);
+          this.dataManager.deleteLink(link.id);
           this.render();
         }
       }, 'リンクを削除');
@@ -1497,159 +2025,51 @@ export class UI {
     return btn;
   }
 
-  // --- Drag and Drop Handlers ---
-
   /**
-   * ドラッグ操作が開始されたときに呼び出されます。
+   * タイトル要素をその場（インライン）で編集できるようにします。
+   * カード表示・テーブル表示のどちらの要素にも使える共通処理です。
+   * 編集モード中、カード/テーブル行本体は pointer-events:none で無効化されているため、
+   * この要素自身に pointer-events:auto を与えてクリック・フォーカスできるようにする必要があります（CSS側で対応）。
    * @private
-   * @param {DragEvent} e - ドラッグイベントオブジェクト。
-   * @param {DragInfo} info - ドラッグ中の要素に関する情報。
+   * @param {HTMLElement} el - タイトルを表示している要素（span）。
+   * @param {Link} link - 対象のリンクデータ。呼び出し元のクロージャが持つローカルコピー。
    */
-  _handleDragStart(e, info) {
-    // summary要素でのdragstartがdetails要素に伝播しないようにする
-    if (e.target.tagName === 'SUMMARY') {
+  _makeTitleEditable(el, link) {
+    el.contentEditable = 'true';
+    el.spellcheck = false;
+    el.title = 'クリックしてタイトルを編集';
+    el.classList.add('title-editable');
+
+    // フォーカス取得はしたいが、リンクのナビゲーション（親<a>のデフォルト動作）は止める
+    el.addEventListener('mousedown', (e) => e.stopPropagation());
+    el.addEventListener('click', (e) => {
+      e.preventDefault();
       e.stopPropagation();
-    }
-    this.draggedInfo = info;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', null); // Firefoxで必須
-    
-    // プレースホルダーを作成
-    this.placeholder = document.createElement('div');
-    this.placeholder.className = `drag-placeholder ${info.type}-placeholder`;
-    const rect = e.currentTarget.getBoundingClientRect();
-    this.placeholder.style.height = `${rect.height}px`;
-    if (info.type === 'link') {
-       this.placeholder.style.width = `${rect.width}px`;
-    }
+    });
 
-    // 少し遅延させてからクラスを適用しないと、ドラッグゴーストにスタイルが反映されてしまう
-    setTimeout(() => {
-      e.currentTarget.classList.add('dragging');
-    }, 0);
-  }
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        el.blur();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        el.textContent = link.title;
+        el.blur();
+      }
+    });
 
-  /**
-   * ドラッグ中の要素がドロップターゲット上にあるときに呼び出されます。
-   * ドロップ位置に応じてプレースホルダーを挿入します。
-   * @private
-   * @param {DragEvent} e - ドラッグイベントオブジェクト。
-   */
-  _handleDragOver(e) {
-    e.preventDefault(); // ドロップを許可する
-    const targetElement = e.currentTarget;
-    
-    // プレースホルダーが存在しない場合や、ターゲットがプレースホルダー自身の場合は処理しない
-    if (!this.placeholder || targetElement.classList.contains('drag-placeholder')) {
+    el.addEventListener('blur', () => {
+      const newTitle = el.textContent.trim();
+      if (!newTitle) {
+        el.textContent = link.title; // 空欄は許可しない
         return;
-    }
-
-    const rect = targetElement.getBoundingClientRect();
-    const isCategory = this.draggedInfo.type === 'category';
-    // 垂直方向のD&D（カテゴリ）か水平方向のD&D（リンク）かで中央点を計算
-    const midpoint = isCategory ? rect.top + rect.height / 2 : rect.left + rect.width / 2;
-    const clientPos = isCategory ? e.clientY : e.clientX;
-
-    // プレースホルダーを挿入する位置を決定
-    if (clientPos < midpoint) {
-        // ターゲット要素の前にプレースホルダーを挿入
-        targetElement.parentNode.insertBefore(this.placeholder, targetElement);
-        this.draggedInfo.dropPosition = 'before';
-    } else {
-        // ターゲット要素の後にプレースホルダーを挿入
-        targetElement.parentNode.insertBefore(this.placeholder, targetElement.nextSibling);
-        this.draggedInfo.dropPosition = 'after';
-    }
+      }
+      if (newTitle !== link.title) {
+        this.dataManager.updateLink(link.id, { title: newTitle });
+        link.title = newTitle;
+        el.textContent = newTitle;
+      }
+    });
   }
 
-  /**
-   * ドラッグ中の要素がドロップされたときに呼び出されます。
-   * データの並び替えを行い、UIを更新します。
-   * @private
-   * @param {DragEvent} e - ドラッグイベントオブジェクト。
-   * @param {object} dropTargetInfo - ドロップターゲットの情報。
-   * @param {'category'|'link'} dropTargetInfo.type - ドロップターゲットの要素タイプ。
-   * @param {number} dropTargetInfo.index - ドロップターゲットのインデックス。
-   * @param {number} [dropTargetInfo.catIndex] - リンクの場合、親カテゴリのインデックス。
-   */
-  _handleDrop(e, dropTargetInfo) {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!this.draggedInfo) return;
-
-    // ドロップターゲットがプレースホルダー自身なら何もしない
-    if (e.currentTarget.classList.contains('drag-placeholder')) return;
-    
-    let fromIndex = this.draggedInfo.index;
-    let toIndex = dropTargetInfo.index;
-    
-    // 異なるカテゴリ間でのリンク移動は許可しない
-    if (this.draggedInfo.type === 'link' && this.draggedInfo.catIndex !== dropTargetInfo.catIndex) {
-        this._cleanupDragStyles(); // クリーンアップのみ行って終了
-        return;
-    }
-
-    // toIndexをプレースホルダーの位置に基づいて再計算する
-    // e.currentTarget.parentNode は .link-list または #app-container
-    const children = Array.from(e.currentTarget.parentNode.children);
-    const placeholderIndex = children.indexOf(this.placeholder);
-    
-    if (placeholderIndex !== -1) {
-       toIndex = placeholderIndex;
-       // ドラッグ元の要素がプレースホルダーより前にあった場合、
-       // 削除することでインデックスが1つずれるため調整
-       if (fromIndex < placeholderIndex) {
-           // fromIndexがplaceholderIndexより小さい場合、元の要素が削除されることで、
-           // toIndexの計算時に1つずれてしまうのを補正する。
-           // 例: [A,B,C,D], AをCの後に移動。placeholderIndex=3。fromIndex=0。
-           // toIndex=3-(1)=2 (0番目のAが削除されるとB,C,Dは0,1,2に詰まるため)
-           // (Aが削除された後の配列での新しいインデックス)
-           toIndex--; // 0番目の要素が削除されると、それ以降の要素のインデックスが1つ減るため
-       }
-    }
-
-    if (this.draggedInfo.type === 'category') {
-        if (fromIndex !== toIndex) {
-            this.dataManager.moveCategory(fromIndex, toIndex);
-        }
-    } else if (this.draggedInfo.type === 'link') {
-        // 同じカテゴリ内でリンクを移動
-        if (fromIndex !== toIndex) { // fromIndexとtoIndexが異なる場合のみ移動
-            this.dataManager.moveLink(this.draggedInfo.catIndex, fromIndex, toIndex);
-        }
-    }
-    
-    this._cleanupDragStyles(); // ドラッグスタイルとプレースホルダーをクリーンアップ
-    this.render(); // UIを即座に更新して変更を反映
-  }
-
-  /**
-   * ドラッグ操作が終了したときに呼び出されます。
-   * @private
-   * @param {DragEvent} e - ドラッグイベントオブジェクト。
-   */
-  _handleDragEnd(e) {
-    this._cleanupDragStyles(); // クリーンアップ処理を実行
-  }
-  
-  /**
-   * ドラッグアンドドロップ操作に関連する一時的なスタイルと要素をクリーンアップします。
-   * @private
-   */
-  _cleanupDragStyles() {
-    // ドラッグ中の要素のスタイルを戻す
-    const draggingElement = document.querySelector('.dragging');
-    if (draggingElement) {
-        draggingElement.classList.remove('dragging');
-    }
-    
-    // プレースホルダーをDOMから削除
-    if (this.placeholder) {
-      this.placeholder.remove();
-      this.placeholder = null; // 参照をクリア
-    }
-    
-    this.draggedInfo = null; // ドラッグ情報をリセット
-  }
 }

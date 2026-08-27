@@ -16,4 +16,4 @@ Windows Registry Editor Version 5.00
 [HKEY_CURRENT_USER\Software\Classes\opendir\shell\open]
 
 [HKEY_CURRENT_USER\Software\Classes\opendir\shell\open\command]
-@="powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File \"C:\\Users\\kageyama\\Tools\\portal_site_bussiness\\portal_site\\tools\\opendir_handler.ps1\" \"%1\""
+@="powershell.exe -ExecutionPolicy Bypass -WindowStyle Hidden -File \"C:\\Users\\kageyama\\Tools\\portal_site_business\\portal_site\\tools\\opendir_handler.ps1\" \"%1\""

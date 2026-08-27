@@ -5,6 +5,7 @@
  */
 
 import { IconPickerDialog } from './iconPickerDialog.js';
+import { detectBadge } from '../badgeDetector.js';
 
 /**
  * @class BulkLinkDialog
@@ -31,11 +32,8 @@ export class BulkLinkDialog {
   initEventListeners() {
     this.dialog.addEventListener('close', () => {
       if (this.dialog.returnValue === 'save') {
-        const categoryId = document.getElementById('bulkLinkCategorySelect').value;
-        if (!categoryId) {
-          alert('カテゴリを選択してください。');
-          return;
-        }
+        const tagsRaw = document.getElementById('bulkLinkTagsInput').value;
+        const tags = Array.from(new Set(tagsRaw.split(',').map(t => t.trim()).filter(Boolean)));
 
         const links = [];
         const rows = document.querySelectorAll('#bulk-link-input-area .bulk-link-row');
@@ -50,13 +48,14 @@ export class BulkLinkDialog {
               url,
               icon: row.querySelector('.input-icon').value.trim() || 'link',
               badge: row.querySelector('.input-badge').value,
-              memo: row.querySelector('.input-memo').value.trim()
+              memo: row.querySelector('.input-memo').value.trim(),
+              tags: [...tags]
             });
           }
         });
 
         if (links.length > 0) {
-          this.dataManager.addBulkLinks(categoryId, links);
+          this.dataManager.addBulkLinks(links);
           this.renderCallback();
           alert(`${links.length}件のリンクを追加しました。`);
         } else {
@@ -114,19 +113,22 @@ export class BulkLinkDialog {
         <button type="button" class="bulk-icon-picker-btn secondary-btn" title="アイコンを選択">選択</button>
       </div>
       <select class="input-badge">
-        <option value="doc"     ${link.badge === 'doc'     ? 'selected' : ''}>Docs</option>
-        <option value="video"   ${link.badge === 'video'   ? 'selected' : ''}>Video</option>
-        <option value="article" ${link.badge === 'article' ? 'selected' : ''}>Article</option>
-        <option value="portal"  ${link.badge === 'portal'  ? 'selected' : ''}>Portal</option>
-        <option value="code"    ${link.badge === 'code'    ? 'selected' : ''}>Code</option>
-        <option value="tool"    ${link.badge === 'tool'    ? 'selected' : ''}>Tool</option>
+        <option value="doc"     ${link.badge === 'doc'     ? 'selected' : ''}>Docs（ドキュメント）</option>
+        <option value="spreadsheet" ${link.badge === 'spreadsheet' ? 'selected' : ''}>Sheet（表計算）</option>
+        <option value="website" ${link.badge === 'website' ? 'selected' : ''}>Web（ウェブサイト）</option>
+        <option value="drive"   ${link.badge === 'drive'   ? 'selected' : ''}>Drive（Googleドライブ）</option>
+        <option value="video"   ${link.badge === 'video'   ? 'selected' : ''}>Video（動画）</option>
+        <option value="article" ${link.badge === 'article' ? 'selected' : ''}>Article（記事）</option>
+        <option value="portal"  ${link.badge === 'portal'  ? 'selected' : ''}>Portal（ポータル）</option>
+        <option value="code"    ${link.badge === 'code'    ? 'selected' : ''}>Code（コード）</option>
+        <option value="tool"    ${link.badge === 'tool'    ? 'selected' : ''}>Tool（ツール）</option>
         <option value="sns"     ${link.badge === 'sns'     ? 'selected' : ''}>SNS</option>
-        <option value="cloud"   ${link.badge === 'cloud'   ? 'selected' : ''}>Cloud</option>
-        <option value="local"   ${link.badge === 'local'   ? 'selected' : ''}>Local</option>
-        <option value="money"   ${link.badge === 'money'   ? 'selected' : ''}>Money</option>
-        <option value="news"    ${link.badge === 'news'    ? 'selected' : ''}>News</option>
-        <option value="idea"    ${link.badge === 'idea'    ? 'selected' : ''}>Idea</option>
-        <option value="company" ${link.badge === 'company' ? 'selected' : ''}>Company</option>
+        <option value="cloud"   ${link.badge === 'cloud'   ? 'selected' : ''}>Cloud（クラウド）</option>
+        <option value="local"   ${link.badge === 'local'   ? 'selected' : ''}>Local（ローカル）</option>
+        <option value="money"   ${link.badge === 'money'   ? 'selected' : ''}>Money（お金）</option>
+        <option value="news"    ${link.badge === 'news'    ? 'selected' : ''}>News（ニュース）</option>
+        <option value="idea"    ${link.badge === 'idea'    ? 'selected' : ''}>Idea（アイデア）</option>
+        <option value="company" ${link.badge === 'company' ? 'selected' : ''}>Company（会社）</option>
       </select>
       <input type="text" class="input-memo" placeholder="メモ" value="${link.memo || ''}">
     `;
@@ -134,6 +136,8 @@ export class BulkLinkDialog {
     const iconInput = row.querySelector('.input-icon');
     const previewSpan = row.querySelector('.bulk-icon-preview');
     const selectBtn = row.querySelector('.bulk-icon-picker-btn');
+    const urlInput = row.querySelector('.input-url');
+    const badgeSelect = row.querySelector('.input-badge');
 
     // 初期値を正しくレンダリング
     this._updatePreview(previewSpan, initialIcon);
@@ -145,25 +149,22 @@ export class BulkLinkDialog {
       });
     });
 
+    // URLからバッジ種別を自動判定（ユーザーが手動でバッジを選び直したら以降は上書きしない）
+    let badgeManuallySet = false;
+    badgeSelect.addEventListener('change', () => {
+      badgeManuallySet = true;
+    });
+    urlInput.addEventListener('input', () => {
+      if (badgeManuallySet) return;
+      const detected = detectBadge(urlInput.value);
+      if (detected) badgeSelect.value = detected;
+    });
+
     return row;
   }
 
   open() {
-    const select = document.getElementById('bulkLinkCategorySelect');
-    select.innerHTML = '';
-    const categories = this.dataManager.getData();
-
-    if (categories.length === 0) {
-      alert('先に追加先のカテゴリを作成してください。');
-      return;
-    }
-
-    categories.forEach(cat => {
-      const option = document.createElement('option');
-      option.value = cat.id;
-      option.textContent = cat.title;
-      select.appendChild(option);
-    });
+    document.getElementById('bulkLinkTagsInput').value = '';
 
     const inputArea = document.getElementById('bulk-link-input-area');
     inputArea.innerHTML = '';

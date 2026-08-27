@@ -11,11 +11,12 @@ import { LinkDialog } from './dialogs/linkDialog.js';
 import { BulkLinkDialog } from './dialogs/bulkLinkDialog.js';
 import { PortalDialog } from './dialogs/portalDialog.js';
 import { IconPickerDialog } from './dialogs/iconPickerDialog.js';
-import { CategoryDialog } from './dialogs/categoryDialog.js';
 import { SearchManager } from './searchManager.js';
 import { MemoryManager } from './memoryManager.js';
 import { WorkflowManager } from './workflowManager.js';
 import { WorkflowDialog } from './dialogs/workflowDialog.js';
+import { ThemeManager } from './themeManager.js';
+import { TagManager } from './tagManager.js';
 
 /**
  * DOMContentLoaded イベントリスナー。DOMが完全にロードされた後にアプリケーションを初期化します。
@@ -74,37 +75,40 @@ document.addEventListener('DOMContentLoaded', async () => {
    * @type {IconPickerDialog}
    * @description アイコン選択ダイアログのインスタンス。
    */
-  const iconPickerDialog = new IconPickerDialog(); 
+  const iconPickerDialog = new IconPickerDialog();
+
+  /**
+   * @type {SearchManager}
+   * @description タグ一覧の収集にも使うため、LinkDialogより先に作る。
+   */
+  const searchManager = new SearchManager(dataManager);
+
+  /**
+   * @type {TagManager}
+   * @description リンク未紐づけの事前登録タグを管理。LinkDialogのタグ候補にも使うため先に作る。
+   */
+  const tagManager = new TagManager(dataManager);
 
   /**
    * @type {LinkDialog}
    * @description 単一リンク編集ダイアログのインスタンス。
    */
-  const linkDialog = new LinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog); 
+  const linkDialog = new LinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog, configManager, searchManager, tagManager);
 
       /**
        * @type {BulkLinkDialog}
        * @description 複数リンク一括追加ダイアログのインスタンス。
        */
-      const bulkLinkDialog = new BulkLinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog); 
-      
-      /**
-       * @type {CategoryDialog}
-       * @description カテゴリ編集ダイアログのインスタンス。
-       */
-      const categoryDialog = new CategoryDialog(dataManager);
-  
+      const bulkLinkDialog = new BulkLinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog);
+
       /**
        * @type {UI}
        * @description ユーザーインターフェースの描画とイベント処理を管理するインスタンス。
        */
-      ui = new UI(dataManager, configManager, categoryDialog, linkDialog, bulkLinkDialog); // categoryDialogを追加
+      ui = new UI(dataManager, configManager, linkDialog, bulkLinkDialog);
 
-  /**
-   * @type {SearchManager}
-   */
-  const searchManager = new SearchManager(dataManager);
   ui.searchManager = searchManager;
+  ui.tagManager = tagManager;
 
   /**
    * @type {MemoryManager}
@@ -130,7 +134,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   /**
    * @type {WorkflowDialog}
    */
-  const workflowDialog = new WorkflowDialog(workflowManager, dataManager, configManager, () => uiRenderCallback());
+  const workflowDialog = new WorkflowDialog(workflowManager, dataManager, configManager, () => uiRenderCallback(), searchManager, tagManager);
   ui.workflowDialog = workflowDialog;
 
 
@@ -154,7 +158,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     ui.init();
 
     // 各種ダイアログの初期化
-    categoryDialog.init(() => uiRenderCallback());
     linkDialog.init(() => uiRenderCallback());
     bulkLinkDialog.init(() => uiRenderCallback());
     portalDialog.init(() => ui.render());
@@ -169,6 +172,10 @@ document.addEventListener('DOMContentLoaded', async () => {
   // 保存ボタンの状態を更新
   ui.updateSaveButtonState(dataManager.hasUnsavedChanges);
 
+  // テーマ切り替え（ライト/ダーク）
+  const themeManager = new ThemeManager();
+  themeManager.init();
+
   // サイドバートグル
   const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
   const appSidebar = document.getElementById('appSidebar');
@@ -177,4 +184,14 @@ document.addEventListener('DOMContentLoaded', async () => {
       appSidebar.classList.toggle('collapsed');
     });
   }
+
+  // 各ダイアログ右上の閉じる（×）ボタン。
+  // 'cancel' を返して閉じることで、キャンセルボタンと同じ扱いにする
+  // （保存扱いされて中途半端なデータが登録されるのを防ぐ）。
+  document.querySelectorAll('[data-dialog-close]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dialog = btn.closest('dialog');
+      if (dialog) dialog.close('cancel');
+    });
+  });
 });

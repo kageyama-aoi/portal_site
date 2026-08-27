@@ -1,1 +1,5 @@
 node_modules/
+
+# 個人環境向け（エディタ設定・マルチルートワークスペース）
+.vscode/
+*.code-workspace

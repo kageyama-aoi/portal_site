@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A lightweight, serverless personal portal site built with **vanilla JavaScript** (no framework, no bundler). Users organize links into categories within multiple named "portals". Data is stored in a local `data/data.json` file and persisted via browser download/upload. Configuration is stored in `localStorage`.
+A lightweight, serverless personal portal site built with **vanilla JavaScript** (no framework, no bundler). Users organize links with tags (a link can carry zero, one, or many tags) within multiple named "portals". Data is stored in a local `data/data.json` file and persisted via browser download/upload. Configuration is stored in `localStorage`.
 
 ---
 
@@ -13,15 +13,14 @@ portal_site/
 ├── index.html            # Single-page app shell; defines all <dialog> elements
 ├── style.css             # All styles; CSS Variables for theming
 ├── data/
-│   └── data.json         # Portal data (categories + links); the only "database"
+│   └── data.json         # Portal data (flat links with tags); the only "database"
 ├── js/
 │   ├── app.js            # Entry point — initializes everything on DOMContentLoaded
 │   ├── configManager.js  # Portal config (active portal ID, titles) via localStorage
-│   ├── dataManager.js    # CRUD for categories and links; dirty-state tracking
+│   ├── dataManager.js    # CRUD for links (flat, tag-grouped); dirty-state tracking
 │   ├── iconList.js       # Material Symbols icon definitions used in icon picker
 │   ├── ui.js             # DOM rendering, edit mode, drag-and-drop, view switching
 │   └── dialogs/
-│       ├── categoryDialog.js   # Create/edit categories
 │       ├── linkDialog.js       # Create/edit individual links
 │       ├── bulkLinkDialog.js   # Batch-add links (newline-separated)
 │       ├── iconPickerDialog.js # Select/configure icon + color/style
@@ -86,7 +85,7 @@ No build step required.
 
 ### Naming
 - **Classes:** PascalCase (`DataManager`, `LinkDialog`)
-- **Methods/Variables:** camelCase (`getCategory`, `isDirty`)
+- **Methods/Variables:** camelCase (`getLink`, `isDirty`)
 - **Private methods:** Underscore prefix (`_generateId`, `_load`)
 - **Constants:** SCREAMING_SNAKE_CASE (`CONFIG_KEY`)
 - **IDs:** Prefix + timestamp + random (`cat_1234567890_abc`, `link_1234567890_def`)
@@ -123,34 +122,41 @@ All public methods and classes have JSDoc comments. Maintain this when adding ne
 ## Data Model
 
 ### `data/data.json` structure
+Links are stored as a **flat array per portal** — there is no category/folder concept. `tags` is the only grouping mechanism: a link may have zero, one, or many tags, and a link with N tags is displayed inside N tag groups (card view, table view, and search results all group by tag). Links with no tags are shown under a "タグなし" (no tag) group.
+
 ```json
 {
   "portals": {
     "default": [
       {
-        "id": "cat_<timestamp>_<random>",
-        "title": "Category Name",
-        "isOpen": true,
-        "links": [
-          {
-            "id": "link_<timestamp>_<random>",
-            "title": "Link Title",
-            "url": "https://example.com",
-            "badge": "doc",
-            "icon": "article",
-            "iconColor": "#4A90D9",
-            "iconStyle": "outlined",
-            "memo": "Optional note"
-          }
-        ]
+        "id": "link_<timestamp>_<random>",
+        "title": "Link Title",
+        "url": "https://example.com",
+        "badge": "doc",
+        "icon": "article",
+        "iconColor": "#4A90D9",
+        "iconStyle": "outlined",
+        "memo": "Optional note",
+        "tags": ["work", "reference"]
       }
     ]
   }
 }
 ```
 
+Older files that still use the pre-tag category-nested shape (`[{id, title, isOpen, links: [...]}]`) are automatically flattened on load by `DataManager._migrateLegacyPortal()` — each category's title becomes an initial tag on all of its links.
+
+### Tag registry (`tagRegistry`)
+Tags normally only exist implicitly as strings inside each link's `tags` array (`SearchManager.getAllTags()` derives the "all tags" list by scanning links). `data/data.json` also has an optional top-level `tagRegistry` key (sibling of `portals`/`workflows`, portal-scoped like `workflows`) for tags that have been deliberately pre-created but aren't attached to any link yet:
+```json
+{ "portals": {...}, "workflows": {...}, "tagRegistry": { "default": ["タグA", "タグB"] } }
+```
+Managed by `js/tagManager.js` (`TagManager`, mirrors `WorkflowManager`'s pattern). The sidebar tag filter panel merges `SearchManager.getAllTags()` (used tags) with `TagManager.getRegisteredTags(portalId)` (registered-but-unused tags, shown with a dashed `.tag-chip-empty` style) and exposes a "＋タグ作成" button (edit mode only) to add new registry entries via `prompt()`.
+
 ### Valid `badge` values
-`video`, `doc`, `article`, `portal`, `code`, `tool`
+`doc`, `spreadsheet`, `website`, `drive`, `video`, `article`, `portal`, `code`, `tool`, `sns`, `cloud`, `local`, `money`, `news`, `idea`, `company`
+
+`spreadsheet`, `website`, `drive` and `local` (opendir: paths, and when the opendir checkbox is used) are auto-suggested from the URL by `js/badgeDetector.js` when adding/editing a link, but the user can always override the selection manually. `drive` (Google Drive) is kept separate from the generic `cloud` badge (Dropbox/OneDrive/iCloud/Sharepoint) since it's used far more often.
 
 ### Valid `iconStyle` values
 `outlined`, `rounded`, `sharp`
@@ -188,8 +194,8 @@ The app has a read-only and an edit mode. Most mutations (add/delete/reorder) ar
 ### View Modes
 The UI supports **card view** (CSS Grid of link cards) and **table view** (compact rows). State is toggled via `ui.toggleViewMode()`.
 
-### Drag and Drop
-Drag-and-drop reordering is implemented natively (HTML5 drag events). Both categories and links within a category can be reordered.
+### Ordering
+There is no manual reordering. Links are a flat array grouped dynamically by tag at render time (a link with multiple tags appears in multiple groups), so a single "position" isn't meaningful once a link can belong to more than one group. Display order follows array order (creation order). There is a separate, unrelated drag-and-drop feature for reordering the header view-mode buttons (card/table/memory/workflow) — see `_initViewBtnOrder()` in `ui.js`.
 
 ---
 
@@ -211,8 +217,8 @@ describe('DataManager', () => {
     dm = new DataManager('default');
   });
 
-  test('should add a category', () => {
-    dm.addCategory('Test');
+  test('should add a link', () => {
+    dm.addLink({ title: 'Test', url: 'https://example.com', tags: [] });
     expect(dm.getData().length).toBe(1);
   });
 });

@@ -10,6 +10,8 @@
  * @property {number} step - ステップ番号（1始まり）
  * @property {string} title - ステップのタイトル
  * @property {string} memo - ステップの補足説明
+ * @property {string} prompt - コピー機能の対象となる本文（省略可）
+ * @property {'none'|'prompt'|'code'|'text'} promptType - promptの種別。'none'なら内容があっても非表示（省略時は'prompt'扱い）
  * @property {string|null} linkId - 関連リンクのID（省略可）
  */
 
@@ -40,12 +42,15 @@ export class WorkflowManager {
   }
 
   /**
-   * 指定ポータルのワークフロー一覧を返します（深いコピー）。
+   * 指定ポータルのワークフロー一覧を、タイトルの五十音順（ロケール比較）で返します（深いコピー）。
+   * メイン画面・フロー管理ダイアログ・出力先選択ダイアログなど、呼び出し箇所によって
+   * 表示順がバラバラにならないよう、ここで一元的にソートしておく。
    * @param {string} portalId
    * @returns {Workflow[]}
    */
   getWorkflows(portalId) {
-    return JSON.parse(JSON.stringify(this.dataManager.allWorkflows[portalId] || []));
+    const workflows = JSON.parse(JSON.stringify(this.dataManager.allWorkflows[portalId] || []));
+    return workflows.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ja'));
   }
 
   /**
@@ -126,6 +131,8 @@ export class WorkflowManager {
         step: wf.steps.length + 1,
         title: '',
         memo: '',
+        prompt: '',
+        promptType: 'none',
         linkId: null,
         ...stepData
       };

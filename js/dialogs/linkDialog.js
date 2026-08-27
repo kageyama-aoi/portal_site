@@ -5,6 +5,8 @@
  */
 
 import { IconPickerDialog } from './iconPickerDialog.js';
+import { detectBadge } from '../badgeDetector.js';
+import { initTagsSuggest } from '../tagSuggest.js';
 
 /**
  * @class LinkDialog
@@ -32,14 +34,33 @@ export class LinkDialog {
   openIconPickerBtn;
   /** @property {HTMLInputElement} linkIsLocalInput - ローカルフォルダ用チェックボックス。 */
   linkIsLocalInput;
-  editingCategoryId = null;
   editingLinkId = null;
+  /**
+   * @property {boolean} badgeManuallySet - ユーザーがバッジを手動で選び直したかどうか。
+   * true の間は URL からのバッジ自動判定を行わない（既存の選択を勝手に上書きしないため）。
+   */
+  badgeManuallySet = false;
+  /** @property {ConfigManager} configManager - タグ候補を出す対象ポータルを知るために使う。 */
+  configManager;
+  /** @property {SearchManager} searchManager - リンクに実際に使われているタグの収集に使う。 */
+  searchManager;
+  /** @property {TagManager} tagManager - リンク未紐づけの事前登録タグの収集に使う。 */
+  tagManager;
+  /** @property {HTMLElement} tagsSuggestBox - タグ入力のサジェスト用ドロップダウン要素。 */
+  tagsSuggestBox;
+  /**
+   * @property {string[]} _knownTagsCache - open() のたびに計算し直すタグ候補一覧。
+   * キー入力のたびに全リンクを再スキャンしないよう、ダイアログを開いている間はこれを使い回す。
+   */
+  _knownTagsCache = [];
 
-  constructor(dataManager, renderCallback, iconPickerDialog) {
+  constructor(dataManager, renderCallback, iconPickerDialog, configManager = null, searchManager = null, tagManager = null) {
     this.dataManager = dataManager;
     this.renderCallback = renderCallback;
     this.iconPickerDialog = iconPickerDialog;
-    this.editingCategoryId = null;
+    this.configManager = configManager;
+    this.searchManager = searchManager;
+    this.tagManager = tagManager;
     this.editingLinkId = null;
   }
 
@@ -54,7 +75,9 @@ export class LinkDialog {
     this.linkIconSizeInput = document.getElementById('linkIconSizeInput');
     this.openIconPickerBtn = document.getElementById('openLinkIconPickerBtn');
     this.linkIsLocalInput = document.getElementById('linkIsLocalInput');
+    this.tagsSuggestBox = document.getElementById('linkTagsSuggest');
     this.initEventListeners();
+    this._initTagsSuggest();
   }
 
   initEventListeners() {
@@ -72,19 +95,18 @@ export class LinkDialog {
           iconSize: this.linkIconSizeInput.value,
           badge: this.form.linkBadgeInput.value,
           memo: this.form.linkMemoInput.value,
-          tags: tagsRaw.split(',').map(t => t.trim()).filter(Boolean),
+          tags: Array.from(new Set(tagsRaw.split(',').map(t => t.trim()).filter(Boolean))),
           keywords: keywordsRaw.split(',').map(k => k.trim()).filter(Boolean),
           freq: document.getElementById('linkFreqInput').value || null
         };
 
-        if (this.editingCategoryId && this.editingLinkId) {
-          this.dataManager.updateLink(this.editingCategoryId, this.editingLinkId, linkData);
-        } else if (this.editingCategoryId) {
-          this.dataManager.addLink(this.editingCategoryId, linkData);
+        if (this.editingLinkId) {
+          this.dataManager.updateLink(this.editingLinkId, linkData);
+        } else {
+          this.dataManager.addLink(linkData);
         }
         this.renderCallback();
       }
-      this.editingCategoryId = null;
       this.editingLinkId = null;
     });
 
@@ -114,13 +136,29 @@ export class LinkDialog {
           urlInput.value = 'opendir:' + urlInput.value;
         }
         urlInput.placeholder = 'C:\\Users\\...（フォルダパス）';
+        if (!this.badgeManuallySet) this.form.linkBadgeInput.value = 'local';
       } else {
         if (urlInput.value.startsWith('opendir:')) {
           urlInput.value = urlInput.value.slice('opendir:'.length);
         }
         urlInput.placeholder = 'https://example.com';
+        if (!this.badgeManuallySet) {
+          const detected = detectBadge(urlInput.value);
+          if (detected) this.form.linkBadgeInput.value = detected;
+        }
       }
       urlInput.focus();
+    });
+
+    // URLからバッジ種別を自動判定（スプレッドシート/ドキュメント/よく使うサイト等）。
+    // ユーザーがバッジを手動で選び直したら、以降は自動判定で上書きしない。
+    this.form.linkUrlInput.addEventListener('input', () => {
+      if (this.badgeManuallySet || this.linkIsLocalInput.checked) return;
+      const detected = detectBadge(this.form.linkUrlInput.value);
+      if (detected) this.form.linkBadgeInput.value = detected;
+    });
+    this.form.linkBadgeInput.addEventListener('change', () => {
+      this.badgeManuallySet = true;
     });
 
     // アイコンスタイルボタン群
@@ -180,6 +218,36 @@ export class LinkDialog {
   }
 
   /**
+   * 現在のポータルで「既に使われているタグ」＋「まだリンク0件の事前登録タグ」を
+   * 合わせた候補一覧を返します（重複除去・ソート済み）。
+   * @private
+   * @returns {string[]}
+   */
+  _getKnownTags() {
+    if (!this.searchManager || !this.tagManager || !this.configManager) return [];
+    const portalId = this.configManager.getActivePortalId();
+    const used = this.searchManager.getAllTags();
+    const registered = this.tagManager.getRegisteredTags(portalId);
+    return Array.from(new Set([...used, ...registered])).sort((a, b) => a.localeCompare(b, 'ja'));
+  }
+
+  /**
+   * タグ欄（カンマ区切り）に、新規入力はそのまま・既存タグは選択できる
+   * サジェストドロップダウンを設定します（js/tagSuggest.js の共通実装を使用）。
+   * 候補一覧は open() 時に this._knownTagsCache へキャッシュしたものを参照する
+   * （キー入力のたびに全リンクを再スキャンしないようにするため）。
+   * @private
+   */
+  _initTagsSuggest() {
+    if (!this.tagsSuggestBox) return;
+    initTagsSuggest({
+      inputEl: document.getElementById('linkTagsInput'),
+      boxEl: this.tagsSuggestBox,
+      getKnownTags: () => this._knownTagsCache || []
+    });
+  }
+
+  /**
    * スタイル値を各コントロールに反映して表示を初期化します。
    * @private
    */
@@ -192,12 +260,16 @@ export class LinkDialog {
     this._activateBtn('iconSizeGroup', size);
   }
 
-  open(categoryId, linkId = null) {
-    this.editingCategoryId = categoryId;
+  open(linkId = null, prefillTag = null) {
     this.editingLinkId = linkId;
+    // 編集時は既存のバッジ選択を尊重（自動判定で上書きしない）。
+    // 新規追加時のみ、URL入力に応じた自動判定を有効にする。
+    this.badgeManuallySet = !!linkId;
+    // タグ候補は開いている間キー入力のたびに再計算しないよう、ここで1回だけ計算する。
+    this._knownTagsCache = this._getKnownTags();
 
     if (linkId) {
-      const link = this.dataManager.getLink(categoryId, linkId);
+      const link = this.dataManager.getLink(linkId);
       const isLocal = !!link.url?.startsWith('opendir:');
       this.linkIsLocalInput.checked = isLocal;
       this.form.linkUrlInput.placeholder = isLocal ? 'C:\\Users\\...（フォルダパス）' : 'https://example.com';
@@ -221,7 +293,7 @@ export class LinkDialog {
       this.form.linkBadgeInput.value = 'doc';
       this.linkIconColorInput.value = '#64748b';
       this.linkIconColorInput.dataset.custom = 'false';
-      document.getElementById('linkTagsInput').value = '';
+      document.getElementById('linkTagsInput').value = prefillTag || '';
       document.getElementById('linkKeywordsInput').value = '';
       document.getElementById('linkFreqInput').value = '';
       this._loadStyle(0, 400, 'normal');

@@ -27,31 +27,29 @@ export class SearchManager {
    * @param {string[]} [filters.tags=[]] - AND絞り込みするタグ配列
    * @param {string|null} [filters.badge=null] - バッジ絞り込み
    * @param {string|null} [filters.freq=null] - 頻度絞り込み ('daily'|'weekly'|'monthly'|'rare')
-   * @returns {{ link: object, catId: string, catTitle: string }[]}
+   * @returns {{ link: object }[]}
    */
   search(query, { tags = [], badge = null, freq = null } = {}) {
     const data = this.dataManager.getData();
     const q = (query || '').trim().toLowerCase();
     const results = [];
 
-    data.forEach(cat => {
-      cat.links.forEach(link => {
-        const textMatch = !q ||
-          link.title.toLowerCase().includes(q) ||
-          (link.memo || '').toLowerCase().includes(q) ||
-          (link.tags || []).some(t => t.toLowerCase().includes(q)) ||
-          (link.keywords || []).some(k => k.toLowerCase().includes(q));
+    data.forEach(link => {
+      const textMatch = !q ||
+        link.title.toLowerCase().includes(q) ||
+        (link.memo || '').toLowerCase().includes(q) ||
+        (link.tags || []).some(t => t.toLowerCase().includes(q)) ||
+        (link.keywords || []).some(k => k.toLowerCase().includes(q));
 
-        const tagMatch = tags.length === 0 ||
-          tags.every(tag => (link.tags || []).includes(tag));
+      const tagMatch = tags.length === 0 ||
+        tags.every(tag => (link.tags || []).includes(tag));
 
-        const badgeMatch = !badge || link.badge === badge;
-        const freqMatch = !freq || link.freq === freq;
+      const badgeMatch = !badge || link.badge === badge;
+      const freqMatch = !freq || link.freq === freq;
 
-        if (textMatch && tagMatch && badgeMatch && freqMatch) {
-          results.push({ link, catId: cat.id, catTitle: cat.title });
-        }
-      });
+      if (textMatch && tagMatch && badgeMatch && freqMatch) {
+        results.push({ link });
+      }
     });
 
     return results;
@@ -64,39 +62,33 @@ export class SearchManager {
   getAllTags() {
     const data = this.dataManager.getData();
     const tagSet = new Set();
-    data.forEach(cat => {
-      cat.links.forEach(link => {
-        (link.tags || []).forEach(t => { if (t) tagSet.add(t); });
-      });
+    data.forEach(link => {
+      (link.tags || []).forEach(t => { if (t) tagSet.add(t); });
     });
     return Array.from(tagSet).sort();
   }
 
   /**
-   * freq='rare' のリンクを全カテゴリから収集します。
-   * @returns {{ link: object, catId: string, catTitle: string }[]}
+   * freq='rare' のリンクを全リンクから収集します。
+   * @returns {{ link: object }[]}
    */
   getRareLinks() {
     return this.search('', { freq: 'rare' });
   }
 
   /**
-   * 与えられたIDのリンクオブジェクトを全カテゴリから探します。
+   * 与えられたIDのリンクオブジェクトを探します。
    * @param {string} linkId
-   * @returns {{ link: object, catId: string, catTitle: string }|null}
+   * @returns {{ link: object }|null}
    */
   findLinkById(linkId) {
-    const data = this.dataManager.getData();
-    for (const cat of data) {
-      const link = cat.links.find(l => l.id === linkId);
-      if (link) return { link, catId: cat.id, catTitle: cat.title };
-    }
-    return null;
+    const link = this.dataManager.getData().find(l => l.id === linkId);
+    return link ? { link } : null;
   }
 
   /**
-   * 全リンクをフラットなリストで返します（カテゴリ情報付き）。
-   * @returns {{ link: object, catId: string, catTitle: string }[]}
+   * 全リンクをフラットなリストで返します。
+   * @returns {{ link: object }[]}
    */
   getAllLinks() {
     return this.search('');
