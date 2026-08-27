@@ -104,6 +104,12 @@ export class UI {
    */
   collapsedTagGroups = new Set();
   /**
+   * @property {Set<string>} expandedWorkflowIds - ユーザーがこのセッションで開いた作業フローカードのID。
+   * 作業フローは既定で折りたたみ表示にし、開いたものだけここに記憶する
+   * （タグ別グループが既定で開いているのと逆の扱い）。
+   */
+  expandedWorkflowIds = new Set();
+  /**
    * @property {string} freqFilter - 選択中の頻度フィルタ
    */
   freqFilter = '';
@@ -1135,7 +1141,12 @@ export class UI {
     workflows.forEach(wf => {
       const card = document.createElement('details');
       card.className = 'workflow-card';
-      card.open = true;
+      // 既定は折りたたみ。セッション中に開いたフローだけ開いた状態を復元する。
+      card.open = this.expandedWorkflowIds.has(wf.id);
+      card.addEventListener('toggle', () => {
+        if (card.open) this.expandedWorkflowIds.add(wf.id);
+        else this.expandedWorkflowIds.delete(wf.id);
+      });
 
       const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' }[wf.freq] || '';
       const tags = (wf.tags || []).map(t => `<span class="tag-chip tag-chip-sm">${this._escapeHtml(t)}</span>`).join('');
