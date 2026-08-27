@@ -1,0 +1,2 @@
+# 空欄からの Issue 作成も許可する（github-issue-dev スキルがテンプレート無しで作る場合があるため）
+blank_issues_enabled: true
