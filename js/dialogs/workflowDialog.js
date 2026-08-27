@@ -261,7 +261,9 @@ export class WorkflowDialog {
     if (!row) return;
     const titleInput = row.querySelector('.wf-step-title');
     if (!titleInput) return;
-    row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    if (typeof row.scrollIntoView === 'function') {
+      row.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
     titleInput.focus();
   }
 
@@ -294,7 +296,32 @@ export class WorkflowDialog {
   }
 
   /**
+   * ステップ配列の要素を from から to へ移動し、step番号（1始まり）を振り直します。
+   * DOMに依存しない純粋関数なので、D&D・▲▼ボタンの双方から呼べてテストもしやすい。
+   * @param {WorkflowStep[]} steps
+   * @param {number} from
+   * @param {number} to
+   * @returns {boolean} 実際に移動したら true（範囲外・同一位置なら false）
+   */
+  static moveStep(steps, from, to) {
+    if (
+      !Array.isArray(steps) ||
+      from === to ||
+      from < 0 || from >= steps.length ||
+      to < 0 || to >= steps.length
+    ) {
+      return false;
+    }
+    const [moved] = steps.splice(from, 1);
+    steps.splice(to, 0, moved);
+    steps.forEach((s, i) => { s.step = i + 1; });
+    return true;
+  }
+
+  /**
    * @private - ステップリストを描画します。
+   * 並べ替えはドラッグハンドル（D&D）と各行の▲▼ボタンの2系統で行えます。
+   * 実際の並べ替えは WorkflowDialog.moveStep() に集約し、ここでは再描画するだけ。
    */
   _renderSteps(steps, linkOptions) {
     const container = document.getElementById('wfStepsContainer');
@@ -305,19 +332,41 @@ export class WorkflowDialog {
       return;
     }
 
+    // D&D中の掴んでいる行インデックス。この描画呼び出しの間だけ有効。
+    let dragSrcIdx = null;
+
+    const reorder = (from, to, focusTitle = true) => {
+      if (!WorkflowDialog.moveStep(steps, from, to)) return;
+      this._renderSteps(steps, linkOptions);
+      if (focusTitle) this._focusStepTitle(to);
+    };
+
     steps.forEach((step, i) => {
-      // メモ・プロンプト・リンクのいずれかが既に入っているステップだけ自動展開する。
-      // 空のステップまで一律展開すると、1行だけの単純な手順でも詳細欄が
-      // 常に表示されて縦に間延びしてしまうため（メイン画面の作業フロー表示と同じ対策）。
-      const hasDetails = !!(step.memo || step.prompt || step.linkId);
+      // プロンプトが既に入っているステップだけ詳細欄を自動展開する。
+      // タイトル・メモ・リンクは常に1行に出しているので、展開対象はプロンプトだけ。
+      const hasDetails = !!step.prompt;
 
       const row = document.createElement('div');
       row.className = 'wf-step-row' + (hasDetails ? ' wf-expanded' : '');
       row.innerHTML = `
         <div class="wf-step-header-row">
+          <span class="icon icon-xs wf-step-drag-handle" title="ドラッグで並べ替え">drag_indicator</span>
           <div class="wf-step-num">Step ${i + 1}</div>
           <input type="text" class="wf-step-title" placeholder="ステップタイトル" value="${this._escape(step.title || '')}">
-          <button type="button" class="wf-step-expand-btn" title="メモ・プロンプト・リンクを表示/編集">
+          <input type="text" class="wf-step-memo" placeholder="補足メモ（省略可）" value="${this._escape(step.memo || '')}">
+          <select class="wf-step-link" title="関連リンク">
+            <option value="">-- リンクなし --</option>
+            ${linkOptions}
+          </select>
+          <span class="wf-step-move-btns">
+            <button type="button" class="wf-step-move-btn wf-step-move-up" title="上へ移動" ${i === 0 ? 'disabled' : ''}>
+              <span class="icon icon-xs">keyboard_arrow_up</span>
+            </button>
+            <button type="button" class="wf-step-move-btn wf-step-move-down" title="下へ移動" ${i === steps.length - 1 ? 'disabled' : ''}>
+              <span class="icon icon-xs">keyboard_arrow_down</span>
+            </button>
+          </span>
+          <button type="button" class="wf-step-expand-btn" title="プロンプト本文を表示/編集">
             <span class="icon icon-xs">${hasDetails ? 'expand_less' : 'expand_more'}</span>
           </button>
           <button type="button" class="action-btn btn-delete wf-step-del-btn" data-index="${i}" title="削除">
@@ -325,7 +374,6 @@ export class WorkflowDialog {
           </button>
         </div>
         <div class="wf-step-details">
-          <input type="text" class="wf-step-memo" placeholder="補足メモ（省略可）" value="${this._escape(step.memo || '')}">
           <div class="wf-step-prompt-row">
             <select class="wf-step-prompt-type" title="本文の種類">
               <option value="none">－ なし</option>
@@ -335,10 +383,6 @@ export class WorkflowDialog {
             </select>
             <textarea class="wf-step-prompt" rows="2" placeholder="本文（省略可・出力時にコピーボタンが付きます）">${this._escape(step.prompt || '')}</textarea>
           </div>
-          <select class="wf-step-link">
-            <option value="">-- リンクなし --</option>
-            ${linkOptions}
-          </select>
         </div>
       `;
       // 選択済みリンクを復元
@@ -351,6 +395,39 @@ export class WorkflowDialog {
       expandBtn.addEventListener('click', () => {
         const expanded = row.classList.toggle('wf-expanded');
         expandBtn.querySelector('.icon').textContent = expanded ? 'expand_less' : 'expand_more';
+      });
+
+      // ── 並べ替え: ▲▼ボタン ──
+      row.querySelector('.wf-step-move-up').addEventListener('click', () => reorder(i, i - 1));
+      row.querySelector('.wf-step-move-down').addEventListener('click', () => reorder(i, i + 1));
+
+      // ── 並べ替え: ドラッグハンドル ──
+      // 行全体を draggable にすると入力欄のテキスト選択ができなくなるため、
+      // ハンドルを mousedown した時だけ一時的に draggable を立てる。
+      const handle = row.querySelector('.wf-step-drag-handle');
+      handle.addEventListener('mousedown', () => { row.draggable = true; });
+      row.addEventListener('dragstart', e => {
+        dragSrcIdx = i;
+        row.classList.add('wf-step-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      row.addEventListener('dragend', () => {
+        row.draggable = false;
+        row.classList.remove('wf-step-dragging');
+        container.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
+      });
+      row.addEventListener('dragover', e => {
+        if (dragSrcIdx === null) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        container.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
+        if (dragSrcIdx !== i) row.classList.add('wf-step-drag-over');
+      });
+      row.addEventListener('drop', e => {
+        e.preventDefault();
+        if (dragSrcIdx === null || dragSrcIdx === i) return;
+        reorder(dragSrcIdx, i, false);
+        dragSrcIdx = null;
       });
 
       // 入力変更を steps 配列に反映

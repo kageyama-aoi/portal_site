@@ -1825,7 +1825,10 @@ dialog textarea {
 .wf-step-drag-over { border-top: 2px solid var(--primary) !important; }
 
 /* ── ワークフローダイアログ ── */
-.workflow-dialog { max-width: 600px; width: 95vw; }
+/* ステップ行を「タイトル｜メモ｜リンク｜並べ替え」の横並びで一覧しながら
+   編集できるよう、編集フォームでは横幅を広めに取る。狭い画面では
+   .wf-step-header-row の flex-wrap で各欄が自然に折り返す。 */
+.workflow-dialog { max-width: 960px; width: 95vw; }
 .wf-list-header {
   display: flex;
   justify-content: space-between;
@@ -1928,14 +1931,21 @@ dialog textarea {
   padding: 8px 0;
   border-bottom: 1px solid var(--card-border);
 }
-/* 見出し行（Step番号・タイトル・展開ボタン・削除ボタン）は常時1行のコンパクト表示。
-   メモ/プロンプト/リンクは既に入力済みのステップだけ自動展開し、
-   空のステップは折りたたんでおく（メイン画面の作業フロー表示と同じ考え方）。 */
+/* 見出し行に タイトル・メモ・リンク・並べ替え(▲▼)・展開・削除 を横並びで載せる。
+   画面が狭いときは flex-wrap で各欄が下の行へ折り返す。
+   プロンプト本文だけは複数行なので .wf-step-details に残し、展開で表示する。 */
 .wf-step-header-row {
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
+.wf-step-drag-handle {
+  flex-shrink: 0;
+  color: var(--text-sub);
+  cursor: grab;
+}
+.wf-step-drag-handle:active { cursor: grabbing; }
 .wf-step-num {
   font-size: 0.75rem;
   font-weight: 700;
@@ -1943,7 +1953,27 @@ dialog textarea {
   flex-shrink: 0;
   min-width: 44px;
 }
-.wf-step-header-row .wf-step-title { flex: 1; min-width: 0; }
+.wf-step-header-row .wf-step-title { flex: 2 1 150px; min-width: 120px; }
+.wf-step-header-row .wf-step-memo { flex: 1.6 1 120px; min-width: 100px; }
+.wf-step-header-row .wf-step-link { flex: 1.2 1 120px; min-width: 100px; }
+.wf-step-move-btns {
+  display: inline-flex;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.wf-step-move-btn {
+  background: none;
+  border: 1px solid var(--card-border);
+  border-radius: 5px;
+  cursor: pointer;
+  color: var(--text-sub);
+  display: inline-flex;
+  align-items: center;
+  padding: 3px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.wf-step-move-btn:hover:not(:disabled) { color: var(--primary); border-color: var(--primary); }
+.wf-step-move-btn:disabled { opacity: 0.3; cursor: default; }
 .wf-step-expand-btn {
   background: none;
   border: none;
