@@ -1,3 +1,20 @@
+/*
+ * style.css — portal_site の全スタイル（ビルドなし・単一ファイル）
+ *
+ * 構成:
+ *   1. :root / ダークモード ..... CSS変数（配色・バッジ色）
+ *   2. Material Symbols ......... アイコンのベースクラス
+ *   3. アプリ全体レイアウト ..... サイドバー / メインコンテンツ / ヘッダー
+ *   4. ボタン類 ................. .secondary-btn / .primary-btn / .bulk-action-btn / .save-btn / .view-btn
+ *   5. リンク一覧・カード ....... .link-card / .table-row / バッジ
+ *   6. ダイアログ ............... 共通 / ポータル / アイコンピッカー / 一括追加
+ *   7. 検索・思い出しポータル ... 検索パネル / タグ・頻度フィルタ / 検索結果 / 思い出しモード
+ *   8. ワークフロー ............. モード表示 / ステップ / 管理ダイアログ
+ *   9. opendir ローカルリンク ... 左ボーダー色分け / パスコピー
+ *  10. 汎用 .................... ツールチップ / D&D
+ *
+ * 節見出しは 全角ダッシュで囲む1行コメント形式に統一。
+ */
 :root {
   /* Forest Bench: 深緑の作業台 */
   --bg: #F3F5F3;
@@ -72,7 +89,7 @@
   --icon-opsz-lg: 40;
 }
 
-/* ===== ダークモード ===== */
+/* ── ダークモード ── */
 :root[data-theme="dark"] {
   --bg: #191E1C;
   --card-bg: #212824;
@@ -130,7 +147,7 @@
   --bg-company: #2E3236;
 }
 
-/* ===== Material Symbols ベースクラス ===== */
+/* ── Material Symbols ベースクラス ── */
 .icon {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
@@ -166,7 +183,7 @@ body {
   overflow: hidden;
 }
 
-/* ===== アプリ全体レイアウト ===== */
+/* ── アプリ全体レイアウト ── */
 .app-layout {
   display: flex;
   flex-direction: column;
@@ -202,20 +219,20 @@ header {
   text-overflow: ellipsis;
 }
 
-/* サイドバートグルボタン */
+/* ── サイドバートグルボタン ── */
 .sidebar-toggle-btn {
   padding: 6px 8px !important;
   flex-shrink: 0;
 }
 
-/* サイドバー + メインの横並びエリア */
+/* ── サイドバー + メインの横並びエリア ── */
 .app-body {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* ===== サイドバー ===== */
+/* ── サイドバー ── */
 .sidebar {
   width: 240px;
   flex-shrink: 0;
@@ -237,7 +254,7 @@ header {
   pointer-events: none;
 }
 
-/* ===== メインコンテンツ ===== */
+/* ── メインコンテンツ ── */
 .main-content {
   flex: 1;
   overflow-y: auto;
@@ -258,7 +275,7 @@ h1 {
   color: var(--text-sub);
 }
 
-/* ヘッダー内コントロール */
+/* ── ヘッダー内コントロール ── */
 .header-controls {
   display: flex;
   flex-direction: column;
@@ -266,7 +283,7 @@ h1 {
   gap: 8px;
 }
 
-/* トグルスイッチ */
+/* ── トグルスイッチ ── */
 .edit-toggle-area {
   display: flex;
   align-items: center;
@@ -314,7 +331,9 @@ input:checked + .slider:before {
   transform: translateX(16px);
 }
 
-/* 保存ボタン */
+/* ── 保存ボタン ── */
+/* class="primary-btn save-btn"。!important は .primary-btn / .secondary-btn の
+   同詳細度ルールに確実に勝たせるための保険（外すと環境により見た目が崩れる）。 */
 .save-btn {
   font-size: 0.8rem !important;
   padding: 6px 12px !important;
@@ -343,7 +362,7 @@ input:checked + .slider:before {
   100% { box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0); }
 }
 
-/* Controls */
+/* ── コントロール（ボタン群） ── */
 .controls {
   display: flex;
   gap: 8px;
@@ -370,32 +389,31 @@ input:checked + .slider:before {
   border-color: var(--primary);
 }
 
-/* Toggle All Buttons Specific Styles */
-/* .toggle-all-btn styles removed, now using .bulk-action-btn */
-
+/* ── 一括操作ボタン（リンク追加／一括追加） ── */
+/* <div class="controls"> 内に置かれ `.controls button`（詳細度 0,0,1,1）に
+   負けるため、!important で primary 配色を確実に当てる。 */
 .bulk-action-btn {
-  background: var(--primary) !important; /* Primary color background, ensure it applies */
-  color: white !important; /* White text, ensure it applies */
-  border: 2px solid var(--primary-dark) !important; /* Make border more prominent */
+  background: var(--primary) !important;
+  color: #fff !important;
+  border: 2px solid var(--primary-dark) !important;
   font-weight: 600;
-  gap: 6px; /* Space between icon and text */
+  gap: 6px;
 }
-
 .bulk-action-btn:hover {
-  background: var(--primary-dark) !important; /* Darker primary on hover */
+  background: var(--primary-dark) !important;
   border-color: var(--primary-dark) !important;
 }
 
 .primary-btn {
   background: var(--primary) !important;
-  color: white !important;
+  color: #fff !important;
   border-color: var(--primary) !important;
 }
 .primary-btn:hover {
   background: var(--primary-dark) !important;
 }
 
-/* Category Style */
+/* ── <details> / <summary> ベース ── */
 details {
   background: var(--card-bg);
   border-radius: 10px;
@@ -429,7 +447,7 @@ summary {
   flex-grow: 1;
 }
 
-/* グループ内ボタン群 */
+/* ── グループ内ボタン群 ── */
 .group-actions {
   display: flex;
   gap: 6px;
@@ -462,7 +480,7 @@ summary::after {
   content: none; /* JS で .summary-chevron スパンを挿入するため無効化 */
 }
 
-/* summary 内に JS で挿入するシェブロンアイコン */
+/* ── summary 内に JS で挿入するシェブロンアイコン ── */
 .summary-chevron {
   color: var(--text-sub);
   transition: transform 0.3s;
@@ -477,7 +495,7 @@ summary::-webkit-details-marker {
   display: none;
 }
 
-/* Link List */
+/* ── リンク一覧 ── */
 .link-list {
   padding: 0 16px 16px 16px;
   display: grid;
@@ -504,7 +522,7 @@ summary::-webkit-details-marker {
   background: var(--card-bg);
 }
 
-/* Link Card Style */
+/* ── リンクカード ── */
 .link-card-wrapper {
   position: relative;
 }
@@ -529,7 +547,7 @@ summary::-webkit-details-marker {
   transform: translateX(2px);
 }
 
-/* 編集モード時のカード挙動無効化用 */
+/* ── 編集モード時のカード挙動無効化用 ── */
 .link-card.disabled {
   pointer-events: none; 
 }
@@ -538,7 +556,7 @@ summary::-webkit-details-marker {
   border-color: transparent;
 }
 
-/* カード内編集ボタン */
+/* ── カード内編集ボタン ── */
 .card-actions {
   position: absolute;
   top: 8px;
@@ -611,7 +629,7 @@ summary::-webkit-details-marker {
 .badge-website { color: var(--color-website); background: var(--bg-website); }
 .badge-drive { color: var(--color-drive); background: var(--bg-drive); }
 
-/* New Badge Classes */
+/* ── バッジ（badge-*） ── */
 .badge-tool { color: var(--color-tool); background: var(--bg-tool); }
 .badge-sns { color: var(--color-sns); background: var(--bg-sns); }
 .badge-cloud { color: var(--color-cloud); background: var(--bg-cloud); }
@@ -631,7 +649,7 @@ summary::-webkit-details-marker {
   overflow: hidden;
 }
 
-/* Data Management */
+/* ── データ管理パネル ── */
 .data-management {
   padding-top: 16px;
   border-top: 1px solid var(--card-border);
@@ -663,7 +681,7 @@ summary::-webkit-details-marker {
   .main-content { padding: 12px 16px; }
 }
 
-/* Dialog Style */
+/* ── ダイアログ共通 ── */
 dialog {
   position: relative;
   border: 1px solid var(--card-border);
@@ -749,7 +767,7 @@ dialog.bulk-dialog {
   grid-column: 1 / -1;
 }
 
-/* リンク一括追加の入力エリア */
+/* ── リンク一括追加の入力エリア ── */
 #bulk-link-input-area {
   display: flex;
   flex-direction: column;
@@ -779,14 +797,14 @@ dialog.bulk-dialog {
   color: var(--text-main);
 }
 
-/* 各入力欄の幅を調整 */
+/* ── 各入力欄の幅を調整 ── */
 .bulk-link-row .input-title { flex: 1 1 25%; }
 .bulk-link-row .input-url { flex: 1 1 35%; }
 .bulk-link-row .bulk-icon-cell { flex: 0 0 80px; }
 .bulk-link-row .input-badge { flex: 0 0 100px; }
 .bulk-link-row .input-memo { flex: 1 1 20%; }
 
-/* Portal Dialog */
+/* ── ポータル管理ダイアログ ── */
 .portal-section {
   background: var(--bg);
   border: 1px solid var(--card-border);
@@ -827,7 +845,7 @@ dialog.bulk-dialog {
 }
 
 
-/* Drag and Drop Styles */
+/* ── ドラッグ＆ドロップ ── */
 .dragging {
   opacity: 0.4 !important;
 }
@@ -854,7 +872,7 @@ dialog textarea {
   gap: 12px;
 }
 
-/* Icon Picker */
+/* ── アイコンピッカー ── */
 #iconPickerDialog {
   max-width: 600px;
 }
@@ -863,7 +881,7 @@ dialog textarea {
   margin-bottom: 10px;
 }
 
-/* カテゴリフィルターボタン群 */
+/* ── カテゴリフィルターボタン群 ── */
 .icon-category-filter {
   display: flex;
   flex-wrap: wrap;
@@ -897,7 +915,7 @@ dialog textarea {
   border-color: var(--primary);
 }
 
-/* 検索ゼロ件メッセージ */
+/* ── 検索ゼロ件メッセージ ── */
 .icon-grid-empty {
   grid-column: 1 / -1;
   padding: 24px;
@@ -939,7 +957,7 @@ dialog textarea {
   color: var(--primary);
 }
 
-/* アイコン名ラベル（グリッドセル内） */
+/* ── アイコン名ラベル（グリッドセル内） ── */
 .icon-grid-label {
   font-size: 0.55rem;
   color: var(--text-sub);
@@ -956,7 +974,7 @@ dialog textarea {
   color: var(--primary);
 }
 
-/* 一括追加ダイアログのアイコン選択列 */
+/* ── 一括追加ダイアログのアイコン選択列 ── */
 .bulk-icon-cell {
   flex: 0 0 80px;
   display: flex;
@@ -982,7 +1000,7 @@ dialog textarea {
   padding: 4px 6px !important;
 }
 
-/* ===== ビュー切り替えボタン ===== */
+/* ── ビュー切り替えボタン ── */
 .view-btn-group {
   display: inline-flex;
   border: 1px solid var(--card-border);
@@ -996,6 +1014,8 @@ dialog textarea {
   border-radius: 8px;
   overflow: hidden;
 }
+/* class="secondary-btn view-btn"。!important は .secondary-btn 由来の枠線・配色を
+   確実に打ち消すための保険。 */
 .view-btn {
   border: none !important;
   border-radius: 0 !important;
@@ -1003,18 +1023,18 @@ dialog textarea {
 }
 .view-btn.active {
   background: var(--primary) !important;
-  color: white !important;
+  color: #fff !important;
 }
 /* カード/テーブル（表示スタイル）と 思い出し/作業フロー（機能）を
    視覚的に2つの塊として見せるための仕切り。
    ボタンはドラッグで自由に並び替え可能なため、並びを変えた場合は
    区切り線の位置がずれる場合があるが、それは許容する。 */
 #viewTableBtn {
-  border-right: 1px solid var(--card-border) !important;
+  border-right: 1px solid var(--card-border) !important; /* .view-btn の border:none !important を打ち消す */
   margin-right: 4px;
 }
 
-/* ===== テーブルビュー ===== */
+/* ── テーブルビュー ── */
 .link-list-table {
   display: block;
   padding: 0 0 8px 0;
@@ -1118,7 +1138,7 @@ dialog textarea {
   text-align: center;
 }
 
-/* メモ ツールチップ */
+/* ── メモ ツールチップ ── */
 .table-row[data-memo]:hover::after {
   content: attr(data-memo);
   position: absolute;
@@ -1137,14 +1157,14 @@ dialog textarea {
   pointer-events: none;
 }
 
-/* テーブル行の D&D プレースホルダー */
+/* ── テーブル行の D&D プレースホルダー ── */
 .link-list-table .drag-placeholder {
   height: 32px;
   border-radius: 4px;
   margin: 0;
 }
 
-/* ===== アイコンスタイルコントロール ===== */
+/* ── アイコンスタイルコントロール ── */
 .icon-style-row {
   display: flex;
   align-items: center;
@@ -1178,9 +1198,7 @@ dialog textarea {
   color: white;
 }
 
-/* =====================================================
-   思い出しポータル機能 — 追加スタイル
-   ===================================================== */
+/* ══════════ 検索・思い出しポータル ══════════ */
 
 /* ── 検索パネル ── */
 .search-panel {
@@ -1504,7 +1522,7 @@ dialog textarea {
   gap: 8px;
 }
 
-/* ── テーブル表示: カテゴリ別／タグ別グループ ── */
+/* ── テーブル表示: タグ別グループ ── */
 .table-mode-header {
   display: flex;
   justify-content: space-between;
@@ -1893,7 +1911,7 @@ dialog textarea {
 .wf-export-row { display: flex; gap: 12px; flex-wrap: wrap; }
 .wf-export-row .wf-export-field { flex: 1 1 200px; }
 
-/* 発行履歴（配布台帳）ダイアログ */
+/* ── 発行履歴（配布台帳）ダイアログ ── */
 .dist-dot { color: #dc2626; font-size: 0.7em; margin-left: 3px; vertical-align: middle; }
 .dist-header h3 { margin: 0; }
 .dist-note-help { margin: 4px 0 0; font-size: 0.78rem; color: var(--text-sub); line-height: 1.5; }
@@ -2100,7 +2118,7 @@ dialog textarea {
   border-left: 3px solid var(--color-local);
 }
 
-/* ローカルリンク クリップボードコピーボタン */
+/* ── ローカルリンク クリップボードコピーボタン ── */
 .local-copy-btn {
   position: absolute;
   bottom: 6px;
@@ -2121,7 +2139,7 @@ dialog textarea {
   opacity: 1;
 }
 
-/* ===== #10 URL / Explorer リンクの左ボーダー色分け ===== */
+/* ── リンクカード/テーブル行の左ボーダー（通常リンク） ── */
 .link-card:not(.link-local) {
   border-left: 3px solid var(--primary);
 }
@@ -2132,7 +2150,7 @@ dialog textarea {
   border-left: 3px solid var(--primary);
 }
 
-/* ===== #9 ワークフロービュー リンクメモ ツールチップ ===== */
+/* ── 汎用ツールチップ（.has-tooltip + data-tooltip） ── */
 .has-tooltip {
   position: relative;
 }
@@ -2161,7 +2179,7 @@ dialog textarea {
   opacity: 1;
 }
 
-/* ===== #11 表示切替ボタン D&D ===== */
+/* ── ヘッダー表示切替ボタンの並べ替え（D&D） ── */
 .view-btn {
   cursor: grab;
 }
