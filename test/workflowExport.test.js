@@ -164,3 +164,66 @@ describe('作業フロー HTML 出力のチェックリスト機能', () => {
     expect(document.querySelector('.wp-pct').textContent).toBe('100%');
   });
 });
+
+describe('作業フロー HTML 出力: 完了ステップの畳み', () => {
+  beforeEach(() => { try { localStorage.clear(); } catch (e) {} });
+
+  const check = (idx) => {
+    const b = document.querySelectorAll('.step-checkbox')[idx];
+    b.checked = true;
+    b.dispatchEvent(new Event('change', { bubbles: true }));
+    return b.closest('.step');
+  };
+
+  test('チェックした完了ステップは is-done かつ step-peek なし（畳んだ状態）', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const step = check(0);
+    expect(step.classList.contains('is-done')).toBe(true);
+    expect(step.classList.contains('step-peek')).toBe(false);
+  });
+
+  test('完了ステップの行クリックで step-peek がトグルする（チェックボックスは対象外）', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const step = check(0);
+    step.querySelector('.step-title').click();
+    expect(step.classList.contains('step-peek')).toBe(true);
+    step.querySelector('.step-title').click();
+    expect(step.classList.contains('step-peek')).toBe(false);
+
+    // チェックボックス操作では peek トグルしない
+    step.querySelector('.step-checkbox').click(); // uncheck
+    expect(step.classList.contains('step-peek')).toBe(false);
+  });
+
+  test('「完了 N件」トグルは done>0 で表示、件数を出す', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const toggle = document.querySelector('.wf-done-toggle');
+    expect(toggle.style.display).toBe('none');
+    check(0);
+    expect(toggle.style.display).toBe('');
+    expect(toggle.querySelector('.wf-done-count').textContent).toBe('1');
+  });
+
+  test('まとめトグルで workflow.show-done が切り替わり、個別 peek はクリアされる', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const step = check(0);
+    step.classList.add('step-peek');
+    const wfEl = document.querySelector('.workflow');
+    document.querySelector('.wf-done-toggle button').click();
+    expect(wfEl.classList.contains('show-done')).toBe(true);
+    expect(step.classList.contains('step-peek')).toBe(false);
+    document.querySelector('.wf-done-toggle button').click();
+    expect(wfEl.classList.contains('show-done')).toBe(false);
+  });
+
+  test('チェックを外すと step-peek も is-done も外れる', () => {
+    loadIntoDom(exportHtml(sampleWorkflow, {}));
+    const step = check(0);
+    step.classList.add('step-peek');
+    const b = step.querySelector('.step-checkbox');
+    b.checked = false;
+    b.dispatchEvent(new Event('change', { bubbles: true }));
+    expect(step.classList.contains('is-done')).toBe(false);
+    expect(step.classList.contains('step-peek')).toBe(false);
+  });
+});

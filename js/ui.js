@@ -1751,6 +1751,9 @@ export class UI {
         </div>
         ${wfDescHtml ? `<p class="wf-desc" data-editable contenteditable="false">${wfDescHtml}</p>` : ''}
         ${tags ? `<div class="wf-tags">${tags}</div>` : ''}
+        <div class="wf-done-toggle" style="display:none;">
+          <button type="button" onclick="wfToggleDone(this)">✓ 完了 <span class="wf-done-count">0</span> 件 <span class="wf-done-caret">▸</span></button>
+        </div>
         <div class="steps">${stepsHtml}</div>
       </div>`;
     }).join('');
@@ -1842,6 +1845,16 @@ export class UI {
   body.wf-edit-mode .step.is-done .step-title, body.wf-edit-mode .step.is-done .step-memo { text-decoration: none; color: #1B2421; }
   body.wf-edit-mode .step.is-done .step-num { background: #1F5F4A; }
   body.wf-edit-mode .step.is-done .prompt-block, body.wf-edit-mode .step.is-done .step-resource { opacity: 1; }
+  /* 完了ステップはコンパクトな1行に畳む。クリックで一時的に開く（.step-peek）、
+     見出し下のトグルでまとめて開く（.workflow.show-done）。編集モード中は畳まない。 */
+  body:not(.wf-edit-mode) .workflow:not(.show-done) .step.is-done:not(.step-peek) .step-body > :not(.step-title),
+  body:not(.wf-edit-mode) .workflow:not(.show-done) .step.is-done:not(.step-peek) .step-resource { display: none; }
+  body:not(.wf-edit-mode) .workflow:not(.show-done) .step.is-done:not(.step-peek) { padding-top: 6px; padding-bottom: 6px; cursor: pointer; }
+  body:not(.wf-edit-mode) .workflow:not(.show-done) .step.is-done:not(.step-peek):hover { background: #F3F5F3; }
+  .wf-done-toggle { padding: 4px 18px 0; }
+  .wf-done-toggle button { background: none; border: none; color: #8B968F; font-size: 0.75rem; cursor: pointer; padding: 2px 0; }
+  .wf-done-toggle button:hover { color: #1F5F4A; }
+  body.wf-edit-mode .wf-done-toggle { display: none !important; }
   .step-num { flex-shrink: 0; width: 26px; height: 26px; border-radius: 50%; background: #1F5F4A; color: #fff; font-size: 0.8rem; font-weight: 700; display: flex; align-items: center; justify-content: center; transition: background .2s; }
   .step-resource { flex: 0 0 auto; align-self: flex-end; width: 42%; min-width: 220px; max-width: 320px; }
   .step-body { flex: 1; min-width: 0; }
@@ -2085,9 +2098,18 @@ function wfUpdateProgress(wfEl) {
   var done = 0;
   boxes.forEach(function (b) {
     var step = b.closest('.step');
-    if (b.checked) { done++; if (step) step.classList.add('is-done'); }
-    else if (step) step.classList.remove('is-done');
+    if (!step) return;
+    if (b.checked) { done++; step.classList.add('is-done'); }
+    else { step.classList.remove('is-done'); step.classList.remove('step-peek'); }
   });
+  // 完了ステップのまとめ開閉トグル
+  var dt = wfEl.querySelector('.wf-done-toggle');
+  if (dt) {
+    dt.style.display = done > 0 ? '' : 'none';
+    var c = dt.querySelector('.wf-done-count');
+    if (c) c.textContent = done;
+    if (done === 0) wfEl.classList.remove('show-done');
+  }
   var prog = wfEl.querySelector('.wf-progress');
   if (!prog || !total) { if (prog) prog.style.display = 'none'; return; }
   var frac = done / total;
@@ -2101,6 +2123,14 @@ function wfUpdateProgress(wfEl) {
   prog.setAttribute('title', done + ' / ' + total + ' 完了');
   prog.classList.toggle('has-progress', done > 0);
   prog.classList.toggle('is-complete', done === total);
+}
+function wfToggleDone(btn) {
+  var wfEl = btn.closest('.workflow');
+  var showing = wfEl.classList.toggle('show-done');
+  var caret = btn.querySelector('.wf-done-caret');
+  if (caret) caret.textContent = showing ? '▾' : '▸';
+  // まとめ操作を優先し、個別に開いていたものは畳む
+  wfEl.querySelectorAll('.step.step-peek').forEach(function (s) { s.classList.remove('step-peek'); });
 }
 function wfInitChecklist() {
   document.querySelectorAll('.workflow').forEach(function (wfEl) {
@@ -2136,8 +2166,22 @@ document.addEventListener('change', function (e) {
   if (!e.target || !e.target.classList || !e.target.classList.contains('step-checkbox')) return;
   var wfEl = e.target.closest('.workflow');
   if (!wfEl) return;
+  // チェックしたステップは畳む（個別に開いていた状態はクリア）
+  var step = e.target.closest('.step');
+  if (step && e.target.checked) step.classList.remove('step-peek');
   wfPersistChecks(wfEl);
   wfUpdateProgress(wfEl);
+});
+// 畳まれた完了ステップをクリックで一時的に開く（チェックボックス・リンク・ボタン操作は除外）
+document.addEventListener('click', function (e) {
+  if (document.body.classList.contains('wf-edit-mode')) return;
+  if (!e.target.closest) return;
+  var step = e.target.closest('.step.is-done');
+  if (!step) return;
+  if (e.target.closest('.step-check, a, button, input, textarea, .link-input')) return;
+  var wfEl = step.closest('.workflow');
+  if (wfEl && wfEl.classList.contains('show-done')) return; // まとめ表示中は個別トグルしない
+  step.classList.toggle('step-peek');
 });
 
 wfInitClamps();
