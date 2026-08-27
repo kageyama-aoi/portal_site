@@ -8,7 +8,16 @@
 - カード表示／テーブル表示／思い出しモード（最近使った・よく使う・たまにしか使わないリンク）／作業フロー表示の4つの表示モード
 - タグのインライン編集、タグのオートコンプリート（新規タグは自由入力・既存タグは候補から選択）、リンク未紐付けの「事前登録タグ」を作成できるタグ管理エリア
 - URLから資料の種類（スプレッドシート／ドキュメント／Webサイト／Googleドライブ／動画／コードリポジトリ／SNS 等）を自動判定してバッジを提案する機能（手動で上書き可）
-- 作業フロー（ワークフロー）機能：手順をステップ単位で登録し、各ステップにリンクやAIプロンプト・コード・メモを紐付けて管理。PDF/HTML出力にも対応
+- 作業フロー（ワークフロー）機能：
+  - 手順をステップ単位で登録し、各ステップにリンク・AIプロンプト・コード・メモを紐付け
+  - ステップの並べ替え（編集時：ドラッグ＋▲▼、既定は折りたたみ表示）
+  - **配布バージョン管理**：内容変更で版番号（rev）が自動更新、受領者と口頭照合できる「照合コード」を付与
+  - **発行履歴（配布台帳）**：どの版をいつ誰に配ったかをメモレベルで記録（この端末内のみ・配布物には含めない）
+  - **PDF / 単体HTML 出力**：サーバー不要で動作。HTML出力は次に対応
+    - チェックリスト化（各ステップにチェックボックス、円形の進捗％、完了ステップは自動で畳む）
+    - 改変検知（配布後に内容が書き換えられると「⚠ 配布後に変更されています」を表示）
+    - その場で編集 → 新しいHTMLファイルとして保存（元ファイルは上書きしない）
+    - 「次回見直し予定」「最新版の入手先」を任意で埋め込み
 - 複数リンクの一括追加、複数ポータルの管理機能
 - 編集モードによる安全な操作、リンク・タググループの一括開閉
 - ダークモード対応
@@ -36,31 +45,46 @@
 ├── style.css                # アプリケーションのメインスタイルシート
 ├── package.json              # devDependencies（jest, babel）と npm test スクリプト
 ├── data/                    # ポータルデータを格納するディレクトリ
-│   └── data.json            # ポータルデータ（唯一の「データベース」。tags/badge/workflows/tagRegistry を含む）
+│   ├── data.json            # ポータルデータ（唯一の「データベース」。tags/badge/workflows/tagRegistry を含む）
+│   └── distribution-log.json # 作業フロー出力の発行履歴（任意・.gitignore対象）
 ├── DOCS/                    # プロジェクトに関するドキュメント（設計提案・分析メモなど）
 ├── js/                      # JavaScriptソースコード（ESモジュール、ビルド不要）
-│   ├── app.js               # アプリケーションのエントリーポイントと初期化（依存性の注入）
+│   ├── app.js               # エントリーポイントと初期化（依存性の注入）
 │   ├── configManager.js     # ポータル設定の管理（localStorage）
-│   ├── dataManager.js       # データの状態管理と永続化ロジック（links / workflows / tagRegistry）
-│   ├── searchManager.js     # タイトル・タグ・メモ・検索キーワードの横断検索、タグ一覧の収集
+│   ├── dataManager.js       # データの状態管理と永続化（links / workflows / tagRegistry）
+│   ├── searchManager.js     # 横断検索、タグ一覧の収集、findLinkById
 │   ├── tagManager.js        # リンク未紐付けの「事前登録タグ」の管理
+│   ├── tagSuggest.js        # タグ入力欄の共通サジェスト（リンク／作業フローで共用）
 │   ├── memoryManager.js     # 「思い出しモード」用の訪問履歴の管理
-│   ├── workflowManager.js   # 作業フロー（ワークフロー）のCRUD
 │   ├── themeManager.js      # ライト/ダークモードの切り替え
-│   ├── badgeDetector.js     # URLからバッジ種別（スプレッドシート/ドキュメント/Web/Drive等）を推測
+│   ├── badgeDetector.js     # URLからバッジ種別を推測
 │   ├── iconList.js          # アイコンピッカーで使用するMaterial Symbolsのリスト
-│   ├── ui.js                # メインUIの描画とイベント処理（カード/テーブル/思い出し/作業フロー表示）
+│   ├── workflowManager.js   # 作業フローのCRUD・版更新
+│   ├── workflowVersion.js   # 版管理の純粋関数（内容ハッシュ・照合コード・rev更新判定）
+│   ├── workflowConstants.js # 頻度ラベルの定数（FREQ_LABELS / freqLabel）
+│   ├── workflowExporter.js  # 作業フローのHTML/PDF書き出し（DOM非依存）
+│   ├── distributionLog.js   # 発行履歴（localStorage作業コピー＋共有ファイル）
+│   ├── ui.js                # メインUIの描画とイベント処理
+│   ├── util/                # 共通ユーティリティ
+│   │   ├── html.js          # escapeHtml()
+│   │   └── clipboard.js     # copyToClipboard()（フォールバック付き）
 │   └── dialogs/             # 各種ダイアログのロジック
-│       ├── linkDialog.js       # リンク編集ダイアログ
-│       ├── bulkLinkDialog.js   # 複数リンク一括追加ダイアログ
-│       ├── iconPickerDialog.js # アイコン選択ダイアログ
-│       ├── portalDialog.js     # ポータル管理ダイアログ
-│       └── workflowDialog.js   # 作業フローの一覧・作成・編集ダイアログ
+│       ├── linkDialog.js            # リンク編集ダイアログ
+│       ├── bulkLinkDialog.js        # 複数リンク一括追加ダイアログ
+│       ├── iconPickerDialog.js      # アイコン選択ダイアログ
+│       ├── portalDialog.js          # ポータル管理ダイアログ
+│       ├── workflowDialog.js        # 作業フローの一覧・作成・編集ダイアログ
+│       └── distributionLogDialog.js # 発行履歴の一覧・編集・書き出しダイアログ
 └── test/                    # テストコード（Jest）
-    ├── setup.js              # グローバルpolyfill（TextEncoder等）
-    ├── sample.test.js        # スモークテスト
-    ├── dataManager.test.js   # DataManagerの単体テスト
-    └── ui.test.js            # UI関連のテスト
+    ├── setup.js                    # グローバルpolyfill（TextEncoder等）
+    ├── dataManager.test.js         # DataManager
+    ├── ui.test.js                  # UI（タググループ描画・編集モード）
+    ├── ui.characterization.test.js # 特性テスト（リファクタ時の挙動固定）
+    ├── workflowDialog.test.js      # ステップ並べ替え
+    ├── workflowVersion.test.js     # 版管理ロジック
+    ├── workflowExport.test.js      # 出力HTMLの検証（版スタンプ・改変検知・チェックリスト）
+    ├── distributionLog.test.js     # 発行履歴マネージャ
+    └── distributionLogDialog.test.js # 発行履歴ダイアログ
 ```
 
 ## メンテナンスガイドライン
@@ -92,7 +116,14 @@
 
 - **`memoryManager.js` / `workflowManager.js` (思い出し・作業フロー層)**
   - `memoryManager.js`は「思い出しモード」（最近使った/よく使う/たまにしか使わないリンク）のための訪問履歴を管理します。
-  - `workflowManager.js`は作業フロー（手順とステップ）のCRUDを担当します（`WorkflowDialog`から利用）。
+  - `workflowManager.js`は作業フロー（手順とステップ）のCRUDと版（rev）更新を担当します。版管理の純粋ロジックは`workflowVersion.js`にあります。
+
+- **`workflowExporter.js` / `distributionLog.js` (作業フローの出力・配布)**
+  - `workflowExporter.js`は作業フローを配布用の単体HTML・印刷用HTML(PDF)として書き出します。UIのDOMには依存せず、事前に解決済みのデータを受け取ります。**出力HTMLに手を入れるときは必ず`npx jest test/workflowExport.test.js`を実行**してください（HTML/CSS/インラインJSを1つの巨大な文字列テンプレートで生成しているため）。
+  - `distributionLog.js`は「どの版をいつ誰に配ったか」の発行履歴を、localStorageの作業コピーと`data/distribution-log.json`（共有ファイル・.gitignore対象）の二層で管理します。
+
+- **`util/` (共通ユーティリティ)**
+  - `html.js`の`escapeHtml()`、`clipboard.js`の`copyToClipboard()`を全モジュールで共有します。個別に再実装しないでください。頻度ラベルの定数は`workflowConstants.js`が単一の情報源です。
 
 - **`badgeDetector.js` (ユーティリティ)**
   - URL（ホスト名・パス・拡張子）からリンクの種別（バッジ）を推測します。リンク追加・編集時に自動でバッジを提案しますが、常に手動で上書き可能です。
@@ -116,6 +147,8 @@
   - **方針:**
     - **既存のダイアログを修正する場合:** `dialogs`ディレクトリ内の対応するファイル（例: リンク追加ダイアログなら`linkDialog.js`）を修正してください。
     - **新しいダイアログを追加する場合:** `dialogs`ディレクトリに新しいJSファイルを作成し、既存のダイアログクラスを参考に新しいクラスを実装してください。その後、`app.js`でそのクラスをインスタンス化し、`ui.js`に渡すように修正します。
+
+> 開発の進め方・データモデル・作業フローの詳細は `CLAUDE.md` を参照してください（AIアシスタント向けですが人間にも有用です）。
 
 ### メンテナンスの例
 
