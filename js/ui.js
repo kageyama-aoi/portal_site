@@ -1139,16 +1139,22 @@ export class UI {
 
       const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' }[wf.freq] || '';
       const tags = (wf.tags || []).map(t => `<span class="tag-chip tag-chip-sm">${this._escapeHtml(t)}</span>`).join('');
+      const stepCount = wf.steps.length;
 
       const summary = document.createElement('summary');
       summary.className = 'workflow-card-summary';
       summary.innerHTML = `
-        <div class="workflow-card-title">
-          <span class="icon icon-sm" style="color:var(--primary)">account_tree</span>
-          <span class="workflow-card-title-text">${this._escapeHtml(wf.title)}</span>
-          <span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel}</span>
-          ${wf.description ? `<span class="workflow-card-desc">${this._escapeHtml(wf.description)}</span>` : ''}
-          ${tags ? `<div class="wf-tags-row">${tags}</div>` : ''}
+        <div class="workflow-card-head">
+          <div class="workflow-card-title">
+            <span class="icon icon-sm workflow-card-icon">account_tree</span>
+            <span class="workflow-card-title-text">${this._escapeHtml(wf.title)}</span>
+            ${freqLabel ? `<span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel}</span>` : ''}
+            <span class="workflow-card-count">${stepCount} ステップ</span>
+          </div>
+          ${(wf.description || tags) ? `<div class="workflow-card-sub">
+            ${wf.description ? `<span class="workflow-card-desc">${this._escapeHtml(wf.description)}</span>` : ''}
+            ${tags ? `<span class="wf-tags-row">${tags}</span>` : ''}
+          </div>` : ''}
         </div>
         <span class="icon icon-lg summary-chevron">expand_more</span>
       `;
@@ -1290,7 +1296,7 @@ export class UI {
             if (step.memo) {
               const memo = document.createElement('div');
               memo.className = 'workflow-step-memo';
-              memo.innerHTML = `<span class="icon icon-xs">lightbulb</span> ${this._escapeHtml(step.memo)}`;
+              memo.textContent = step.memo;
               detailsPanel.appendChild(memo);
             }
             if (hasVisiblePrompt) {
