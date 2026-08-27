@@ -1065,6 +1065,24 @@ export class UI {
     const portalId = this.configManager.getActivePortalId();
     const workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
 
+    this.container.appendChild(this._buildWorkflowModeHeader());
+
+    if (workflows.length === 0) {
+      this.container.appendChild(this._buildWorkflowEmptyState());
+      return;
+    }
+
+    // 並び順は WorkflowManager.getWorkflows() 側でタイトルの五十音順に統一済み。
+    // ここで独自に頻度順などへ並べ替えないことで、フロー管理ダイアログや
+    // 出力先選択ダイアログと表示順が食い違わないようにする。
+    workflows.forEach(wf => this.container.appendChild(this._buildWorkflowCard(wf, portalId)));
+  }
+
+  /**
+   * @private ワークフローモードのヘッダー（タイトル＋操作ボタン群）を返します。
+   * @returns {HTMLElement}
+   */
+  _buildWorkflowModeHeader() {
     const header = document.createElement('div');
     header.className = 'workflow-mode-header';
     header.innerHTML = `
@@ -1080,309 +1098,337 @@ export class UI {
     const headerBtns = document.createElement('div');
     headerBtns.style.cssText = 'display:flex; gap:8px;';
 
-    const pdfBtn = document.createElement('button');
-    pdfBtn.type = 'button';
-    pdfBtn.className = 'secondary-btn';
-    pdfBtn.innerHTML = '<span class="icon icon-sm">picture_as_pdf</span> PDF出力';
-    pdfBtn.style.cssText = 'font-size:0.85rem;';
-    pdfBtn.addEventListener('click', () => this._openExportSelectDialog('pdf'));
-    headerBtns.appendChild(pdfBtn);
+    const mkBtn = (innerHtml, onClick, title = '') => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'secondary-btn';
+      btn.style.cssText = 'font-size:0.85rem;';
+      btn.innerHTML = innerHtml;
+      if (title) btn.title = title;
+      btn.addEventListener('click', onClick);
+      return btn;
+    };
 
-    const htmlBtn = document.createElement('button');
-    htmlBtn.type = 'button';
-    htmlBtn.className = 'secondary-btn';
-    htmlBtn.innerHTML = '<span class="icon icon-sm">html</span> HTML出力';
-    htmlBtn.title = 'サーバー不要・コピー/リンクボタン付きの単体HTMLとして書き出します';
-    htmlBtn.style.cssText = 'font-size:0.85rem;';
-    htmlBtn.addEventListener('click', () => this._openExportSelectDialog('html'));
-    headerBtns.appendChild(htmlBtn);
-
+    headerBtns.appendChild(mkBtn(
+      '<span class="icon icon-sm">picture_as_pdf</span> PDF出力',
+      () => this._openExportSelectDialog('pdf')
+    ));
+    headerBtns.appendChild(mkBtn(
+      '<span class="icon icon-sm">html</span> HTML出力',
+      () => this._openExportSelectDialog('html'),
+      'サーバー不要・コピー/リンクボタン付きの単体HTMLとして書き出します'
+    ));
     if (this.distributionLogDialog) {
-      const logBtn = document.createElement('button');
-      logBtn.type = 'button';
-      logBtn.className = 'secondary-btn';
       const unsaved = this.distributionLog && this.distributionLog.hasUnsavedChanges;
-      logBtn.innerHTML = `<span class="icon icon-sm">history</span> 発行履歴${unsaved ? '<span class="dist-dot" title="未保存の追記があります">●</span>' : ''}`;
-      logBtn.title = 'どの版をいつ誰に配ったかの記録';
-      logBtn.style.cssText = 'font-size:0.85rem;';
-      logBtn.addEventListener('click', () => this.distributionLogDialog.open());
-      headerBtns.appendChild(logBtn);
+      headerBtns.appendChild(mkBtn(
+        `<span class="icon icon-sm">history</span> 発行履歴${unsaved ? '<span class="dist-dot" title="未保存の追記があります">●</span>' : ''}`,
+        () => this.distributionLogDialog.open(),
+        'どの版をいつ誰に配ったかの記録'
+      ));
     }
-
-    const editBtn = document.createElement('button');
-    editBtn.type = 'button';
-    editBtn.className = 'secondary-btn';
-    editBtn.innerHTML = '<span class="icon icon-sm">edit</span> フローを管理';
-    editBtn.style.cssText = 'font-size:0.85rem;';
-    editBtn.addEventListener('click', () => {
-      if (this.workflowDialog) this.workflowDialog.open();
-    });
-    headerBtns.appendChild(editBtn);
+    headerBtns.appendChild(mkBtn(
+      '<span class="icon icon-sm">edit</span> フローを管理',
+      () => { if (this.workflowDialog) this.workflowDialog.open(); }
+    ));
 
     header.appendChild(headerBtns);
+    return header;
+  }
 
-    this.container.appendChild(header);
+  /**
+   * @private ワークフロー未登録時の空状態要素を返します。
+   * @returns {HTMLElement}
+   */
+  _buildWorkflowEmptyState() {
+    const empty = document.createElement('div');
+    empty.className = 'workflow-empty';
+    empty.innerHTML = `
+      <span class="icon" style="font-size:2.5rem;color:var(--text-sub)">account_tree</span>
+      <p>ワークフローがまだ登録されていません。</p>
+      <button type="button" class="primary-btn" id="wfCreateFromEmpty" style="margin-top:8px;">
+        <span class="icon icon-sm">add</span> 最初のフローを作成
+      </button>
+    `;
+    empty.querySelector('#wfCreateFromEmpty').addEventListener('click', () => {
+      if (this.workflowDialog) this.workflowDialog.open();
+    });
+    return empty;
+  }
 
-    if (workflows.length === 0) {
-      const empty = document.createElement('div');
-      empty.className = 'workflow-empty';
-      empty.innerHTML = `
-        <span class="icon" style="font-size:2.5rem;color:var(--text-sub)">account_tree</span>
-        <p>ワークフローがまだ登録されていません。</p>
-        <button type="button" class="primary-btn" id="wfCreateFromEmpty" style="margin-top:8px;">
-          <span class="icon icon-sm">add</span> 最初のフローを作成
-        </button>
-      `;
-      this.container.appendChild(empty);
-      document.getElementById('wfCreateFromEmpty')?.addEventListener('click', () => {
-        if (this.workflowDialog) this.workflowDialog.open();
+  /**
+   * @private 1つのワークフローカード（<details>）を組み立てて返します。
+   * @param {object} wf
+   * @param {string} portalId
+   * @returns {HTMLDetailsElement}
+   */
+  _buildWorkflowCard(wf, portalId) {
+    const card = document.createElement('details');
+    card.className = 'workflow-card';
+    // 既定は折りたたみ。セッション中に開いたフローだけ開いた状態を復元する。
+    card.open = this.expandedWorkflowIds.has(wf.id);
+    card.addEventListener('toggle', () => {
+      if (card.open) this.expandedWorkflowIds.add(wf.id);
+      else this.expandedWorkflowIds.delete(wf.id);
+    });
+
+    const wfFreqLabel = freqLabel(wf.freq);
+    const tags = (wf.tags || []).map(t => `<span class="tag-chip tag-chip-sm">${this._escapeHtml(t)}</span>`).join('');
+
+    const summary = document.createElement('summary');
+    summary.className = 'workflow-card-summary';
+    summary.innerHTML = `
+      <div class="workflow-card-head">
+        <div class="workflow-card-title">
+          <span class="icon icon-sm workflow-card-icon">account_tree</span>
+          <span class="workflow-card-title-text">${this._escapeHtml(wf.title)}</span>
+          ${wfFreqLabel ? `<span class="wf-freq-badge wf-freq-${wf.freq}">${wfFreqLabel}</span>` : ''}
+          <span class="workflow-card-count">${wf.steps.length} ステップ</span>
+        </div>
+        ${(wf.description || tags) ? `<div class="workflow-card-sub">
+          ${wf.description ? `<span class="workflow-card-desc">${this._escapeHtml(wf.description)}</span>` : ''}
+          ${tags ? `<span class="wf-tags-row">${tags}</span>` : ''}
+        </div>` : ''}
+      </div>
+      <span class="icon icon-lg summary-chevron">expand_more</span>
+    `;
+    card.appendChild(summary);
+
+    const stepsDiv = document.createElement('div');
+    stepsDiv.className = 'workflow-steps';
+
+    if (wf.steps.length === 0) {
+      stepsDiv.innerHTML = '<div style="padding:12px 20px;color:var(--text-sub);font-size:0.85rem;">ステップがありません。</div>';
+    } else {
+      const dragState = { srcIdx: null };
+      wf.steps.forEach((step, stepIndex) => {
+        stepsDiv.appendChild(this._buildWorkflowStepRow(step, stepIndex, wf, portalId, stepsDiv, dragState));
       });
-      return;
     }
 
-    // 並び順は WorkflowManager.getWorkflows() 側でタイトルの五十音順に統一済み。
-    // ここで独自に頻度順などへ並べ替えないことで、フロー管理ダイアログや
-    // 出力先選択ダイアログと表示順が食い違わないようにする。
-    workflows.forEach(wf => {
-      const card = document.createElement('details');
-      card.className = 'workflow-card';
-      // 既定は折りたたみ。セッション中に開いたフローだけ開いた状態を復元する。
-      card.open = this.expandedWorkflowIds.has(wf.id);
-      card.addEventListener('toggle', () => {
-        if (card.open) this.expandedWorkflowIds.add(wf.id);
-        else this.expandedWorkflowIds.delete(wf.id);
+    card.appendChild(stepsDiv);
+    return card;
+  }
+
+  /**
+   * @private 1ステップ分の行要素を組み立てて返します。
+   * @param {object} step
+   * @param {number} stepIndex
+   * @param {object} wf - 所属ワークフロー
+   * @param {string} portalId
+   * @param {HTMLElement} stepsDiv - D&D中のクラス掃除に使う親要素
+   * @param {{srcIdx: number|null}} dragState - 同カード内のステップ行で共有するD&D状態
+   * @returns {HTMLElement}
+   */
+  _buildWorkflowStepRow(step, stepIndex, wf, portalId, stepsDiv, dragState) {
+    const stepRow = document.createElement('div');
+    stepRow.className = 'workflow-step-row';
+
+    // 編集モード: D&D並び替え
+    if (this.isEditMode) {
+      stepRow.draggable = true;
+      const handle = document.createElement('span');
+      handle.className = 'icon icon-xs workflow-step-drag-handle';
+      handle.textContent = 'drag_indicator';
+      stepRow.appendChild(handle);
+
+      stepRow.addEventListener('dragstart', (e) => {
+        dragState.srcIdx = stepIndex;
+        stepRow.classList.add('wf-step-dragging');
+        e.dataTransfer.effectAllowed = 'move';
       });
+      stepRow.addEventListener('dragend', () => {
+        stepRow.classList.remove('wf-step-dragging');
+        stepsDiv.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
+      });
+      stepRow.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        stepsDiv.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
+        if (dragState.srcIdx !== stepIndex) stepRow.classList.add('wf-step-drag-over');
+      });
+      stepRow.addEventListener('drop', (e) => {
+        e.preventDefault();
+        if (dragState.srcIdx === null || dragState.srcIdx === stepIndex) return;
+        const wfData = this.workflowManager.getWorkflow(portalId, wf.id);
+        const steps = [...wfData.steps];
+        const [moved] = steps.splice(dragState.srcIdx, 1);
+        steps.splice(stepIndex, 0, moved);
+        steps.forEach((s, i) => { s.step = i + 1; });
+        this.workflowManager.updateWorkflow(portalId, wf.id, { steps });
+        dragState.srcIdx = null;
+        this.render();
+      });
+    }
 
-      const wfFreqLabel = freqLabel(wf.freq);
-      const tags = (wf.tags || []).map(t => `<span class="tag-chip tag-chip-sm">${this._escapeHtml(t)}</span>`).join('');
-      const stepCount = wf.steps.length;
+    const num = document.createElement('div');
+    num.className = 'workflow-step-num';
+    num.textContent = step.step;
+    stepRow.appendChild(num);
 
-      const summary = document.createElement('summary');
-      summary.className = 'workflow-card-summary';
-      summary.innerHTML = `
-        <div class="workflow-card-head">
-          <div class="workflow-card-title">
-            <span class="icon icon-sm workflow-card-icon">account_tree</span>
-            <span class="workflow-card-title-text">${this._escapeHtml(wf.title)}</span>
-            ${wfFreqLabel ? `<span class="wf-freq-badge wf-freq-${wf.freq}">${wfFreqLabel}</span>` : ''}
-            <span class="workflow-card-count">${stepCount} ステップ</span>
-          </div>
-          ${(wf.description || tags) ? `<div class="workflow-card-sub">
-            ${wf.description ? `<span class="workflow-card-desc">${this._escapeHtml(wf.description)}</span>` : ''}
-            ${tags ? `<span class="wf-tags-row">${tags}</span>` : ''}
-          </div>` : ''}
-        </div>
-        <span class="icon icon-lg summary-chevron">expand_more</span>
-      `;
-      card.appendChild(summary);
+    const content = document.createElement('div');
+    content.className = 'workflow-step-content';
 
-      const stepsDiv = document.createElement('div');
-      stepsDiv.className = 'workflow-steps';
+    // タイトル行
+    const titleRow = document.createElement('div');
+    titleRow.className = 'workflow-step-title-row';
 
-      if (wf.steps.length === 0) {
-        stepsDiv.innerHTML = '<div style="padding:12px 20px;color:var(--text-sub);font-size:0.85rem;">ステップがありません。</div>';
-      } else {
-        let dragSrcIdx = null;
+    const stepTitle = document.createElement('div');
+    stepTitle.className = 'workflow-step-title';
 
-        wf.steps.forEach((step, stepIndex) => {
-          const stepRow = document.createElement('div');
-          stepRow.className = 'workflow-step-row';
+    if (this.isEditMode) {
+      stepTitle.contentEditable = 'true';
+      stepTitle.textContent = step.title;
+      stepTitle.addEventListener('blur', () => {
+        const newTitle = stepTitle.textContent.trim();
+        if (newTitle !== step.title) {
+          this.workflowManager.updateStep(portalId, wf.id, stepIndex, { title: newTitle });
+        }
+      });
+      stepTitle.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); stepTitle.blur(); }
+      });
+    } else {
+      stepTitle.textContent = step.title;
+    }
+    titleRow.appendChild(stepTitle);
 
-          // 編集モード: D&D並び替え
-          if (this.isEditMode) {
-            stepRow.draggable = true;
-            const handle = document.createElement('span');
-            handle.className = 'icon icon-xs workflow-step-drag-handle';
-            handle.textContent = 'drag_indicator';
-            stepRow.appendChild(handle);
+    // メモ展開ボタン（メモ・プロンプトあり or 編集モード）
+    let expandBtn = null;
+    const hasVisiblePrompt = step.prompt && (step.promptType || 'prompt') !== 'none';
+    if (step.memo || hasVisiblePrompt || this.isEditMode) {
+      expandBtn = document.createElement('button');
+      expandBtn.type = 'button';
+      expandBtn.className = 'workflow-step-expand-btn';
+      expandBtn.innerHTML = '<span class="icon icon-xs">expand_more</span>';
+      expandBtn.title = 'メモを表示/非表示';
+      expandBtn.addEventListener('click', () => {
+        stepRow.classList.toggle('wf-expanded');
+        expandBtn.querySelector('.icon').textContent =
+          stepRow.classList.contains('wf-expanded') ? 'expand_less' : 'expand_more';
+      });
+      titleRow.appendChild(expandBtn);
 
-            stepRow.addEventListener('dragstart', (e) => {
-              dragSrcIdx = stepIndex;
-              stepRow.classList.add('wf-step-dragging');
-              e.dataTransfer.effectAllowed = 'move';
-            });
-            stepRow.addEventListener('dragend', () => {
-              stepRow.classList.remove('wf-step-dragging');
-              stepsDiv.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
-            });
-            stepRow.addEventListener('dragover', (e) => {
-              e.preventDefault();
-              e.dataTransfer.dropEffect = 'move';
-              stepsDiv.querySelectorAll('.wf-step-drag-over').forEach(el => el.classList.remove('wf-step-drag-over'));
-              if (dragSrcIdx !== stepIndex) stepRow.classList.add('wf-step-drag-over');
-            });
-            stepRow.addEventListener('drop', (e) => {
-              e.preventDefault();
-              if (dragSrcIdx === null || dragSrcIdx === stepIndex) return;
-              const wfData = this.workflowManager.getWorkflow(portalId, wf.id);
-              const steps = [...wfData.steps];
-              const [moved] = steps.splice(dragSrcIdx, 1);
-              steps.splice(stepIndex, 0, moved);
-              steps.forEach((s, i) => { s.step = i + 1; });
-              this.workflowManager.updateWorkflow(portalId, wf.id, { steps });
-              dragSrcIdx = null;
-              this.render();
-            });
-          }
-
-          const num = document.createElement('div');
-          num.className = 'workflow-step-num';
-          num.textContent = step.step;
-          stepRow.appendChild(num);
-
-          const content = document.createElement('div');
-          content.className = 'workflow-step-content';
-
-          // タイトル行
-          const titleRow = document.createElement('div');
-          titleRow.className = 'workflow-step-title-row';
-
-          const stepTitle = document.createElement('div');
-          stepTitle.className = 'workflow-step-title';
-
-          if (this.isEditMode) {
-            stepTitle.contentEditable = 'true';
-            stepTitle.textContent = step.title;
-            stepTitle.addEventListener('blur', () => {
-              const newTitle = stepTitle.textContent.trim();
-              if (newTitle !== step.title) {
-                this.workflowManager.updateStep(portalId, wf.id, stepIndex, { title: newTitle });
-              }
-            });
-            stepTitle.addEventListener('keydown', (e) => {
-              if (e.key === 'Enter') { e.preventDefault(); stepTitle.blur(); }
-            });
-          } else {
-            stepTitle.textContent = step.title;
-          }
-          titleRow.appendChild(stepTitle);
-
-          // メモ展開ボタン（メモ・プロンプトあり or 編集モード）
-          let expandBtn = null;
-          const hasVisiblePrompt = step.prompt && (step.promptType || 'prompt') !== 'none';
-          if (step.memo || hasVisiblePrompt || this.isEditMode) {
-            expandBtn = document.createElement('button');
-            expandBtn.type = 'button';
-            expandBtn.className = 'workflow-step-expand-btn';
-            expandBtn.innerHTML = '<span class="icon icon-xs">expand_more</span>';
-            expandBtn.title = 'メモを表示/非表示';
-            expandBtn.addEventListener('click', () => {
-              stepRow.classList.toggle('wf-expanded');
-              expandBtn.querySelector('.icon').textContent =
-                stepRow.classList.contains('wf-expanded') ? 'expand_less' : 'expand_more';
-            });
-            titleRow.appendChild(expandBtn);
-
-            // 編集モードでも、既にメモ/プロンプトがあるステップだけ自動展開する。
-            // 空のステップまで一律展開すると、1行だけの単純な手順でも
-            // 空のメモ入力欄・2行のプロンプト欄が常に表示されて縦に間延びしてしまうため。
-            if (this.isEditMode && (step.memo || step.prompt)) {
-              stepRow.classList.add('wf-expanded');
-              expandBtn.querySelector('.icon').textContent = 'expand_less';
-            }
-          }
-
-          content.appendChild(titleRow);
-
-          // 詳細パネル（メモ）
-          const detailsPanel = document.createElement('div');
-          detailsPanel.className = 'workflow-step-details';
-
-          if (this.isEditMode) {
-            const memoInput = document.createElement('input');
-            memoInput.type = 'text';
-            memoInput.className = 'workflow-step-memo-input';
-            memoInput.placeholder = 'メモ（補足説明）';
-            memoInput.value = step.memo || '';
-            memoInput.addEventListener('blur', () => {
-              this.workflowManager.updateStep(portalId, wf.id, stepIndex, { memo: memoInput.value });
-            });
-            detailsPanel.appendChild(memoInput);
-
-            const promptInput = document.createElement('textarea');
-            promptInput.className = 'workflow-step-prompt-input';
-            promptInput.rows = 2;
-            promptInput.placeholder = 'AIプロンプト（省略可・出力時にコピーボタンが付きます）';
-            promptInput.value = step.prompt || '';
-            promptInput.addEventListener('blur', () => {
-              this.workflowManager.updateStep(portalId, wf.id, stepIndex, { prompt: promptInput.value });
-            });
-            detailsPanel.appendChild(promptInput);
-          } else {
-            if (step.memo) {
-              const memo = document.createElement('div');
-              memo.className = 'workflow-step-memo';
-              memo.textContent = step.memo;
-              detailsPanel.appendChild(memo);
-            }
-            if (hasVisiblePrompt) {
-              const typeMeta = this._promptTypeMeta(step.promptType);
-              const promptBlock = document.createElement('div');
-              promptBlock.className = `workflow-step-prompt ${typeMeta.cls}`;
-              promptBlock.innerHTML = `
-                <div class="workflow-step-prompt-header">
-                  <span class="icon icon-xs">${typeMeta.icon}</span> ${typeMeta.label}
-                  <button type="button" class="wf-copy-btn" title="${typeMeta.label}をコピー">
-                    <span class="icon icon-xs">content_copy</span> コピー
-                  </button>
-                </div>
-                <pre class="workflow-step-prompt-text wf-clamp"></pre>
-                <button type="button" class="wf-prompt-toggle-btn" style="display:none;">▼ 続きを見る</button>
-              `;
-              const promptTextEl = promptBlock.querySelector('.workflow-step-prompt-text');
-              promptTextEl.textContent = step.prompt;
-              const copyBtn = promptBlock.querySelector('.wf-copy-btn');
-              copyBtn.addEventListener('click', () => this._copyToClipboard(step.prompt, copyBtn));
-              const clampToggleBtn = promptBlock.querySelector('.wf-prompt-toggle-btn');
-              clampToggleBtn.addEventListener('click', () => {
-                const stillClamped = promptTextEl.classList.toggle('wf-clamp');
-                clampToggleBtn.textContent = stillClamped ? '▼ 続きを見る' : '▲ 折りたたむ';
-              });
-              // 折りたたみパネルは初期状態で非表示のため、展開された時点で長さを判定する
-              if (expandBtn) {
-                expandBtn.addEventListener('click', () => {
-                  if (stepRow.classList.contains('wf-expanded') && promptTextEl.scrollHeight > promptTextEl.clientHeight + 1) {
-                    clampToggleBtn.style.display = 'inline-block';
-                  }
-                });
-              }
-              if (stepRow.classList.contains('wf-expanded') && promptTextEl.scrollHeight > promptTextEl.clientHeight + 1) {
-                clampToggleBtn.style.display = 'inline-block';
-              }
-              detailsPanel.appendChild(promptBlock);
-            }
-          }
-
-          content.appendChild(detailsPanel);
-          stepRow.appendChild(content);
-
-          if (step.linkId) {
-            const found = this.searchManager?.findLinkById(step.linkId);
-            if (found) {
-              const isLocal = found.link.url && found.link.url.startsWith('opendir:');
-              const linkBtn = document.createElement('a');
-              linkBtn.className = 'workflow-step-link-btn' + (isLocal ? ' wf-link-local' : '');
-              linkBtn.href = found.link.url;
-              if (!isLocal) linkBtn.target = '_blank';
-              linkBtn.innerHTML = `<span class="icon icon-sm">open_in_new</span> ${this._escapeHtml(found.link.title)}`;
-              if (found.link.memo) {
-                linkBtn.dataset.tooltip = found.link.memo;
-                linkBtn.classList.add('has-tooltip');
-              }
-              linkBtn.addEventListener('click', () => {
-                if (this.memoryManager) this.memoryManager.recordVisit(found.link.id);
-              });
-              stepRow.appendChild(linkBtn);
-            }
-          }
-
-          stepsDiv.appendChild(stepRow);
-        });
+      // 編集モードでも、既にメモ/プロンプトがあるステップだけ自動展開する。
+      // 空のステップまで一律展開すると、1行だけの単純な手順でも
+      // 空のメモ入力欄・2行のプロンプト欄が常に表示されて縦に間延びしてしまうため。
+      if (this.isEditMode && (step.memo || step.prompt)) {
+        stepRow.classList.add('wf-expanded');
+        expandBtn.querySelector('.icon').textContent = 'expand_less';
       }
+    }
 
-      card.appendChild(stepsDiv);
-      this.container.appendChild(card);
+    content.appendChild(titleRow);
+
+    // 詳細パネル（メモ）
+    const detailsPanel = document.createElement('div');
+    detailsPanel.className = 'workflow-step-details';
+
+    if (this.isEditMode) {
+      const memoInput = document.createElement('input');
+      memoInput.type = 'text';
+      memoInput.className = 'workflow-step-memo-input';
+      memoInput.placeholder = 'メモ（補足説明）';
+      memoInput.value = step.memo || '';
+      memoInput.addEventListener('blur', () => {
+        this.workflowManager.updateStep(portalId, wf.id, stepIndex, { memo: memoInput.value });
+      });
+      detailsPanel.appendChild(memoInput);
+
+      const promptInput = document.createElement('textarea');
+      promptInput.className = 'workflow-step-prompt-input';
+      promptInput.rows = 2;
+      promptInput.placeholder = 'AIプロンプト（省略可・出力時にコピーボタンが付きます）';
+      promptInput.value = step.prompt || '';
+      promptInput.addEventListener('blur', () => {
+        this.workflowManager.updateStep(portalId, wf.id, stepIndex, { prompt: promptInput.value });
+      });
+      detailsPanel.appendChild(promptInput);
+    } else {
+      if (step.memo) {
+        const memo = document.createElement('div');
+        memo.className = 'workflow-step-memo';
+        memo.textContent = step.memo;
+        detailsPanel.appendChild(memo);
+      }
+      if (hasVisiblePrompt) {
+        detailsPanel.appendChild(this._buildWorkflowStepPrompt(step, stepRow, expandBtn));
+      }
+    }
+
+    content.appendChild(detailsPanel);
+    stepRow.appendChild(content);
+
+    if (step.linkId) {
+      const linkBtn = this._buildWorkflowStepLink(step.linkId);
+      if (linkBtn) stepRow.appendChild(linkBtn);
+    }
+
+    return stepRow;
+  }
+
+  /**
+   * @private 閲覧モードのステップに付くプロンプト表示ブロックを返します。
+   * @param {object} step
+   * @param {HTMLElement} stepRow
+   * @param {HTMLElement|null} expandBtn - 展開ボタン（クランプ判定タイミングに使う）
+   * @returns {HTMLElement}
+   */
+  _buildWorkflowStepPrompt(step, stepRow, expandBtn) {
+    const typeMeta = this._promptTypeMeta(step.promptType);
+    const promptBlock = document.createElement('div');
+    promptBlock.className = `workflow-step-prompt ${typeMeta.cls}`;
+    promptBlock.innerHTML = `
+      <div class="workflow-step-prompt-header">
+        <span class="icon icon-xs">${typeMeta.icon}</span> ${typeMeta.label}
+        <button type="button" class="wf-copy-btn" title="${typeMeta.label}をコピー">
+          <span class="icon icon-xs">content_copy</span> コピー
+        </button>
+      </div>
+      <pre class="workflow-step-prompt-text wf-clamp"></pre>
+      <button type="button" class="wf-prompt-toggle-btn" style="display:none;">▼ 続きを見る</button>
+    `;
+    const promptTextEl = promptBlock.querySelector('.workflow-step-prompt-text');
+    promptTextEl.textContent = step.prompt;
+    const copyBtn = promptBlock.querySelector('.wf-copy-btn');
+    copyBtn.addEventListener('click', () => this._copyToClipboard(step.prompt, copyBtn));
+    const clampToggleBtn = promptBlock.querySelector('.wf-prompt-toggle-btn');
+    clampToggleBtn.addEventListener('click', () => {
+      const stillClamped = promptTextEl.classList.toggle('wf-clamp');
+      clampToggleBtn.textContent = stillClamped ? '▼ 続きを見る' : '▲ 折りたたむ';
     });
+    // 折りたたみパネルは初期状態で非表示のため、展開された時点で長さを判定する
+    const revealToggleIfClamped = () => {
+      if (stepRow.classList.contains('wf-expanded') && promptTextEl.scrollHeight > promptTextEl.clientHeight + 1) {
+        clampToggleBtn.style.display = 'inline-block';
+      }
+    };
+    if (expandBtn) expandBtn.addEventListener('click', revealToggleIfClamped);
+    revealToggleIfClamped();
+    return promptBlock;
+  }
+
+  /**
+   * @private ステップに紐づくリンクボタン（無ければ null）を返します。
+   * @param {string} linkId
+   * @returns {HTMLAnchorElement|null}
+   */
+  _buildWorkflowStepLink(linkId) {
+    const found = this.searchManager?.findLinkById(linkId);
+    if (!found) return null;
+    const isLocal = found.link.url && found.link.url.startsWith('opendir:');
+    const linkBtn = document.createElement('a');
+    linkBtn.className = 'workflow-step-link-btn' + (isLocal ? ' wf-link-local' : '');
+    linkBtn.href = found.link.url;
+    if (!isLocal) linkBtn.target = '_blank';
+    linkBtn.innerHTML = `<span class="icon icon-sm">open_in_new</span> ${this._escapeHtml(found.link.title)}`;
+    if (found.link.memo) {
+      linkBtn.dataset.tooltip = found.link.memo;
+      linkBtn.classList.add('has-tooltip');
+    }
+    linkBtn.addEventListener('click', () => {
+      if (this.memoryManager) this.memoryManager.recordVisit(found.link.id);
+    });
+    return linkBtn;
   }
 
   /**
