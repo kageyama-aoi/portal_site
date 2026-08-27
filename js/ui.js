@@ -4,6 +4,8 @@
  * @module UI
  */
 
+import { verificationCode } from './workflowVersion.js';
+
 /**
  * @typedef {object} Link
  * @property {string} id - リンクのユニークID。
@@ -74,6 +76,15 @@ export class UI {
    * @property {WorkflowDialog|null} workflowDialog
    */
   workflowDialog = null;
+  /**
+   * @property {import('./distributionLog.js').DistributionLogManager|null} distributionLog
+   *   作業フロー出力の発行履歴（配布台帳）。app.js で設定。
+   */
+  distributionLog = null;
+  /**
+   * @property {object|null} distributionLogDialog - 発行履歴ダイアログ。app.js で設定。
+   */
+  distributionLogDialog = null;
   /**
    * @property {TagManager|null} tagManager
    */
@@ -1075,6 +1086,17 @@ export class UI {
     htmlBtn.addEventListener('click', () => this._openExportSelectDialog('html'));
     headerBtns.appendChild(htmlBtn);
 
+    if (this.distributionLogDialog) {
+      const logBtn = document.createElement('button');
+      logBtn.type = 'button';
+      logBtn.className = 'secondary-btn';
+      logBtn.innerHTML = '<span class="icon icon-sm">history</span> 発行履歴';
+      logBtn.title = 'どの版をいつ誰に配ったかの記録（この端末内のみ）';
+      logBtn.style.cssText = 'font-size:0.85rem;';
+      logBtn.addEventListener('click', () => this.distributionLogDialog.open());
+      headerBtns.appendChild(logBtn);
+    }
+
     const editBtn = document.createElement('button');
     editBtn.type = 'button';
     editBtn.className = 'secondary-btn';
@@ -1365,14 +1387,41 @@ export class UI {
       <label class="wf-export-item">
         <input type="radio" name="wfExportRadio" class="wf-export-check" value="${wf.id}" ${i === 0 ? 'checked' : ''}>
         <span class="wf-export-item-title">${this._escapeHtml(wf.title)}</span>
+        <span class="wf-export-item-rev">v${wf.rev || 1}</span>
         <span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel[wf.freq] || ''}</span>
       </label>
     `).join('');
+
+    const prefs = this.distributionLog ? this.distributionLog.getExportPrefs() : { reviewDue: '', sourceHint: '' };
+    const recents = this.distributionLog ? this.distributionLog.getRecentRecipients() : [];
+    const recentsOptions = recents.map(r => `<option value="${this._escapeHtml(r)}">`).join('');
 
     content.innerHTML = `
       <h3 style="margin:0 0 4px;">${formatLabel}出力する作業フローを選択</h3>
       <p style="margin:0 0 12px;font-size:0.82rem;color:var(--text-sub);">出力できるのは1つの作業フローのみです。</p>
       <div class="wf-export-list">${itemsHtml}</div>
+
+      <div class="wf-export-meta">
+        <label class="wf-export-field">
+          <span>配布先メモ <span class="wf-export-opt">（任意・この端末の記録だけに残ります）</span></span>
+          <input type="text" id="wfExportRecipient" list="wfExportRecentList" autocomplete="off"
+                 placeholder="誰に渡すか一言（例: 営業部 田中さん）">
+          <datalist id="wfExportRecentList">${recentsOptions}</datalist>
+        </label>
+        <div class="wf-export-row">
+          <label class="wf-export-field">
+            <span>次回見直し予定 <span class="wf-export-opt">（任意）</span></span>
+            <input type="month" id="wfExportReviewDue" value="${this._escapeHtml(prefs.reviewDue || '')}">
+          </label>
+          <label class="wf-export-field">
+            <span>最新版の入手先 <span class="wf-export-opt">（任意・配布物に表示されます）</span></span>
+            <input type="text" id="wfExportSourceHint" autocomplete="off"
+                   value="${this._escapeHtml(prefs.sourceHint || '')}"
+                   placeholder="例: 共有フォルダ「作業手順」／担当 総務 佐藤">
+          </label>
+        </div>
+      </div>
+
       <div style="display:flex; justify-content:flex-end; gap:8px; margin-top:12px;">
         <button type="button" id="wfExportCancelBtn" class="secondary-btn">キャンセル</button>
         <button type="button" id="wfExportConfirmBtn" class="primary-btn">${formatLabel}を出力</button>
@@ -1386,11 +1435,36 @@ export class UI {
         alert('出力する作業フローを1つ選択してください。');
         return;
       }
+      const wf = workflows.find(w => w.id === checked.value);
+      const recipientNote = document.getElementById('wfExportRecipient').value.trim();
+      const reviewDue = document.getElementById('wfExportReviewDue').value;
+      const sourceHint = document.getElementById('wfExportSourceHint').value.trim();
+
+      if (this.distributionLog) {
+        this.distributionLog.setExportPrefs({ reviewDue, sourceHint });
+      }
+
+      const exportMeta = { reviewDue, sourceHint };
       dialog.close();
+
       if (format === 'pdf') {
-        this._exportWorkflowAsPdf([checked.value]);
+        this._exportWorkflowAsPdf([checked.value], exportMeta);
       } else {
-        this._exportWorkflowAsHtml([checked.value]);
+        this._exportWorkflowAsHtml([checked.value], exportMeta);
+      }
+
+      // 発行履歴に1件記録（配布先メモは配布物には含めない）
+      if (this.distributionLog && wf) {
+        const code = verificationCode(wf.rev || 1, wf.contentHash, wf.updatedAt);
+        this.distributionLog.addEntry({
+          portalId,
+          workflowId: wf.id,
+          title: wf.title,
+          rev: wf.rev || 1,
+          code,
+          format,
+          recipientNote
+        });
       }
     });
 
@@ -1403,7 +1477,7 @@ export class UI {
    * @private
    * @param {string[]} [selectedIds] - 出力対象のワークフローID。省略時は全件。
    */
-  _exportWorkflowAsPdf(selectedIds) {
+  _exportWorkflowAsPdf(selectedIds, exportMeta = {}) {
     const portalId = this.configManager.getActivePortalId();
     const portal = this.configManager.getActivePortal();
     let workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
@@ -1416,8 +1490,14 @@ export class UI {
 
     const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
     const esc = (s) => this._escapeHtml(s);
+    const sourceHint = (exportMeta && exportMeta.sourceHint) ? String(exportMeta.sourceHint) : '';
 
     const workflowsHtml = workflows.map(wf => {
+      const rev = wf.rev || 1;
+      const code = verificationCode(rev, wf.contentHash, wf.updatedAt);
+      const updatedDate = wf.updatedAt
+        ? new Date(wf.updatedAt).toLocaleDateString('ja-JP')
+        : new Date().toLocaleDateString('ja-JP');
       const freq = freqLabel[wf.freq] || '';
       const tags = (wf.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
 
@@ -1451,6 +1531,7 @@ export class UI {
         <div class="wf-header">
           <h2>${esc(wf.title)}</h2>
           ${freq ? `<span class="freq-badge">${freq}</span>` : ''}
+          <span class="wf-version">v${rev} ・ ${esc(updatedDate)} ・ ${esc(code)}</span>
         </div>
         ${wf.description ? `<p class="wf-desc">${esc(wf.description)}</p>` : ''}
         ${tags ? `<div class="wf-tags">${tags}</div>` : ''}
@@ -1472,10 +1553,12 @@ export class UI {
     body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; font-size: 11pt; color: #1B2421; background: #fff; padding: 20mm 15mm; }
     h1 { font-size: 18pt; margin-bottom: 4px; }
     .subtitle { font-size: 10pt; color: #57645E; margin-bottom: 6px; }
-    .export-date { font-size: 9pt; color: #8B968F; margin-bottom: 24px; }
+    .export-date { font-size: 9pt; color: #8B968F; margin-bottom: 6px; }
+    .dist-hint { font-size: 9pt; color: #57645E; margin-bottom: 24px; }
     .workflow { margin-bottom: 24px; border: 1px solid #DCE3DF; border-radius: 8px; overflow: hidden; break-inside: avoid; page-break-inside: avoid; }
-    .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #EAF0EE; border-bottom: 1px solid #DCE3DF; }
+    .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #EAF0EE; border-bottom: 1px solid #DCE3DF; flex-wrap: wrap; }
     .wf-header h2 { font-size: 13pt; flex: 1; }
+    .wf-version { font-size: 7.5pt; font-weight: 600; color: #57645E; background: #DCE3DF; padding: 1px 7px; border-radius: 8px; white-space: nowrap; }
     .freq-badge { font-size: 8pt; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: #d1fae5; color: #059669; white-space: nowrap; }
     .wf-desc { padding: 6px 14px; font-size: 10pt; color: #57645E; border-bottom: 1px solid #E8EDEA; }
     .wf-tags { padding: 4px 14px 6px; border-bottom: 1px solid #E8EDEA; }
@@ -1504,6 +1587,7 @@ export class UI {
   <h1>${esc(title)}</h1>
   ${subtitle ? `<div class="subtitle">${esc(subtitle)}</div>` : ''}
   <div class="export-date">出力日: ${today}</div>
+  ${sourceHint ? `<div class="dist-hint">最新版の入手先: ${esc(sourceHint)}</div>` : ''}
   ${workflowsHtml}
   <script>window.onload = function() { window.print(); };<\/script>
 </body>
@@ -1521,8 +1605,9 @@ export class UI {
    * プロンプトのコピー、リンクへの移動、内容の直接編集＋再保存に対応します。
    * @private
    * @param {string[]} [selectedIds] - 出力対象のワークフローID。省略時は全件。
+   * @param {{reviewDue?: string, sourceHint?: string}} [exportMeta] - 出力ダイアログで入力された配布メタ。
    */
-  _exportWorkflowAsHtml(selectedIds) {
+  _exportWorkflowAsHtml(selectedIds, exportMeta = {}) {
     const portalId = this.configManager.getActivePortalId();
     const portal = this.configManager.getActivePortal();
     let workflows = this.workflowManager ? this.workflowManager.getWorkflows(portalId) : [];
@@ -1536,9 +1621,37 @@ export class UI {
     const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
     const esc = (s) => this._escapeHtml(s);
 
+    // 改変検知の基準値。配布時点の [data-editable] / .link-input の値を DOM 出現順に並べる。
+    // 属性値だと改行が正規化されてしまうため、JSON にまとめて埋め込む。
+    const baseEditables = [];
+    const baseLinkInputs = [];
+    const recEditable = (raw) => { baseEditables.push(raw == null ? '' : String(raw)); return esc(raw || ''); };
+    const recLinkInput = (raw) => { baseLinkInputs.push(raw == null ? '' : String(raw)); return esc(raw || ''); };
+
+    // wf-meta 用の版情報（配布物には Git 由来の文字列を一切入れない）
+    const metaWorkflows = [];
+
+    const pageTitle = portal?.title || '作業フロー';
+    const pageSubtitle = portal?.subtitle || '';
+    // ページ見出し（h1 → subtitle）は全ワークフローより前に DOM に出るので、真っ先に基準値を記録する
+    const pageTitleHtml = recEditable(pageTitle);
+    const pageSubtitleHtml = pageSubtitle ? recEditable(pageSubtitle) : '';
+
     const workflowsHtml = workflows.map(wf => {
+      const rev = wf.rev || 1;
+      const code = verificationCode(rev, wf.contentHash, wf.updatedAt);
+      const updatedDate = wf.updatedAt
+        ? new Date(wf.updatedAt).toLocaleDateString('ja-JP')
+        : new Date().toLocaleDateString('ja-JP');
+      metaWorkflows.push({ workflowId: wf.id, title: wf.title, rev, contentHash: wf.contentHash || '', code });
+
       const freq = freqLabel[wf.freq] || '';
       const tags = (wf.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
+
+      // 改変検知の基準値は DOM 出現順に記録する必要があるため、
+      // 見出し（h2 → wf-desc）を先に記録してからステップを組み立てる。
+      const wfTitleHtml = recEditable(wf.title);
+      const wfDescHtml = wf.description ? recEditable(wf.description) : '';
 
       const stepsHtml = wf.steps.map(step => {
         let linkHtml = '';
@@ -1557,7 +1670,7 @@ export class UI {
               <div class="link-block${isLocal ? ' link-block-local' : ''}">
                 <div class="link-name"><span class="icon-txt">${isLocal ? '📁' : '🔗'}</span> ${esc(found.link.title)}</div>
                 <div class="link-controls">
-                  <input type="text" class="link-input" value="${esc(displayValue)}" spellcheck="false" readonly ${isLocal ? 'data-scheme="opendir:"' : ''}>
+                  <input type="text" class="link-input" value="${recLinkInput(displayValue)}" spellcheck="false" readonly ${isLocal ? 'data-scheme="opendir:"' : ''}>
                   <button type="button" class="mini-btn open-btn" onclick="wfOpenLink(this)">開く</button>
                   <button type="button" class="mini-btn copy-btn" onclick="wfCopyLink(this)">コピー</button>
                 </div>
@@ -1565,6 +1678,9 @@ export class UI {
           }
         }
         const hasVisiblePrompt = step.prompt && (step.promptType || 'prompt') !== 'none';
+        // step-title → step-memo → prompt-text の順で改変検知の基準値を記録する
+        const stepTitleHtml = recEditable(step.title);
+        const stepMemoHtml = recEditable(step.memo || '');
         let promptHtml = '';
         if (hasVisiblePrompt) {
           const ptMeta = {
@@ -1572,6 +1688,7 @@ export class UI {
             code: { icon: '💻', label: 'コード', cls: 'pt-code' },
             text: { icon: '📝', label: 'テキスト', cls: 'pt-text' }
           }[step.promptType] || { icon: '🤖', label: 'プロンプト', cls: '' };
+          const promptTextHtml = recEditable(step.prompt || '');
           // 折りたたみ/展開ボタンをテキスト末尾ではなくヘッダーに置く。
           // プロンプトが長いと、末尾のボタンを押すためだけに毎回一番下まで
           // スクロールする必要があり、閉じる時も同様に不便だったため。
@@ -1584,7 +1701,7 @@ export class UI {
                     <button type="button" class="mini-btn copy-btn" onclick="wfCopyPrompt(this)">📋 コピー</button>
                   </div>
                 </div>
-                <div class="prompt-text wf-clamp" data-editable contenteditable="false" data-placeholder="${ptMeta.label}を入力/貼り付け...">${esc(step.prompt || '')}</div>
+                <div class="prompt-text wf-clamp" data-editable contenteditable="false" data-placeholder="${ptMeta.label}を入力/貼り付け...">${promptTextHtml}</div>
               </div>`;
         }
         // 本文（タイトル・説明・プロンプト）は左詰めの列、資料（リンク）は右側の
@@ -1594,8 +1711,8 @@ export class UI {
         return `<div class="step">
           <div class="step-num">${step.step}</div>
           <div class="step-body">
-            <div class="step-title" data-editable contenteditable="false">${esc(step.title)}</div>
-            <div class="step-memo" data-editable contenteditable="false" data-placeholder="補足メモ">${esc(step.memo || '')}</div>
+            <div class="step-title" data-editable contenteditable="false">${stepTitleHtml}</div>
+            <div class="step-memo" data-editable contenteditable="false" data-placeholder="補足メモ">${stepMemoHtml}</div>
             ${promptHtml}
           </div>
           ${linkHtml ? `<div class="step-resource">${linkHtml}</div>` : ''}
@@ -1604,20 +1721,42 @@ export class UI {
 
       return `<div class="workflow">
         <div class="wf-header">
-          <h2 data-editable contenteditable="false">${esc(wf.title)}</h2>
+          <h2 data-editable contenteditable="false">${wfTitleHtml}</h2>
           ${freq ? `<span class="freq-badge">${freq}</span>` : ''}
+          <span class="wf-version" title="配布バージョン（受領者との照合用）">v${rev} ・ ${esc(updatedDate)} ・ ${esc(code)}</span>
         </div>
-        ${wf.description ? `<p class="wf-desc" data-editable contenteditable="false">${esc(wf.description)}</p>` : ''}
+        ${wfDescHtml ? `<p class="wf-desc" data-editable contenteditable="false">${wfDescHtml}</p>` : ''}
         ${tags ? `<div class="wf-tags">${tags}</div>` : ''}
         <div class="steps">${stepsHtml}</div>
       </div>`;
     }).join('');
 
-    const title = portal?.title || '作業フロー';
-    const subtitle = portal?.subtitle || '';
+    const title = pageTitle;
+    const subtitle = pageSubtitle;
     const today = new Date().toLocaleDateString('ja-JP');
-    const baseFileName = `${title}_workflow_${new Date().toISOString().slice(0, 10)}`;
+    const exportedAtIso = new Date().toISOString();
+    const dateStamp = exportedAtIso.slice(0, 10).replace(/-/g, '');
+    // 単一フロー出力（通常経路）ならファイル名に版を入れる
+    const revTag = metaWorkflows.length === 1 ? `_v${metaWorkflows[0].rev}` : '';
+    const singleTitle = metaWorkflows.length === 1 ? metaWorkflows[0].title : title;
+    const baseFileName = `${singleTitle}${revTag}_${dateStamp}`;
     const baseFileNameJs = JSON.stringify(baseFileName).replace(/<\/script/gi, '<\\/script');
+
+    // 配布メタ（Git 由来の文字列は入れない）。改変検知の基準値もここに同梱する。
+    const reviewDue = (exportMeta && exportMeta.reviewDue) ? String(exportMeta.reviewDue) : '';
+    const sourceHint = (exportMeta && exportMeta.sourceHint) ? String(exportMeta.sourceHint) : '';
+    const wfMetaJson = JSON.stringify({
+      schema: 1,
+      exportedAt: exportedAtIso,
+      portalTitle: title,
+      reviewDue,
+      sourceHint,
+      workflows: metaWorkflows
+    }).replace(/</g, '\\u003c');
+    const wfBaselineJson = JSON.stringify({
+      editables: baseEditables,
+      linkInputs: baseLinkInputs
+    }).replace(/</g, '\\u003c');
 
     const html = `<!DOCTYPE html>
 <html lang="ja">
@@ -1701,6 +1840,10 @@ export class UI {
   .origin-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 0.72rem; font-weight: 700; padding: 2px 9px; border-radius: 10px; margin-left: 8px; vertical-align: middle; }
   .origin-badge.origin-original { background: #dbeafe; color: #1e40af; }
   .origin-badge.origin-copy { background: #fef3c7; color: #92400e; }
+  .wf-version { font-size: 0.68rem; font-weight: 600; color: #57645E; background: #DCE3DF; padding: 2px 8px; border-radius: 8px; white-space: nowrap; letter-spacing: 0.02em; }
+  .dist-info { max-width: 760px; margin: 14px auto 0; font-size: 0.76rem; color: #57645E; display: flex; flex-direction: column; gap: 3px; }
+  .dist-info .review-warn { color: #92400e; font-weight: 600; }
+  .dist-info .src-hint b { color: #1B2421; }
   [data-editable]:not([contenteditable="true"]) { cursor: default; }
   body.wf-edit-mode [data-editable][contenteditable="true"] { cursor: text; }
   body.wf-edit-mode [data-editable][contenteditable="true"]:hover { background: #EAF0EE; border-radius: 4px; }
@@ -1716,9 +1859,9 @@ export class UI {
 <div class="page">
   <div class="page-header">
     <div>
-      <h1 data-editable contenteditable="false">${esc(title)}</h1>
-      ${subtitle ? `<div class="subtitle" data-editable contenteditable="false">${esc(subtitle)}</div>` : ''}
-      <div class="export-date">出力日: ${today} <span id="wfOriginBadge" class="origin-badge origin-original">📄 原本</span></div>
+      <h1 data-editable contenteditable="false">${pageTitleHtml}</h1>
+      ${pageSubtitleHtml ? `<div class="subtitle" data-editable contenteditable="false">${pageSubtitleHtml}</div>` : ''}
+      <div class="export-date">出力日: ${today} <span id="wfIntegrityBadge" class="origin-badge origin-original">📄 配布時のまま</span></div>
     </div>
     <label class="edit-toggle">
       <span class="edit-toggle-label">編集する</span>
@@ -1730,9 +1873,15 @@ export class UI {
   </div>
   ${workflowsHtml}
 </div>
+<div class="dist-info" id="wfDistInfo">
+  ${sourceHint ? `<div class="src-hint">最新版の入手先: <b>${esc(sourceHint)}</b></div>` : ''}
+  <div class="review-note" id="wfReviewNote" data-review-due="${esc(reviewDue)}"></div>
+</div>
 <div class="footer-bar">
   <button type="button" id="saveHtmlBtn" onclick="wfSaveAsHtml()" disabled title="「編集する」をONにすると使えます">💾 この内容をHTMLとして保存</button>
 </div>
+<script type="application/json" id="wf-meta">${wfMetaJson}</script>
+<script type="application/json" id="wf-baseline">${wfBaselineJson}</script>
 <script>
 var wfBaseFileName = ${baseFileNameJs};
 function wfShowFeedback(btn, ok) {
@@ -1823,22 +1972,69 @@ function wfSetEditMode(on) {
     }
   });
 }
+// ── 改変検知: 配布時点の基準値（wf-baseline）と現在の内容を突き合わせる ──
+function wfReadBaseline() {
+  try {
+    var el = document.getElementById('wf-baseline');
+    return el ? JSON.parse(el.textContent) : { editables: [], linkInputs: [] };
+  } catch (e) {
+    return { editables: [], linkInputs: [] };
+  }
+}
+function wfCheckIntegrity() {
+  var base = wfReadBaseline();
+  var changed = false;
+  var eds = document.querySelectorAll('[data-editable]');
+  for (var i = 0; i < eds.length; i++) {
+    if ((base.editables[i] != null ? base.editables[i] : '') !== eds[i].textContent) { changed = true; break; }
+  }
+  if (!changed) {
+    var lis = document.querySelectorAll('.link-input');
+    for (var j = 0; j < lis.length; j++) {
+      if ((base.linkInputs[j] != null ? base.linkInputs[j] : '') !== lis[j].value) { changed = true; break; }
+    }
+  }
+  var badge = document.getElementById('wfIntegrityBadge');
+  if (badge) {
+    badge.textContent = changed ? '⚠ 配布後に内容が変更されています' : '📄 配布時のまま';
+    badge.className = 'origin-badge ' + (changed ? 'origin-copy' : 'origin-original');
+  }
+  return changed;
+}
+function wfInitReviewNote() {
+  var note = document.getElementById('wfReviewNote');
+  if (!note) return;
+  var due = note.getAttribute('data-review-due') || '';
+  if (!/^\\d{4}-\\d{2}$/.test(due)) { note.style.display = 'none'; return; }
+  var parts = due.split('-');
+  var end = new Date(Number(parts[0]), Number(parts[1]), 0); // 当月末
+  var now = new Date();
+  if (now > end) {
+    note.className = 'review-warn';
+    note.textContent = '⏰ この手順書は ' + due + ' に見直し予定でした。最新版を入手先にご確認ください。';
+  } else {
+    note.textContent = '次回見直し予定: ' + due;
+  }
+}
 wfInitClamps();
+wfCheckIntegrity();
+wfInitReviewNote();
 document.getElementById('wfEditToggle').addEventListener('change', function (e) {
   wfSetEditMode(e.target.checked);
+});
+document.addEventListener('input', function (e) {
+  if (e.target && (e.target.matches('[data-editable]') || e.target.classList.contains('link-input'))) {
+    wfCheckIntegrity();
+  }
 });
 function wfSaveAsHtml() {
   // 配布事故防止のため、保存する内容は必ず「編集不可」状態に戻してから書き出す
   var toggle = document.getElementById('wfEditToggle');
   if (toggle) toggle.checked = false;
   wfSetEditMode(false);
-  // 原本と複製を一目で見分けられるようバッジを差し替える
-  var badge = document.getElementById('wfOriginBadge');
-  if (badge) {
-    badge.textContent = '📄 複製';
-    badge.classList.remove('origin-original');
-    badge.classList.add('origin-copy');
-  }
+  // 基準値（wf-baseline）は配布時点のまま据え置く。編集して保存し直したコピーは
+  // 「⚠ 配布後に内容が変更されています」と表示され続け、原本との乖離が一目で分かる。
+  wfCheckIntegrity();
   document.querySelectorAll('.link-input').forEach(function (el) {
     el.setAttribute('value', el.value);
     el.setAttribute('readonly', 'readonly');

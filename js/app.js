@@ -17,6 +17,8 @@ import { WorkflowManager } from './workflowManager.js';
 import { WorkflowDialog } from './dialogs/workflowDialog.js';
 import { ThemeManager } from './themeManager.js';
 import { TagManager } from './tagManager.js';
+import { DistributionLogManager } from './distributionLog.js';
+import { DistributionLogDialog } from './dialogs/distributionLogDialog.js';
 
 /**
  * DOMContentLoaded イベントリスナー。DOMが完全にロードされた後にアプリケーションを初期化します。
@@ -122,6 +124,27 @@ document.addEventListener('DOMContentLoaded', async () => {
   const workflowManager = new WorkflowManager(dataManager);
   ui.workflowManager = workflowManager;
 
+  /**
+   * @type {DistributionLogManager}
+   * @description 作業フロー出力の発行履歴（配布台帳）。localStorage に保存。
+   */
+  const distributionLog = new DistributionLogManager();
+  ui.distributionLog = distributionLog;
+
+  /**
+   * @type {DistributionLogDialog}
+   */
+  const distributionLogDialog = new DistributionLogDialog(distributionLog, configManager);
+  distributionLogDialog.workflowsProvider = () => {
+    const pid = configManager.getActivePortalId();
+    return workflowManager.getWorkflows(pid).map(w => ({
+      id: w.id,
+      title: w.title,
+      rev: w.rev || 1
+    }));
+  };
+  ui.distributionLogDialog = distributionLogDialog;
+
         /**
    * @type {PortalDialog}
    * @description ポータル設定ダイアログのインスタンス。
@@ -163,6 +186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     portalDialog.init(() => ui.render());
     iconPickerDialog.init();
     workflowDialog.init();
+    distributionLogDialog.init();
 
   } else {
     console.error('Failed to load data/data.json:', loadResult.error);

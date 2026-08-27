@@ -5,6 +5,8 @@
  * @module WorkflowManager
  */
 
+import { ensureVersionFields, bumpRevIfContentChanged } from './workflowVersion.js';
+
 /**
  * @typedef {object} WorkflowStep
  * @property {number} step - ステップ番号（1始まり）
@@ -23,6 +25,9 @@
  * @property {string[]} tags - タグ配列
  * @property {string} freq - 頻度 ('daily'|'weekly'|'monthly'|'rare')
  * @property {WorkflowStep[]} steps - ステップ配列
+ * @property {number} rev - 版番号（1始まり）。内容変更を伴う保存のたびに +1。配布バージョン管理に使う。
+ * @property {string} updatedAt - 最終更新日時（ISO文字列）
+ * @property {string} contentHash - title+description+steps の内容ハッシュ。rev を上げるかの判定に使う。
  */
 
 /**
@@ -50,6 +55,9 @@ export class WorkflowManager {
    */
   getWorkflows(portalId) {
     const workflows = JSON.parse(JSON.stringify(this.dataManager.allWorkflows[portalId] || []));
+    // UI・出力側が常に版情報を参照できるよう、クローンに対して防御的に補完しておく
+    // （旧データの永続的な補完は DataManager 側で1回だけ行う）。
+    workflows.forEach(wf => ensureVersionFields(wf));
     return workflows.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ja'));
   }
 
@@ -82,6 +90,9 @@ export class WorkflowManager {
       steps: [],
       ...workflowData
     };
+    wf.rev = 1;
+    wf.updatedAt = new Date().toISOString();
+    ensureVersionFields(wf, wf.updatedAt);
     this.dataManager.allWorkflows[portalId].push(wf);
     this.dataManager.markAsDirty();
     return wf;
@@ -97,10 +108,13 @@ export class WorkflowManager {
     const workflows = this.dataManager.allWorkflows[portalId] || [];
     const idx = workflows.findIndex(w => w.id === workflowId);
     if (idx !== -1) {
-      this.dataManager.allWorkflows[portalId][idx] = {
+      const merged = {
         ...this.dataManager.allWorkflows[portalId][idx],
         ...workflowData
       };
+      // 内容（title/description/steps）が実際に変わっていれば rev を +1 する
+      bumpRevIfContentChanged(merged);
+      this.dataManager.allWorkflows[portalId][idx] = merged;
       this.dataManager.markAsDirty();
     }
   }
@@ -137,6 +151,7 @@ export class WorkflowManager {
         ...stepData
       };
       wf.steps.push(step);
+      bumpRevIfContentChanged(wf);
       this.dataManager.markAsDirty();
     }
   }
@@ -152,6 +167,7 @@ export class WorkflowManager {
     const wf = this.getWorkflow(portalId, workflowId);
     if (wf && wf.steps[stepIndex]) {
       Object.assign(wf.steps[stepIndex], stepData);
+      bumpRevIfContentChanged(wf);
       this.dataManager.markAsDirty();
     }
   }
@@ -167,6 +183,7 @@ export class WorkflowManager {
     if (wf) {
       wf.steps.splice(stepIndex, 1);
       wf.steps.forEach((s, i) => { s.step = i + 1; });
+      bumpRevIfContentChanged(wf);
       this.dataManager.markAsDirty();
     }
   }

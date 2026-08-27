@@ -4,6 +4,8 @@
  * @module DataManager
  */
 
+import { ensureVersionFields } from './workflowVersion.js';
+
 /**
  * @class DataManager
  * @brief アプリケーションのリンクデータを管理するクラス。
@@ -170,6 +172,9 @@ export class DataManager {
       if (this._migratePortals()) {
         this.markAsDirty();
       }
+      // 版情報の補完は「次に何か保存されたとき」に一緒に書き出せば十分なので、
+      // これだけを理由に dirty にはしない（毎回の再保存を促さない）。
+      this._ensureWorkflowVersions();
       this.data = this.allPortals[portalId] ?? [];
       return { success: true, data: this.data };
     } catch (e) {
@@ -201,6 +206,7 @@ export class DataManager {
         throw new Error('Invalid data format.');
       }
       this._migratePortals();
+      this._ensureWorkflowVersions();
       this.data = this.allPortals[portalId] ?? [];
       return this.data;
     } catch (err) {
@@ -231,6 +237,7 @@ export class DataManager {
         throw new Error('Invalid data format.');
       }
       this._migratePortals();
+      this._ensureWorkflowVersions();
       this.data = this.allPortals[portalId] ?? [];
       this.markAsDirty();
     } catch (err) {
@@ -251,6 +258,25 @@ export class DataManager {
       if (migrated) anyMigrated = true;
     });
     return anyMigrated;
+  }
+
+  /**
+   * すべてのワークフローに版情報フィールド（rev / updatedAt / contentHash）を補完します。
+   * 旧データ（rev 無し）は rev:1 として扱われます。配布バージョン管理の土台。
+   * @private
+   * @returns {boolean} いずれかのワークフローで補完が発生した場合 true。
+   */
+  _ensureWorkflowVersions() {
+    let anyChanged = false;
+    const now = new Date().toISOString();
+    Object.keys(this.allWorkflows || {}).forEach(portalId => {
+      const list = this.allWorkflows[portalId];
+      if (!Array.isArray(list)) return;
+      list.forEach(wf => {
+        if (ensureVersionFields(wf, now)) anyChanged = true;
+      });
+    });
+    return anyChanged;
   }
 
   /**

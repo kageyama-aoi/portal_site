@@ -1858,6 +1858,40 @@ dialog textarea {
 }
 .wf-export-item:hover { background: var(--bg-tool); }
 .wf-export-item-title { flex: 1; }
+.wf-export-item-rev { font-size: 0.72rem; font-weight: 700; color: var(--text-sub); background: var(--bg-tool); padding: 1px 7px; border-radius: 7px; }
+
+/* 出力ダイアログ: 配布メモ・見直し予定・入手先 */
+.wf-export-meta { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--card-border); display: flex; flex-direction: column; gap: 10px; }
+.wf-export-field { display: flex; flex-direction: column; gap: 4px; font-size: 0.82rem; }
+.wf-export-field input { padding: 7px 10px; border: 1px solid var(--card-border); border-radius: 7px; font-size: 0.88rem; background: var(--bg); color: var(--text-main); }
+.wf-export-opt { font-size: 0.74rem; color: var(--text-sub); font-weight: 400; }
+.wf-export-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.wf-export-row .wf-export-field { flex: 1 1 200px; }
+
+/* 発行履歴（配布台帳）ダイアログ */
+.dist-header h3 { margin: 0; }
+.dist-note-help { margin: 4px 0 0; font-size: 0.78rem; color: var(--text-sub); }
+.dist-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 14px 0 8px; flex-wrap: wrap; }
+.dist-toolbar-right { display: flex; gap: 6px; }
+.dist-toolbar-right .secondary-btn { font-size: 0.78rem; padding: 5px 10px; }
+.dist-filter { padding: 6px 10px; border: 1px solid var(--card-border); border-radius: 7px; background: var(--bg); color: var(--text-main); font-size: 0.85rem; max-width: 60%; }
+.dist-summary { font-size: 0.8rem; color: var(--text-sub); background: var(--bg-tool); border-radius: 7px; padding: 6px 10px; margin-bottom: 8px; }
+.dist-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; }
+.dist-empty { font-size: 0.85rem; color: var(--text-sub); padding: 16px 4px; }
+.dist-row { border: 1px solid var(--card-border); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+.dist-row-main { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 0.82rem; }
+.dist-when { color: var(--text-sub); font-variant-numeric: tabular-nums; }
+.dist-title { font-weight: 600; }
+.dist-rev { font-size: 0.72rem; font-weight: 700; color: var(--text-sub); background: var(--bg-tool); padding: 1px 6px; border-radius: 6px; }
+.dist-fmt { font-size: 0.68rem; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: var(--card-border); color: var(--text-main); }
+.dist-fmt-html { background: #dbeafe; color: #1e40af; }
+.dist-fmt-pdf { background: #fee2e2; color: #991b1b; }
+.dist-manual { font-size: 0.68rem; color: var(--text-sub); border: 1px dashed var(--card-border); padding: 0 5px; border-radius: 6px; }
+.dist-code { margin-left: auto; font-size: 0.72rem; color: var(--text-sub); font-family: 'Consolas', 'Menlo', monospace; }
+.dist-row-note { display: flex; gap: 6px; align-items: center; }
+.dist-note-input { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--card-border); border-radius: 6px; font-size: 0.82rem; background: var(--bg); color: var(--text-main); }
+.dist-del-btn { flex-shrink: 0; background: none; border: 1px solid var(--card-border); border-radius: 6px; padding: 4px; cursor: pointer; color: var(--text-sub); display: inline-flex; }
+.dist-del-btn:hover { color: var(--danger); border-color: var(--danger); }
 .wf-list-item {
   display: flex;
   justify-content: space-between;
