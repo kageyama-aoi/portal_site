@@ -5,6 +5,8 @@
  */
 
 import { initTagsSuggest } from '../tagSuggest.js';
+import { escapeHtml } from '../util/html.js';
+import { freqLabel } from '../workflowConstants.js';
 
 /**
  * @class WorkflowDialog
@@ -487,21 +489,16 @@ export class WorkflowDialog {
   }
 
   /**
-   * @private - HTML特殊文字をエスケープします。
+   * @private - HTML特殊文字をエスケープします（共通実装 util/html.js へ委譲）。
    */
   _escape(str) {
-    return String(str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /**
-   * @private - 頻度ラベルを返します。
+   * @private - 頻度ラベルを返します。未知の値はそのまま返す（旧データ保険）。
    */
   _freqLabel(freq) {
-    const map = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
-    return map[freq] || freq || '';
+    return freqLabel(freq) || freq || '';
   }
 }

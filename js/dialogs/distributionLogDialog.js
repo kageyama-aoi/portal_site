@@ -6,6 +6,7 @@
  */
 
 import { LEDGER_FILE_NAME, LEDGER_FILE_PATH } from '../distributionLog.js';
+import { escapeHtml } from '../util/html.js';
 
 /**
  * @class DistributionLogDialog
@@ -36,13 +37,9 @@ export class DistributionLogDialog {
     this.dialog.showModal();
   }
 
-  /** @private HTML特殊文字をエスケープします。 */
+  /** @private HTML特殊文字をエスケープします（共通実装 util/html.js へ委譲）。 */
   _esc(str) {
-    return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return escapeHtml(str);
   }
 
   /** @private 日時を「MM/DD HH:mm」で表示します。 */

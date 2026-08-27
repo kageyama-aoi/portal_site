@@ -5,6 +5,9 @@
  */
 
 import { verificationCode } from './workflowVersion.js';
+import { escapeHtml } from './util/html.js';
+import { copyToClipboard } from './util/clipboard.js';
+import { freqLabel } from './workflowConstants.js';
 
 /**
  * @typedef {object} Link
@@ -626,7 +629,8 @@ export class UI {
           e.preventDefault();
           e.stopPropagation();
           const localPath = link.url.replace('opendir:', '');
-          navigator.clipboard.writeText(localPath).then(() => {
+          copyToClipboard(localPath, (ok) => {
+            if (!ok) return;
             copyBtn.innerHTML = '<span class="icon icon-xs">check</span>';
             setTimeout(() => { copyBtn.innerHTML = '<span class="icon icon-xs">content_copy</span>'; }, 1500);
           });
@@ -1148,7 +1152,7 @@ export class UI {
         else this.expandedWorkflowIds.delete(wf.id);
       });
 
-      const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' }[wf.freq] || '';
+      const wfFreqLabel = freqLabel(wf.freq);
       const tags = (wf.tags || []).map(t => `<span class="tag-chip tag-chip-sm">${this._escapeHtml(t)}</span>`).join('');
       const stepCount = wf.steps.length;
 
@@ -1159,7 +1163,7 @@ export class UI {
           <div class="workflow-card-title">
             <span class="icon icon-sm workflow-card-icon">account_tree</span>
             <span class="workflow-card-title-text">${this._escapeHtml(wf.title)}</span>
-            ${freqLabel ? `<span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel}</span>` : ''}
+            ${wfFreqLabel ? `<span class="wf-freq-badge wf-freq-${wf.freq}">${wfFreqLabel}</span>` : ''}
             <span class="workflow-card-count">${stepCount} ステップ</span>
           </div>
           ${(wf.description || tags) ? `<div class="workflow-card-sub">
@@ -1398,7 +1402,6 @@ export class UI {
 
     const dialog = document.getElementById('wfExportDialog');
     const content = document.getElementById('wfExportDialogContent');
-    const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
     const formatLabel = format === 'pdf' ? 'PDF' : 'HTML';
 
     const itemsHtml = workflows.map((wf, i) => `
@@ -1406,7 +1409,7 @@ export class UI {
         <input type="radio" name="wfExportRadio" class="wf-export-check" value="${wf.id}" ${i === 0 ? 'checked' : ''}>
         <span class="wf-export-item-title">${this._escapeHtml(wf.title)}</span>
         <span class="wf-export-item-rev">v${wf.rev || 1}</span>
-        <span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel[wf.freq] || ''}</span>
+        <span class="wf-freq-badge wf-freq-${wf.freq}">${freqLabel(wf.freq)}</span>
       </label>
     `).join('');
 
@@ -1506,7 +1509,6 @@ export class UI {
       return;
     }
 
-    const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
     const esc = (s) => this._escapeHtml(s);
     const sourceHint = (exportMeta && exportMeta.sourceHint) ? String(exportMeta.sourceHint) : '';
 
@@ -1516,7 +1518,7 @@ export class UI {
       const updatedDate = wf.updatedAt
         ? new Date(wf.updatedAt).toLocaleDateString('ja-JP')
         : new Date().toLocaleDateString('ja-JP');
-      const freq = freqLabel[wf.freq] || '';
+      const freq = freqLabel(wf.freq);
       const tags = (wf.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
 
       const stepsHtml = wf.steps.map(step => {
@@ -1636,7 +1638,6 @@ export class UI {
       return;
     }
 
-    const freqLabel = { daily: '毎日', weekly: '週次', monthly: '月次', rare: 'たまに' };
     const esc = (s) => this._escapeHtml(s);
 
     // 改変検知の基準値。配布時点の [data-editable] / .link-input の値を DOM 出現順に並べる。
@@ -1663,7 +1664,7 @@ export class UI {
         : new Date().toLocaleDateString('ja-JP');
       metaWorkflows.push({ workflowId: wf.id, title: wf.title, rev, contentHash: wf.contentHash || '', code });
 
-      const freq = freqLabel[wf.freq] || '';
+      const freq = freqLabel(wf.freq);
       const tags = (wf.tags || []).map(t => `<span class="tag">${esc(t)}</span>`).join('');
 
       // 改変検知の基準値は DOM 出現順に記録する必要があるため、
@@ -2277,38 +2278,14 @@ function wfSaveAsHtml() {
         : '<span class="icon icon-xs">close</span> 失敗';
       setTimeout(() => { btn.innerHTML = orig; }, 1400);
     };
-    if (navigator.clipboard && window.isSecureContext) {
-      navigator.clipboard.writeText(text).then(() => showResult(true), () => this._fallbackCopy(text, showResult));
-    } else {
-      this._fallbackCopy(text, showResult);
-    }
+    copyToClipboard(text, showResult);
   }
 
   /**
-   * @private - Clipboard APIが使えない環境向けのフォールバックコピー処理。
-   */
-  _fallbackCopy(text, callback) {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    ta.style.position = 'fixed';
-    ta.style.opacity = '0';
-    document.body.appendChild(ta);
-    ta.focus();
-    ta.select();
-    let ok = false;
-    try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
-    document.body.removeChild(ta);
-    callback(ok);
-  }
-
-  /**
-   * @private - HTML特殊文字をエスケープします。
+   * @private - HTML特殊文字をエスケープします（共通実装 util/html.js へ委譲）。
    */
   _escapeHtml(str) {
-    return String(str || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
+    return escapeHtml(str);
   }
 
   /**
