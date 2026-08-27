@@ -4,6 +4,9 @@
 
 A lightweight, serverless personal portal site built with **vanilla JavaScript** (no framework, no bundler). Users organize links with tags (a link can carry zero, one, or many tags) within multiple named "portals". Data is stored in a local `data/data.json` file and persisted via browser download/upload. Configuration is stored in `localStorage`.
 
+主な機能: タグ別のリンク一覧（カード/テーブル表示）、思い出しモード（訪問履歴ベース）、
+そして**作業フロー**（手順を記録し、配布バージョン管理・改変検知・チェックリスト付きの単体HTML/PDFとして書き出せる）。
+
 ---
 
 ## Repository Structure
@@ -11,29 +14,52 @@ A lightweight, serverless personal portal site built with **vanilla JavaScript**
 ```
 portal_site/
 ├── index.html            # Single-page app shell; defines all <dialog> elements
-├── style.css             # All styles; CSS Variables for theming
+├── style.css             # All styles; CSS Variables for theming (先頭に目次コメント)
 ├── data/
-│   └── data.json         # Portal data (flat links with tags); the only "database"
+│   ├── data.json              # Portal data (flat links + tags + workflows + tagRegistry); the "database"
+│   └── distribution-log.json  # 作業フロー出力の発行履歴 — 任意・.gitignore 対象（§作業フロー参照）
 ├── js/
-│   ├── app.js            # Entry point — initializes everything on DOMContentLoaded
+│   ├── app.js            # Entry point — DOMContentLoaded で全マネージャ/ダイアログを DI 配線
 │   ├── configManager.js  # Portal config (active portal ID, titles) via localStorage
-│   ├── dataManager.js    # CRUD for links (flat, tag-grouped); dirty-state tracking
-│   ├── iconList.js       # Material Symbols icon definitions used in icon picker
-│   ├── ui.js             # DOM rendering, edit mode, drag-and-drop, view switching
+│   ├── dataManager.js    # links の CRUD（フラット・タグ分類）＋ dirty 追跡＋旧形式マイグレーション
+│   ├── searchManager.js  # 全リンク検索・タグ集計・findLinkById
+│   ├── tagManager.js     # 事前登録タグ（tagRegistry）の管理
+│   ├── tagSuggest.js     # タグ入力欄の共通サジェスト（link/workflow ダイアログ共用）
+│   ├── badgeDetector.js  # URL からバッジ種別を自動推定
+│   ├── memoryManager.js  # リンク訪問履歴（思い出しモード用）
+│   ├── themeManager.js   # ライト/ダーク切り替え
+│   ├── iconList.js       # Material Symbols アイコン定義（アイコンピッカー用）
+│   ├── workflowManager.js    # 作業フロー（workflows）の CRUD・版更新
+│   ├── workflowVersion.js    # 版管理の純粋関数（内容ハッシュ・照合コード・rev bump）
+│   ├── workflowConstants.js  # FREQ_LABELS / freqLabel()（頻度ラベルの単一情報源）
+│   ├── workflowExporter.js   # 作業フローの HTML/PDF 書き出し（巨大な文字列テンプレ・DOM非依存）
+│   ├── distributionLog.js    # 発行履歴（localStorage 作業コピー＋共有ファイル）
+│   ├── ui.js             # DOM 描画・編集モード・ビュー切替・各モードのレンダリング
+│   ├── util/
+│   │   ├── html.js           # escapeHtml()（全モジュール共通）
+│   │   └── clipboard.js      # copyToClipboard()（Clipboard API＋execCommand フォールバック）
 │   └── dialogs/
-│       ├── linkDialog.js       # Create/edit individual links
-│       ├── bulkLinkDialog.js   # Batch-add links (newline-separated)
-│       ├── iconPickerDialog.js # Select/configure icon + color/style
-│       └── portalDialog.js     # Manage multiple portals
+│       ├── linkDialog.js            # 個別リンクの作成/編集
+│       ├── bulkLinkDialog.js        # 複数リンク一括追加（改行区切り）
+│       ├── iconPickerDialog.js      # アイコン＋色/スタイル選択
+│       ├── portalDialog.js          # 複数ポータル管理
+│       ├── workflowDialog.js        # 作業フローの閲覧/作成/編集（ステップ並べ替え含む）
+│       └── distributionLogDialog.js # 発行履歴の一覧・配布先メモ編集・CSV/JSON 書き出し
 ├── test/
-│   ├── setup.js              # Jest global polyfills (TextEncoder, TextDecoder)
-│   ├── sample.test.js         # Smoke test
-│   ├── dataManager.test.js    # Unit tests for DataManager
-│   └── ui.test.js             # Unit tests for UI
-├── DOCS/                      # Design proposals and analysis docs (informational)
-├── babel.config.js            # Babel — transpiles ESM for Jest
-├── jest.config.js             # Jest — jsdom environment
-└── package.json               # Dev deps: jest, babel only
+│   ├── setup.js                    # Jest polyfills (TextEncoder, TextDecoder)
+│   ├── dataManager.test.js         # DataManager
+│   ├── ui.test.js                  # UI（タググループ描画・編集モード）
+│   ├── ui.characterization.test.js # リファクタ用の特性テスト（現行挙動の固定）
+│   ├── workflowDialog.test.js      # ステップ並べ替え（moveStep / ▲▼）
+│   ├── workflowVersion.test.js     # 内容ハッシュ・照合コード・rev bump
+│   ├── workflowExport.test.js      # 出力HTMLを jsdom で生成→検証（版スタンプ・改変検知・チェックリスト）
+│   ├── distributionLog.test.js     # 発行履歴マネージャ
+│   └── distributionLogDialog.test.js # 発行履歴ダイアログ
+├── DOCS/                      # 設計提案・分析ドキュメント（情報用）
+├── .agent/handoff/           # セッション引き継ぎメモ
+├── babel.config.js            # Babel — Jest 用 ESM トランスパイル
+├── jest.config.js             # Jest — jsdom 環境
+└── package.json               # dev deps: jest, babel のみ
 ```
 
 ---
@@ -49,7 +75,7 @@ portal_site/
 | Testing | Jest 30 + JSDOM + babel-jest |
 | Transpilation | Babel (@babel/preset-env, current Node target) |
 | Build | None — browser loads modules directly |
-| Persistence | `data/data.json` (file I/O) + `localStorage` (config) |
+| Persistence | `data/data.json` (file I/O) + `localStorage` (config・発行履歴の作業コピー) + `data/distribution-log.json` (発行履歴の共有ファイル・任意) |
 
 No React, Vue, Angular, or bundler (webpack/vite/rollup). Do not introduce frameworks or bundlers unless explicitly asked.
 
@@ -73,11 +99,13 @@ python3 -m http.server
 No build step required.
 
 ### Adding Features
-1. Data model changes → `dataManager.js`
-2. UI rendering changes → `ui.js`
-3. New dialog → create `js/dialogs/newDialog.js`, register in `app.js`
-4. New icon → add to `iconList.js`
-5. Theming → add/modify CSS variables in `style.css`
+1. Link のデータモデル変更 → `dataManager.js`
+2. UI 描画変更 → `ui.js`（各モードは `_renderXxxMode` / `_buildXxx` メソッド）
+3. 新ダイアログ → `js/dialogs/newDialog.js` を作成し `app.js` で配線
+4. 新アイコン → `iconList.js` に追加
+5. テーマ → `style.css` の CSS 変数（先頭に目次あり）
+6. 作業フロー機能・出力HTML → §作業フロー参照（`workflowManager.js` / `workflowExporter.js`）
+7. 共通処理（エスケープ・クリップボード・定数）→ `js/util/` / `js/workflowConstants.js`
 
 ---
 
@@ -87,13 +115,16 @@ No build step required.
 - **Classes:** PascalCase (`DataManager`, `LinkDialog`)
 - **Methods/Variables:** camelCase (`getLink`, `isDirty`)
 - **Private methods:** Underscore prefix (`_generateId`, `_load`)
-- **Constants:** SCREAMING_SNAKE_CASE (`CONFIG_KEY`)
-- **IDs:** Prefix + timestamp + random (`cat_1234567890_abc`, `link_1234567890_def`)
+- **Constants:** SCREAMING_SNAKE_CASE (`CONFIG_KEY`, `FREQ_LABELS`)
+- **IDs:** Prefix + timestamp + random (`link_1234567890_def`, `wf_1234567890_abc`, `dist_...`)
 
 ### Module Pattern
-Each file exports a single class. No default exports — use named exports:
+No default exports — 名前付き export のみ。多くのマネージャ/ダイアログは1ファイル1クラス
+（`export class ClassName {}`）。ただし小さなユーティリティ（`util/html.js`・`workflowConstants.js`・
+`workflowExporter.js`）は関数を名前付き export する。
 ```js
-export class ClassName { ... }
+export class ClassName { ... }        // マネージャ・ダイアログ
+export function helper(...) { ... }    // ユーティリティ
 ```
 
 ### Dependency Injection
@@ -153,6 +184,42 @@ Tags normally only exist implicitly as strings inside each link's `tags` array (
 ```
 Managed by `js/tagManager.js` (`TagManager`, mirrors `WorkflowManager`'s pattern). The sidebar tag filter panel merges `SearchManager.getAllTags()` (used tags) with `TagManager.getRegisteredTags(portalId)` (registered-but-unused tags, shown with a dashed `.tag-chip-empty` style) and exposes a "＋タグ作成" button (edit mode only) to add new registry entries via `prompt()`.
 
+### Workflows (`workflows`)
+`data/data.json` の top-level `workflows` キーはポータルごとの作業フロー配列。`WorkflowManager` が管理。
+
+```json
+{
+  "workflows": {
+    "default": [
+      {
+        "id": "wf_<ts>_<rnd>",
+        "title": "確定申告フロー",
+        "description": "年1回の手順",
+        "tags": ["税務"],
+        "freq": "rare",              // daily | weekly | monthly | rare（FREQ_LABELS）
+        "rev": 3,                    // 版番号。内容変更を伴う保存で +1
+        "updatedAt": "2026-08-27T...",
+        "contentHash": "a1b2c3d4",   // title+description+steps の内容ハッシュ（rev bump 判定用）
+        "steps": [
+          { "step": 1, "title": "…", "memo": "", "prompt": "", "promptType": "none", "linkId": null }
+        ]
+      }
+    ]
+  }
+}
+```
+
+- `promptType`: `none` | `prompt` | `code` | `text`（`none` は本文があっても非表示）
+- 旧データ（`rev` 無し）は読み込み時 `DataManager._ensureWorkflowVersions()` が `rev:1` 補完（dirty にはしない）
+- 版フィールドの純粋ロジックは `js/workflowVersion.js`（`workflowContentHash` / `verificationCode` / `bumpRevIfContentChanged`）
+
+### 発行履歴（発行台帳 / distributionLog）
+作業フローを HTML/PDF 出力したとき「どの版を・いつ・誰に配ったか」を残す。**配布物には含めない**。
+- 作業コピー: `localStorage['portalWorkflowDistributionLog']`（＋ `portalWorkflowExportPrefs` で出力ダイアログの前回値）
+- 共有ファイル: `data/distribution-log.json`（**.gitignore 対象** — 配布先メモに個人名が入りうるため）。
+  起動時に `app.js` が fetch → `DistributionLogManager.applyFileData()` で localStorage へマージ。
+- `data.json` と同じ「fetch で読み・download で書き」モデル。ダイアログの「台帳を保存」で書き出し、`data/` に置き直す。
+
 ### Valid `badge` values
 `doc`, `spreadsheet`, `website`, `drive`, `video`, `article`, `portal`, `code`, `tool`, `sns`, `cloud`, `local`, `money`, `news`, `idea`, `company`
 
@@ -179,11 +246,15 @@ Managed by `js/tagManager.js` (`TagManager`, mirrors `WorkflowManager`'s pattern
 ## UI Architecture
 
 ### Initialization Order (`app.js`)
-1. `ConfigManager` — loads/creates portal config from localStorage
-2. `DataManager` — initialized with active portal ID
-3. `UI` — initialized with managers and dialog references
-4. All `Dialog` instances — initialized with manager references
-5. `fetch('data/data.json')` → `dataManager.loadData()` → `ui.render()`
+1. `ConfigManager` — localStorage からポータル設定を読み込み/生成
+2. `DataManager` — onDirty コールバック付きで生成
+3. `SearchManager` / `TagManager` を先に生成（ダイアログのタグ候補に使うため）
+4. `LinkDialog` / `BulkLinkDialog` → `UI` を生成し、`searchManager` / `tagManager` / `memoryManager` / `workflowManager` を後付け
+5. `DistributionLogManager` + `DistributionLogDialog`（`onDirtyChange` で発行履歴ボタンの● を更新）
+6. `WorkflowDialog` / `PortalDialog`
+7. `await dataManager.load(activePortalId)` → `await fetch('data/distribution-log.json')`（失敗は無視）
+8. 各ダイアログ `init()` → `ui.init()` → `ui.render()`
+9. `ThemeManager.init()`
 
 ### Edit Mode
 The app has a read-only and an edit mode. Most mutations (add/delete/reorder) are only possible in edit mode. The UI class tracks this state and toggles button visibility accordingly.
@@ -192,10 +263,43 @@ The app has a read-only and an edit mode. Most mutations (add/delete/reorder) ar
 `DataManager.isDirty` tracks unsaved changes. When dirty, the UI shows a save button. Saving triggers a file download of the current `data.json`.
 
 ### View Modes
-The UI supports **card view** (CSS Grid of link cards) and **table view** (compact rows). State is toggled via `ui.toggleViewMode()`.
+`ui.viewMode` で切り替え（`localStorage['portalViewMode']` に永続化）。ヘッダーのボタンは D&D で並べ替え可（`_initViewBtnOrder()`）。
+- **card** — リンクカードのグリッド（タグ別グループ）
+- **table** — コンパクトな行（タグ別グループ）
+- **memory**（思い出しモード）— 訪問履歴ベースの「久しく開いていないリンク」提示（`memoryManager.js`）
+- **workflow**（作業フロー）— §作業フロー参照
 
 ### Ordering
-There is no manual reordering. Links are a flat array grouped dynamically by tag at render time (a link with multiple tags appears in multiple groups), so a single "position" isn't meaningful once a link can belong to more than one group. Display order follows array order (creation order). There is a separate, unrelated drag-and-drop feature for reordering the header view-mode buttons (card/table/memory/workflow) — see `_initViewBtnOrder()` in `ui.js`.
+リンクに手動並べ替えは無い（タグで複数グループに現れるため位置が一意にならない）。表示順は配列順（作成順）。
+作業フローの**ステップ**は手動並べ替え可（編集時：ドラッグ＋▲▼、`workflowDialog.js` の `WorkflowDialog.moveStep`／メイン画面：D&D）。
+
+---
+
+## 作業フロー（Workflow）
+
+「たまにしかやらない手順」を記録し、単体HTML/PDFとして配布できる機能。
+
+### 構成
+| 役割 | ファイル |
+|---|---|
+| データ CRUD・版更新 | `workflowManager.js`（`getWorkflows` は clone を返し、内容変更系メソッドで `bumpRevIfContentChanged`） |
+| 版管理の純粋ロジック | `workflowVersion.js` |
+| 頻度ラベル定数 | `workflowConstants.js`（`FREQ_LABELS` / `freqLabel()` — ここが単一情報源。他所でマップを再定義しない） |
+| 閲覧/編集ダイアログ | `dialogs/workflowDialog.js` |
+| メイン画面のビュー描画 | `ui.js` の `_renderWorkflowMode` → `_buildWorkflowModeHeader` / `_buildWorkflowCard` / `_buildWorkflowStepRow` / `_buildWorkflowStepPrompt` / `_buildWorkflowStepLink`（既定は折りたたみ・`expandedWorkflowIds` で開いたものを記憶） |
+| HTML/PDF 書き出し | `workflowExporter.js`（`exportWorkflowsAsHtml` / `exportWorkflowsAsPdf`。UI は `_workflowsForExport` + `_exportOptions` で薄く委譲） |
+| 発行履歴 | `distributionLog.js` / `dialogs/distributionLogDialog.js` |
+
+### 出力HTML（`exportWorkflowsAsHtml`）
+巨大な文字列テンプレート（HTML＋インラインCSS＋インラインJS）を1つ生成。**サーバー不要・単体動作**。
+- **配布バージョン管理**: 見出しに `v{rev} ・ 更新日 ・ 照合コード`、ファイル名 `名前_v{rev}_日付.html`、`<script id="wf-meta">` に版情報
+- **改変検知**: 配布時の本文を `<script id="wf-baseline">`(JSON) に同梱。開くたび照合し「📄 配布時のまま / ⚠ 配布後に内容が変更されています」バッジ
+- **編集モード**: `[data-editable]` を contenteditable 化 → 「HTMLとして保存」で新ファイルとしてDL（元は上書きしない）。基準値は据え置くので編集済みコピーは ⚠ が残る
+- **チェックリスト**: 各ステップにチェックボックス。チェックで打ち消し線＋畳み、見出しに円形プログレス（％）。状態は `localStorage['wfcheck:{id}:{contentHash}']`（版が変われば自動リセット）。保存時に `checked` 属性へ焼き込み
+- **見直し予定日 / 入手先**: 出力ダイアログで任意入力。フッター表示・期限超過で注意文
+- **Git 非露出**: 配布物・出力設定に `github` / リポジトリ名 / `.git` を含めない（`workflowExport.test.js` で担保）。照合コードは16進8桁を避ける（`R{rev}-{MMDD}-{4文字}`）
+
+出力HTMLのインラインJSはモジュールを import できないため、`escapeHtml` 等は使えず自前実装。ここを編集するときは `workflowExport.test.js`（jsdom で生成→検証、16+ケース）を必ず回す。
 
 ---
 
@@ -205,7 +309,9 @@ There is no manual reordering. Links are a flat array grouped dynamically by tag
 - The JSDOM environment simulates browser APIs; `localStorage`, `document`, etc. are available
 - `test/setup.js` adds `TextEncoder`/`TextDecoder` polyfills — add other globals there if needed
 - Mock `fetch` for tests that involve data loading
-- Do not import CSS or HTML templates in test files
+- Do not import CSS or HTML templates in test files（`ui.test.js` は `index.html` を `fs.readFileSync` で読み `document.body.innerHTML` に流すのは可）
+- **出力HTML のテスト**: `workflowExport.test.js` は UI をモック依存で組み、`Blob` を差し替えて生成HTML文字列を捕捉 → `document.documentElement.innerHTML` に流し込んでインライン `<script>` を `eval` 実行し挙動検証する
+- **特性テスト**: 大きめのリファクタ前は `ui.characterization.test.js` のように「現行の見た目・挙動」を固定するテストを先に足す
 
 ### Example test structure
 ```js
@@ -253,6 +359,12 @@ describe('DataManager', () => {
 
 ### Modifying the theme
 All colors are CSS variables in `style.css` under `:root`. Dark mode overrides are under `[data-theme="dark"]`. Modify variables there — do not hardcode colors.
+CSS の節見出しは `/* ── 名前 ── */` 形式で統一。`!important` は詳細度の綱引きを避けるための保険で
+現状は必要（外す前に実ブラウザで before/after を確認すること — 視覚回帰テストは無い）。
+
+### 作業フローの出力HTMLに手を入れる
+`workflowExporter.js` を編集。HTML/PDF でステップ描画・リンク解決・freq ラベルを共有しているので
+片方だけ直さない。編集後は必ず `npx jest test/workflowExport.test.js`。
 
 ### Running a specific test file
 ```bash
@@ -263,7 +375,7 @@ npx jest test/dataManager.test.js
 
 ## Git Workflow
 
-- Default branch: `main`
-- Development branch naming: `claude/<description>-<SESSION_ID>`
-- Commit messages are primarily in Japanese (following existing history)
-- Push with: `git push -u origin <branch-name>`
+- Default branch: `main`。ソロ運用のため通常は `main` に直接コミット＆push（別ブランチは明示依頼時のみ）
+- 開発作業は `/github-issue-dev` スキルの流れに従う: Issue 登録 → 開発 → `npm test` → コミットメッセージ候補提示 → コミット → push → Issue クローズ（ハッシュ記載）
+- コミットメッセージは日本語（既存履歴に合わせる）、Conventional Commits の type を付ける（`feat` / `fix` / `refactor` / `style` / `test` / `chore` / `docs`）
+- `data/data.json` は追跡対象。`data/distribution-log.json` と `data/＿*.json`（手動バックアップ）、`.vscode/`、`*.code-workspace` は `.gitignore`
