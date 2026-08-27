@@ -1795,22 +1795,26 @@ export class UI {
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { font-family: 'Hiragino Sans', 'Yu Gothic', 'Meiryo', sans-serif; font-size: 15px; color: #1B2421; background: #F3F5F3; padding: 24px 16px 64px; line-height: 1.45; }
   .page { max-width: 760px; margin: 0 auto; }
-  .page-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; }
-  h1 { font-size: 1.5rem; margin-bottom: 4px; }
-  .subtitle { font-size: 0.9rem; color: #57645E; margin-bottom: 4px; }
-  .export-date, .export-note { font-size: 0.78rem; color: #8B968F; }
-  .edit-toggle { display: flex; align-items: center; gap: 8px; flex-shrink: 0; padding-top: 2px; }
-  .edit-toggle-label { font-size: 0.8rem; font-weight: 600; color: #57645E; white-space: nowrap; }
+  .page-header { margin-bottom: 6px; }
+  h1 { font-size: 1.5rem; margin-bottom: 2px; }
+  .subtitle { font-size: 0.9rem; color: #57645E; }
+  /* 出力日・整合バッジ・編集ロック状態・編集トグルを1行にまとめる */
+  .meta-bar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 12px; font-size: 0.75rem; color: #8B968F; }
+  .meta-bar .edit-toggle { margin-left: auto; }
+  .meta-sep { color: #C7D0CB; }
+  .export-date, .export-note { font-size: 0.75rem; color: #8B968F; white-space: nowrap; }
+  .edit-toggle { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .edit-toggle-label { font-size: 0.78rem; font-weight: 600; color: #57645E; white-space: nowrap; }
   .switch { position: relative; display: inline-block; width: 40px; height: 22px; flex-shrink: 0; }
   .switch input { opacity: 0; width: 0; height: 0; }
   .switch .slider { position: absolute; inset: 0; background: #C7D0CB; border-radius: 22px; cursor: pointer; transition: 0.15s; }
   .switch .slider:before { position: absolute; content: ""; height: 16px; width: 16px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.15s; }
   .switch input:checked + .slider { background: #dc2626; }
   .switch input:checked + .slider:before { transform: translateX(18px); }
-  .status-bar { display: inline-flex; align-items: center; gap: 5px; margin: 8px 0 12px; padding: 3px 11px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; cursor: help; }
+  .status-bar { display: inline-flex; align-items: center; gap: 5px; margin: 0; padding: 2px 9px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; cursor: help; }
   .status-bar.locked { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
   .status-bar.editing { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
-  .status-hint { font-weight: 400; opacity: 0.75; }
+  .status-hint { font-weight: 400; opacity: 0.7; }
   .workflow { margin-top: 14px; background: #fff; border: 1px solid #DCE3DF; border-radius: 10px; overflow: hidden; }
   .wf-header { display: flex; align-items: center; gap: 10px; padding: 10px 18px; background: #EAF0EE; border-bottom: 1px solid #DCE3DF; flex-wrap: wrap; }
   .wf-header h2 { font-size: 1.1rem; flex: 1 1 40%; min-width: 0; outline: none; }
@@ -1916,18 +1920,20 @@ export class UI {
 <body>
 <div class="page">
   <div class="page-header">
-    <div>
-      <h1 data-editable contenteditable="false">${pageTitleHtml}</h1>
-      ${pageSubtitleHtml ? `<div class="subtitle" data-editable contenteditable="false">${pageSubtitleHtml}</div>` : ''}
-      <div class="export-date">出力日: ${today} <span id="wfIntegrityBadge" class="origin-badge origin-original">📄 配布時のまま</span></div>
-    </div>
+    <h1 data-editable contenteditable="false">${pageTitleHtml}</h1>
+    ${pageSubtitleHtml ? `<div class="subtitle" data-editable contenteditable="false">${pageSubtitleHtml}</div>` : ''}
+  </div>
+  <div class="meta-bar">
+    <span class="export-date">出力日: ${today}</span>
+    <span class="meta-sep">·</span>
+    <span id="wfIntegrityBadge" class="origin-badge origin-original">📄 配布時のまま</span>
+    <span class="status-bar locked" id="wfStatusBar" title="タイトル・メモ・プロンプト・リンク先のURLやパスは、「編集する」をONにすると直接書き換えられます。書き換えた内容は下部の「保存」ボタンで新しいHTMLファイルとして書き出せます（このファイル自体は上書きされません）。">
+      <span id="wfStatusIcon">🔒</span><span id="wfStatusText">編集ロック中</span><span class="status-hint">ⓘ</span>
+    </span>
     <label class="edit-toggle">
       <span class="edit-toggle-label">編集する</span>
       <span class="switch"><input type="checkbox" id="wfEditToggle"><span class="slider"></span></span>
     </label>
-  </div>
-  <div class="status-bar locked" id="wfStatusBar" title="タイトル・メモ・プロンプト・リンク先のURLやパスは、右上の「編集する」をONにすると直接書き換えられます。書き換えた内容は下部の「保存」ボタンで新しいHTMLファイルとして書き出せます（このファイル自体は上書きされません）。">
-    <span id="wfStatusIcon">🔒</span><span id="wfStatusText">編集ロック中</span><span class="status-hint">（詳細はここにカーソル）</span>
   </div>
   ${workflowsHtml}
 </div>
