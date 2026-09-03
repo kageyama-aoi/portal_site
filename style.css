@@ -872,6 +872,22 @@ dialog textarea {
   gap: 12px;
 }
 
+/* ── 使い方ガイド ── */
+#usageGuideDialog {
+  max-width: 480px;
+}
+.usage-guide-list {
+  margin: 0;
+  padding-left: 20px;
+}
+.usage-guide-list li {
+  margin-bottom: 14px;
+  line-height: 1.6;
+}
+.usage-guide-list li:last-child {
+  margin-bottom: 0;
+}
+
 /* ── アイコンピッカー ── */
 #iconPickerDialog {
   max-width: 600px;

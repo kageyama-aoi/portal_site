@@ -216,6 +216,17 @@ document.addEventListener('DOMContentLoaded', async () => {
   const themeManager = new ThemeManager();
   themeManager.init();
 
+  // 使い方ガイド
+  const usageGuideBtn = document.getElementById('usageGuideBtn');
+  const usageGuideDialog = document.getElementById('usageGuideDialog');
+  const closeUsageGuideDialogBtn = document.getElementById('closeUsageGuideDialogBtn');
+  if (usageGuideBtn && usageGuideDialog) {
+    usageGuideBtn.addEventListener('click', () => usageGuideDialog.showModal());
+  }
+  if (closeUsageGuideDialogBtn && usageGuideDialog) {
+    closeUsageGuideDialogBtn.addEventListener('click', () => usageGuideDialog.close());
+  }
+
   // サイドバートグル
   const sidebarToggleBtn = document.getElementById('sidebarToggleBtn');
   const appSidebar = document.getElementById('appSidebar');

@@ -62,6 +62,7 @@
               <span class="icon icon-sm">unfold_less</span>
             </button>
           </div>
+          <button id="usageGuideBtn" class="secondary-btn" title="使い方"><span class="icon icon-sm">help</span> 使い方</button>
           <button id="portalSettingsBtn" class="secondary-btn" title="ポータル管理"><span class="icon icon-md">settings</span></button>
           <button id="themeToggleBtn" class="secondary-btn" title="ダークモードに切り替え"><span class="icon icon-md">dark_mode</span></button>
           <label class="toggle-switch">
@@ -266,6 +267,21 @@
 </dialog>
 
 <!-- アイコンピッカーダイアログ -->
+<!-- 簡易使い方ガイド -->
+<dialog id="usageGuideDialog">
+  <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
+  <h2>使い方</h2>
+  <ol class="usage-guide-list">
+    <li><strong>まずリンクを登録</strong>しましょう。「＋リンク追加」からタイトルとURLを入れるだけでOK。タグを付けると後で分類・検索しやすくなります。</li>
+    <li><strong>作業フロー</strong>（手順書）を作ると、登録したリンクを各ステップに紐づけられます。リンクを先に登録しておくほど、作業フローが便利になります。</li>
+    <li><strong>編集モード</strong>をONにすると追加・削除・並べ替えができます。OFFのときは閲覧のみの安全な状態です。</li>
+    <li>変更内容は自動で保存されません。「JSONを保存」でダウンロードし、<code>data/data.json</code> を上書きしてください。</li>
+  </ol>
+  <div class="dialog-buttons">
+    <button type="button" id="closeUsageGuideDialogBtn">閉じる</button>
+  </div>
+</dialog>
+
 <dialog id="iconPickerDialog">
   <button type="button" class="dialog-close-btn" data-dialog-close title="閉じる" aria-label="閉じる"><span class="icon icon-sm">close</span></button>
   <h3>アイコンを選択</h3>
