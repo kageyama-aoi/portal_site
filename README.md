@@ -48,6 +48,7 @@
 │   ├── data.json            # ポータルデータ（唯一の「データベース」。tags/badge/workflows/tagRegistry を含む）
 │   └── distribution-log.json # 作業フロー出力の発行履歴（任意・.gitignore対象）
 ├── DOCS/                    # プロジェクトに関するドキュメント（設計提案・分析メモなど）
+├── html(kaisetu)/           # コード理解用の解説資料（技術ポイント集＋初心者向け実験ノート）
 ├── js/                      # JavaScriptソースコード（ESモジュール、ビルド不要）
 │   ├── app.js               # エントリーポイントと初期化（依存性の注入）
 │   ├── configManager.js     # ポータル設定の管理（localStorage）

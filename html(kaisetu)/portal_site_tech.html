@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>portal_site 技術ポイント集</title>
+  <style>
+    body {
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      line-height: 1.7;
+      margin: 32px;
+      background: #fafafa;
+      color: #222;
+    }
+    h1, h2, h3 {
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 4px;
+    }
+    code, pre {
+      background: #f4f4f4;
+      border-radius: 6px;
+    }
+    pre {
+      padding: 16px;
+      overflow-x: auto;
+    }
+    .box {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .point {
+      background: #eef6ff;
+      border-left: 6px solid #4a90e2;
+      padding: 12px;
+      margin: 16px 0;
+    }
+    .warning {
+      background: #fff4e5;
+      border-left: 6px solid #f5a623;
+      padding: 14px;
+      margin: 16px 0;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 12px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 0.95em;
+    }
+    th {
+      background: #f4f4f4;
+    }
+    .refpath {
+      font-size: 0.85em;
+      color: #888;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>portal_site 技術ポイント集</h1>
+
+<div class="box">
+  <h2>1. 全体像 — このコードから何を学ぶか</h2>
+  <p>
+    <code>portal_site</code> はフレームワーク・バンドラーを一切使わない「バニラJS」の
+    サーバーレスWebアプリ（リンク集ポータル）です。React/Vueのような大がかりな道具がない分、
+    <strong>「素のブラウザAPIとJSの言語機能だけで、どう設計を成立させるか」</strong>という判断が
+    コードの随所にそのまま残っています。これは実務でフレームワークを使う場合でも土台になる考え方です。
+  </p>
+  <ul>
+    <li>モジュール間の依存を「関数の呼び出し」だけで管理する設計（DI・コールバック）</li>
+    <li>ブラウザのセキュリティ制約（ファイル書き込み不可）を回避する永続化テクニック</li>
+    <li>外部ライブラリなしでの状態管理・UIコンポーネント・ドラッグ&ドロップの実装</li>
+    <li>「配布先の環境に何も入っていない」前提でのHTML自己完結生成テクニック</li>
+    <li>DOM生成コードをテストする際のモック・検証テクニック（Jest + JSDOM）</li>
+  </ul>
+
+  <div class="point">
+    フレームワークが裏で自動的にやってくれること（状態管理・再描画・モジュール解決）を、
+    このコードは全部「自分の手で」書いている。だからこそ、フレームワークが何を解決しているのかが
+    逆に見えてくる。以降、10個の技術ポイントとして拾っていく。
+  </div>
+</div>
+
+<div class="box">
+  <h2>2. 技術ポイント①: 依存性注入（DI）を1箇所に集約する — <code>app.js</code></h2>
+  <p>
+    このアプリには「グローバル変数」も「Reduxのようなストア」もありません。代わりに、
+    起動処理を1つの <code>DOMContentLoaded</code> ハンドラの中で全マネージャ・全ダイアログを
+    生成し、必要なものをコンストラクタ引数として手渡す「配線図」を作っています。
+  </p>
+  <pre><code>const searchManager = new SearchManager(dataManager);
+const tagManager = new TagManager(dataManager);
+const linkDialog = new LinkDialog(dataManager, () => uiRenderCallback(), iconPickerDialog, configManager, searchManager, tagManager);
+ui = new UI(dataManager, configManager, linkDialog, bulkLinkDialog);
+ui.searchManager = searchManager;
+ui.tagManager = tagManager;</code></pre>
+  <p class="refpath">js/app.js: 86〜113行目あたり</p>
+  <ul>
+    <li>各クラスは「自分が使うもの」だけをコンストラクタで受け取り、自分でnewしない（＝差し替え・テストがしやすい）</li>
+    <li>生成順序に意味がある。<code>searchManager</code> / <code>tagManager</code> は
+      <code>linkDialog</code> より先に作る、という順序制約がコメントで明記されている</li>
+  </ul>
+
+  <div class="point">
+    DIの本質は「フレームワークの機能」ではなく、<strong>「あるオブジェクトが必要とするものを、
+    自分で作らず外から渡してもらう」</strong>という設計原則そのもの。この原則さえ守れば、
+    フレームワークが無くても、new を並べるだけでテスト可能な疎結合構造が作れる。
+  </div>
+</div>
+
+<div class="box">
+  <h2>3. 技術ポイント②: コールバックによるモジュール間通信（DOMイベントを使わない）</h2>
+  <p>
+    CLAUDE.md にも明記された設計方針として、モジュール間の通知は
+    <code>CustomEvent</code> のようなDOMイベントではなく、「コールバック関数をプロパティに代入する」
+    素朴な方法で行われています。
+  </p>
+  <pre><code>// app.js: DataManager にコールバックを渡す
+const onDirtyCallback = () => {
+  if (ui) ui.updateSaveButtonState(true);
+};
+const dataManager = new DataManager(onDirtyCallback);
+
+// dataManager.js: 変更があった箇所で呼び出すだけ
+markAsDirty() {
+  this.hasUnsavedChanges = true;
+  if (this.onDirty) this.onDirty();
+}</code></pre>
+  <p class="refpath">js/app.js: 58〜68行目 / js/dataManager.js: 70〜75行目</p>
+
+  <div class="point">
+    DOMイベントは「誰が発火して誰が受け取るか」が実行時までコード上で追いにくくなる
+    （<code>addEventListener</code> がどこにあるか探す必要がある）。コールバックなら
+    <code>Ctrl+クリック</code>で定義元にそのまま飛べる。DOMに関係しない純粋なロジック同士の通信では、
+    こちらの方が追跡性が高い。
+  </div>
+  <div class="warning">
+    ただしコールバックは1対1通信に向く設計。1つの変更を複数の相手に知らせたい「1対多」の通知には、
+    このアプリでも <code>distributionLog.onDirtyChange</code> のように個別プロパティを増やして対応している
+    （本格的なPub/Subが必要になったらイベントバスへの切り替えを検討すべき規模）。
+  </div>
+</div>
+
+<div class="box">
+  <h2>4. 技術ポイント③: <code>JSON.parse(JSON.stringify())</code> でカプセル化する</h2>
+  <p>
+    <code>DataManager.getData()</code> は内部配列 <code>this.data</code> をそのまま返さず、
+    シリアライズ→デシリアライズしたコピーを返します。
+  </p>
+  <pre><code>getData() {
+  return JSON.parse(JSON.stringify(this.data));
+}</code></pre>
+  <p class="refpath">js/dataManager.js: 54〜56行目</p>
+
+  <div class="point">
+    呼び出し側が返り値の配列やオブジェクトを直接書き換えても、<code>DataManager</code> 内部の
+    「正本」データには影響しない。structuredClone等より遅いが、Dateやundefinedを含まない
+    プレーンなJSONデータ（このアプリの link/workflow オブジェクトはまさにそれ）を前提にするなら、
+    追加ライブラリなしで確実にディープコピーできる手軽な方法として十分実用的。
+  </div>
+  <div class="warning">
+    <code>Date</code> オブジェクトや <code>undefined</code> を含むデータをこの方法でコピーすると、
+    文字列化・欠落など意図しない変換が起きる。このアプリが日時を常に ISO 文字列
+    （<code>updatedAt: "2026-08-27T..."</code>）で持っているのは、この制約と整合させるため。
+  </div>
+</div>
+
+<div class="box">
+  <h2>5. 技術ポイント④: Blob + createObjectURL によるファイル保存（サーバー不要の永続化）</h2>
+  <p>
+    ブラウザはセキュリティ上、JSからローカルファイルへ直接書き込めません。そこで「メモリ上に
+    仮想ファイルを作り、隠しリンクを自動クリックさせてダウンロードを起こす」という手法で
+    「保存」を実現しています。
+  </p>
+  <pre><code>save(portalId = 'default') {
+  const dataStr = JSON.stringify({ portals: this.allPortals, ... }, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'data.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url); // メモリリーク防止
+  this.markAsClean();
+}</code></pre>
+  <p class="refpath">js/dataManager.js: 287〜302行目</p>
+
+  <div class="point">
+    ユーザーは保存後に「ダウンロードされた data.json を元の場所に上書き」する一手間が必要になるが、
+    その代わりバックエンドもDBも不要になる。「Gitでバージョン管理したいデータ」との相性も良い
+    （CLAUDE.mdが述べる「ローカルファースト & Gitフレンドリー」の裏にある技術選択）。
+  </div>
+  <div class="warning">
+    <code>URL.createObjectURL()</code> で作ったURLは明示的に <code>revokeObjectURL()</code> しないと
+    ブラウザがメモリ上に保持し続ける。ダウンロードが終わった直後に解放している点を見落とさないこと。
+  </div>
+</div>
+
+<div class="box">
+  <h2>6. 技術ポイント⑤: 読み込み時の「後方互換マイグレーション」パターン</h2>
+  <p>
+    データ形式を将来変えても、古い形式のファイルを読み込んだ瞬間に自動で新形式へ変換し、
+    アプリ側は常に「最新形式しか存在しない」前提でコードを書けるようにしています。
+  </p>
+  <pre><code>_migrateLegacyPortal(portalArray) {
+  const hasLegacyCategory = portalArray.some(entry => entry && Array.isArray(entry.links));
+  if (!hasLegacyCategory) return { data: portalArray, migrated: false };
+
+  const flatLinks = portalArray.flatMap(entry => {
+    if (entry && Array.isArray(entry.links)) {
+      return entry.links.map(link => ({
+        ...link,
+        tags: Array.from(new Set([...(link.tags || []), entry.title]))
+      }));
+    }
+    return entry ? [entry] : [];
+  });
+  return { data: flatLinks, migrated: true };
+}</code></pre>
+  <p class="refpath">js/dataManager.js: 125〜146行目</p>
+  <ul>
+    <li>旧形式（カテゴリでネストしたリンク配列）と新形式（フラット＋タグ配列）が<strong>混在</strong>していても、
+      要素ごとに個別判定することで正しく変換する（配列の先頭だけで判定すると事故る、という
+      過去の失敗がコメントに残っている）</li>
+    <li><code>workflowVersion.js</code> の <code>ensureVersionFields()</code> も同じ発想で、
+      旧データに <code>rev</code> フィールドが無ければ 1 を補う</li>
+  </ul>
+
+  <div class="point">
+    マイグレーションを「起動時に一度だけ静かに変換する」形にすることで、アプリ本体のロジックは
+    データ形式が1種類しかないという前提のまま書け続けられる。互換コードを本体ロジックの
+    あちこちに分散させない、という規律が保たれている。
+  </div>
+</div>
+
+<div class="box">
+  <h2>7. 技術ポイント⑥: CSS変数 + <code>data-theme</code> 属性 + FOUC対策</h2>
+  <p>
+    ライト/ダークテーマの切り替えは、CSSカスタムプロパティ（<code>:root</code> と
+    <code>[data-theme="dark"]</code>）の値をJSで切り替えるだけで実現しています。
+    さらに「ページが表示された瞬間に一瞬ライト画面がちらつく」問題（FOUC）を、
+    CSS読み込み<strong>前</strong>に実行される小さなインラインスクリプトで防いでいます。
+  </p>
+  <pre><code>&lt;!-- index.html の &lt;head&gt; 先頭、CSSリンクより前 --&gt;
+&lt;script&gt;
+  (function () {
+    var saved = localStorage.getItem('portalTheme');
+    var theme = saved || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  })();
+&lt;/script&gt;
+&lt;link rel="stylesheet" href="style.css"&gt;</code></pre>
+  <p class="refpath">index.html: 8〜19行目 / js/themeManager.js: 44〜53行目</p>
+
+  <div class="point">
+    「保存済みの好み → OSの設定（prefers-color-scheme） → デフォルト」という優先順位のフォールバックは、
+    ユーザー設定を尊重するUIの定石。CSSより前にJSで属性を確定させる、という順序がFOUC対策の肝。
+  </div>
+  <div class="warning">
+    <code>localStorage</code> はプライベートブラウジング等で例外を投げることがあるため、
+    <code>try/catch</code> で握りつぶして「表示だけは継続する」フォールバックを必ず入れている
+    （js/themeManager.js の <code>toggle()</code> 内も同様）。
+  </div>
+</div>
+
+<div class="box">
+  <h2>8. 技術ポイント⑦: 純粋関数として分離した「内容ハッシュ」と版管理 — <code>workflowVersion.js</code></h2>
+  <p>
+    「作業フローの内容が変わったら版番号(rev)を上げる」「配布後に改変されたか検知する」機能は、
+    DOM・localStorage・fetch に一切依存しない<strong>純粋関数</strong>だけのモジュールに切り出されています。
+  </p>
+  <pre><code>function djb2(str) { // 暗号用途ではない軽量ハッシュ
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = (((h << 5) + h) + str.charCodeAt(i)) >>> 0;
+  }
+  return h >>> 0;
+}
+
+export function bumpRevIfContentChanged(wf, nowIso) {
+  const newHash = workflowContentHash(wf);
+  if (newHash === wf.contentHash) return false; // 内容が同じなら版は上げない
+  wf.rev += 1;
+  wf.contentHash = newHash;
+  wf.updatedAt = nowIso || new Date().toISOString();
+  return true;
+}</code></pre>
+  <p class="refpath">js/workflowVersion.js: 14〜20行目 / 120〜135行目</p>
+
+  <div class="point">
+    「内容が変わったか」を判定する対象は <code>title</code> / <code>description</code> / <code>steps</code>
+    <strong>だけ</strong>で、<code>tags</code> や <code>freq</code> は含めない（
+    <code>normalizeWorkflowContent()</code>）。「何を版として数えるか」というビジネスルールを、
+    まずデータの正規化関数として明文化している点が学びどころ。<br>
+    そして純粋関数に分離したことで、<code>test/workflowVersion.test.js</code> が
+    DOMもモックも一切使わずに検証できている。
+  </div>
+</div>
+
+<div class="box">
+  <h2>9. 技術ポイント⑧: 「意図的に読みにくくする」フォーマット設計 — 照合コード</h2>
+  <p>
+    配布した作業フローHTMLの版を口頭で確認し合うための「照合コード」は、単なるハッシュ表示ではなく、
+    セキュリティ上・運用上の要件（配布物からGit運用が伝わらないこと）を満たすように
+    <strong>意図的にフォーマットが設計</strong>されています。
+  </p>
+  <pre><code>// 紛らわしい I/O/0/1 を除いた専用アルファベット
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+export function verificationCode(rev, contentHash, updatedAt) {
+  // 形式: R{rev}-{MMDD}-{4文字}  例: R3-0827-KTMR
+  // 16進8桁（=コミットSHAに見える形）は避ける
+  ...
+}</code></pre>
+  <p class="refpath">js/workflowVersion.js: 59〜84行目</p>
+  <ul>
+    <li>16進数8桁（<code>a1b2c3d4</code>）は「Gitのコミットハッシュ」を連想させるため、
+      base36や独自アルファベットに変換して意図的に避けている</li>
+    <li>紛らわしい文字（<code>I</code>/<code>O</code>/<code>0</code>/<code>1</code>）を
+      アルファベットから除外し、口頭伝達でのミスを減らしている</li>
+  </ul>
+
+  <div class="point">
+    「動けば良い」ハッシュ表示と「この用途に最適化されたフォーマット」の違いを示す好例。
+    技術的な正しさだけでなく、<strong>誰が・どう使うか</strong>（口頭で読み上げる、社外に見せる）を
+    フォーマット設計に反映させている。
+  </div>
+</div>
+
+<div class="box">
+  <h2>10. 技術ポイント⑨: 外部ライブラリなしの &lt;dialog&gt;・&lt;details&gt;・ドラッグ&ドロップ</h2>
+  <p>
+    モーダルは <code>&lt;dialog&gt;.showModal()</code>、アコーディオンは <code>&lt;details&gt;</code>
+    というHTML5標準要素をそのまま使い、並べ替えは <code>draggable</code> 属性と
+    <code>dragstart</code>/<code>dragover</code>/<code>drop</code> イベントだけで実装しています。
+  </p>
+  <pre><code>// <details> の開閉状態をJSの変数と同期する（ui.js）
+const card = document.createElement('details');
+card.open = this.expandedWorkflowIds.has(wf.id);
+card.addEventListener('toggle', () => {
+  if (card.open) this.expandedWorkflowIds.add(wf.id);
+  else this.expandedWorkflowIds.delete(wf.id);
+});
+
+// ドラッグ中の要素を、マウス位置に応じて挿し替える
+btn.addEventListener('dragover', e => {
+  e.preventDefault(); // これが無いとdropが発火しない
+  const rect = btn.getBoundingClientRect();
+  const after = e.clientX > rect.left + rect.width / 2;
+  group.insertBefore(dragging, after ? btn.nextSibling : btn);
+});</code></pre>
+  <p class="refpath">js/ui.js: 152〜188行目（表示切替ボタンの並び替え）/ 1164〜1258行目（作業フローのステップ並び替え）</p>
+
+  <div class="point">
+    ブラウザ標準の <code>&lt;dialog&gt;</code>/<code>&lt;details&gt;</code> はフォーカストラップや
+    アクセシビリティの基本を勝手にやってくれる。「独自実装する前に、まず標準要素で足りないか確認する」
+    という判断が、コード量と保守コストを両方下げている。
+  </div>
+  <div class="warning">
+    ドラッグ&ドロップは <code>dragover</code> で必ず <code>e.preventDefault()</code> を呼ばないと
+    <code>drop</code> イベントがそもそも発火しない。素のDOM APIのドラッグ&ドロップで最初にハマりやすい点。
+  </div>
+</div>
+
+<div class="box">
+  <h2>11. 技術ポイント⑩: 「配布先に何も入っていない」前提の自己完結HTML生成</h2>
+  <p>
+    作業フローをHTMLとして書き出す <code>workflowExporter.js</code> は、生成する側は
+    ESモジュールをフルに使えるが、<strong>生成されるHTML自身はESモジュールを import できない</strong>
+    （単体で開かれる前提のため）という制約を抱えています。この制約への向き合い方が学びどころです。
+  </p>
+  <pre><code>// util/clipboard.js（アプリ本体用）とほぼ同じロジックを、
+// 出力HTML用に import なしで再実装している（workflowExporter.js 内の文字列テンプレート）
+function wfFallbackCopy(text, done) {
+  var ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  var ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(ta);
+  done(ok);
+}
+
+// 改変検知: 配布時点の内容（baseline）と現在のDOMを比較する
+function wfCheckIntegrity() {
+  var base = wfReadBaseline(); // <script id="wf-baseline"> から読む
+  var eds = document.querySelectorAll('[data-editable]');
+  for (var i = 0; i < eds.length; i++) {
+    if (base.editables[i] !== eds[i].textContent) return true; // 改変あり
+  }
+  return false;
+}</code></pre>
+  <p class="refpath">js/workflowExporter.js: 455〜573行目あたり</p>
+  <ul>
+    <li>版情報・配布時点の本文スナップショットは <code>&lt;script type="application/json" id="wf-meta"&gt;</code>
+      /<code>id="wf-baseline"&gt;</code> というインラインJSONとしてHTML自身に同梱する
+      （外部ファイルへの参照ゼロ）</li>
+    <li>チェックリストの進捗は <code>localStorage</code> に保存するが、キーに
+      <code>contentHash</code> を含める（<code>'wfcheck:' + id + ':' + hash</code>）ことで、
+      配布側が内容を更新した瞬間に古い進捗が自動的に無効化される</li>
+  </ul>
+
+  <div class="point">
+    「生成する側のコード」と「生成された結果が動く環境」が別のJS実行環境である、という認識が
+    このモジュールの設計を決めている。ビルドツールを使わずに「自己完結した配布物」を作る必要がある場面
+    （メール添付・オフライン環境向けツールなど）で応用できる考え方。
+  </div>
+  <div class="warning">
+    そのぶん <code>escapeHtml</code> 相当の処理もこの中だけで再実装されており、本体側の
+    <code>util/html.js</code> とロジックの重複が生まれる。CLAUDE.md でも
+    「HTML/PDFでステップ描画を共有しているので片方だけ直さない」と明記されている、
+    構造上避けられないトレードオフ。
+  </div>
+</div>
+
+<div class="box">
+  <h2>12. 技術ポイント⑪: 生成したHTML文字列をJestで検証する</h2>
+  <p>
+    上記の「自己完結HTML」は、そのままでは単体テストしにくいものです。
+    <code>workflowExport.test.js</code> は <code>Blob</code> をモックして生成文字列を捕捉し、
+    それをJSDOMに流し込んで<strong>本物のブラウザと同じようにインラインscriptを実行</strong>させることで検証しています。
+  </p>
+  <pre><code>const RealBlob = global.Blob;
+function exportHtml(workflow, exportMeta) {
+  let html = null;
+  global.Blob = class { constructor(parts) { html = parts.join(''); } }; // Blobをすり替えて中身を横取り
+  global.URL.createObjectURL = () => 'blob:x';
+  try {
+    makeUI(workflow)._exportWorkflowAsHtml(['wf_1'], exportMeta);
+  } finally {
+    global.Blob = RealBlob; // 他テストに影響しないよう必ず戻す
+  }
+  return html;
+}
+
+function loadIntoDom(html) {
+  document.documentElement.innerHTML = /* <html>...</html> の内側だけ抜き出したもの */ html;
+  document.querySelectorAll('script:not([type])').forEach(s => {
+    (0, eval)(s.textContent); // 生成されたインラインJSを実際に実行して動作検証する
+  });
+}</code></pre>
+  <p class="refpath">test/workflowExport.test.js: 8〜56行目</p>
+
+  <div class="point">
+    「HTML文字列を生成する関数」は文字列の中身をアサートするだけでも最低限のテストはできるが、
+    それでは「埋め込んだJSが実際に動くか」は分からない。JSDOM上にDOMとして展開し
+    <code>eval</code> で実行してからDOM操作の結果を検証する、というのが
+    「生成コードの出力自体をテストする」ための実践的な一段深いテクニック。
+  </div>
+  <div class="warning">
+    <code>eval</code> はプロダクションコードでは避けるべき機能だが、
+    「自分たちが生成した文字列を検証だけのために実行する」テストコード内であれば、
+    実行環境（JSDOM）が閉じているため許容されている。用途を明確にした上での例外的な使用。
+  </div>
+</div>
+
+<div class="box">
+  <h2>13. 設計思想まとめ</h2>
+  <ul>
+    <li><strong>まず標準機能を疑う</strong> — モーダルは<code>&lt;dialog&gt;</code>、
+      アコーディオンは<code>&lt;details&gt;</code>、コピーは<code>navigator.clipboard</code>。
+      外部ライブラリを入れる前にブラウザ標準でどこまで行けるかを確認している。</li>
+    <li><strong>「変わったかどうか」の判定基準を明文化する</strong> — 版管理・改変検知は、
+      すべて「内容ハッシュの一致/不一致」という単一の判定軸に統一されている（複数の場所で
+      別々の比較ロジックを持たない）。</li>
+    <li><strong>実行環境の境界を意識する</strong> — 「アプリ本体（ESモジュールが使える）」と
+      「配布されたHTML（単体で開かれる）」を明確に分け、後者では意図的に低レベルなコードを書く。</li>
+    <li><strong>フォールバックは常に「表示は止めない」方向に倒す</strong> — localStorage例外・
+      共有ファイルの読み込み失敗など、どれも握りつぶして機能を縮退させるだけで、アプリ全体を
+      落とさない。</li>
+  </ul>
+</div>
+
+<div class="box">
+  <h2>14. 発展・改善余地</h2>
+  <ul>
+    <li>コールバックによる1対1通信は、通知先が増えるほど <code>onXxx</code> プロパティが増えていく。
+      イベント通知の相手が3つ以上になる箇所が出てきたら、簡易的な pub/sub への切り替えを検討する余地がある。</li>
+    <li>djb2ハッシュは衝突耐性が低い（暗号学的ハッシュではない）。版管理・改変検知という
+      「悪意ある改ざんを検出する」用途ではなく「善意の編集を検出する」用途に限定されている前提を、
+      使う側が理解しておく必要がある。</li>
+    <li><code>workflowExporter.js</code> 内で再実装されているクリップボードコピー・エスケープ処理は、
+      本体の <code>util/</code> と将来ズレていく可能性がある。両方を必ず一緒に直すルールの徹底が
+      構造的な負債として残っている。</li>
+  </ul>
+</div>
+
+</body>
+</html>

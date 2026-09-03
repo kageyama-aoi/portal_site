@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>portal_site を動かして学ぶ実験ノート（IT新人向け）</title>
+  <style>
+    body {
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", Meiryo, sans-serif;
+      line-height: 1.7;
+      margin: 32px;
+      background: #fafafa;
+      color: #222;
+    }
+    h1, h2, h3 {
+      border-bottom: 2px solid #ddd;
+      padding-bottom: 4px;
+    }
+    code, pre {
+      background: #f4f4f4;
+      border-radius: 6px;
+    }
+    pre {
+      padding: 16px;
+      overflow-x: auto;
+    }
+    .box {
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+    .point {
+      background: #eef6ff;
+      border-left: 6px solid #4a90e2;
+      padding: 12px;
+      margin: 16px 0;
+    }
+    .warning {
+      background: #fff4e5;
+      border-left: 6px solid #f5a623;
+      padding: 14px;
+      margin: 16px 0;
+    }
+    .try {
+      background: #eefbf0;
+      border: 1px solid #b6e6bf;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin: 14px 0;
+    }
+    .try h4 {
+      margin: 0 0 8px 0;
+      color: #1e7a34;
+    }
+    .try pre {
+      background: #1e1e1e;
+      color: #e0e0e0;
+      margin: 8px 0;
+    }
+    /* .try pre の中の <code> がページ全体の code{background:#f4f4f4} を
+       個別に引き継いでしまい、暗い背景の中に薄いグレーのパッチができて
+       文字が埋もれるのを防ぐ（背景・文字色は親の.try preに揃える） */
+    .try pre code {
+      background: transparent;
+      color: inherit;
+    }
+    .output {
+      background: #1e1e1e;
+      color: #b7f7c1;
+      font-family: Consolas, monospace;
+      border-radius: 6px;
+      padding: 12px 16px;
+      margin: 8px 0;
+      white-space: pre-wrap;
+    }
+    .refcode {
+      font-size: 0.9em;
+      color: #888;
+      border-top: 1px dashed #ddd;
+      margin-top: 12px;
+      padding-top: 8px;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 12px 0;
+    }
+    th, td {
+      border: 1px solid #ddd;
+      padding: 6px 10px;
+      text-align: left;
+      font-size: 0.95em;
+    }
+    th {
+      background: #f4f4f4;
+    }
+    .diagram-box {
+      background: #f5f1ff;
+      border: 1px solid #d9c9f7;
+      border-radius: 8px;
+      padding: 14px 16px 4px;
+      margin: 14px 0;
+    }
+    .diagram-box .diagram-caption {
+      font-size: 0.85em;
+      color: #6b4fa0;
+      font-weight: 600;
+      margin: 0 0 6px 0;
+    }
+    .diagram-box .mermaid {
+      background: #fff;
+      border-radius: 6px;
+      padding: 8px;
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>
+    mermaid.initialize({ startOnLoad: true, theme: 'neutral' });
+  </script>
+</head>
+
+<body>
+
+<h1>portal_site を「動かして学ぶ」実験ノート</h1>
+
+<div class="box">
+  <p>
+    この資料は、<code>portal_site</code> の実際のコードから
+    <strong>「よく使う考え方」だけを短いサンプルに切り出し、実際に動かしながら少しずつ理解する</strong>
+    ための入門編です。専門用語はできるだけ使わず、出てきた場合はその場で説明します。
+  </p>
+  <ul>
+    <li><strong>対象読者</strong>: JavaScriptを学び始めたばかりの方・IT新人の方。
+      <code>class</code> や <code>=&gt;</code>（アロー関数）を見たことがない方は、
+      まず <strong>Lab 0</strong> から読んでください。既に書いたことがある方は Lab 0 を読み飛ばしてOKです。</li>
+    <li><strong>使い方</strong>: 各Labのコードは、ブラウザの開発者ツールの「コンソール」タブに
+      そのまま貼り付けてEnterを押せば実行できます（Chrome/Edgeなら <code>F12</code> キーでコンソールを開けます）。
+      一部は空の <code>.html</code> ファイルに貼り付けて開く必要があるものもあり、その場合は明記します。</li>
+    <li><strong>ゴール</strong>: 最終的に上級編
+      <a href="portal_site_tech.html">portal_site_tech.html</a>（実際のコードそのままの技術解説）を
+      読んで意味がわかるようになること。この資料は<strong>その手前の練習台</strong>で、
+      上級編を消したり簡単な内容に置き換えたりするものではありません。</li>
+  </ul>
+  <div class="point">
+    各Labの最後に「本物のコードではここ」という欄があります。
+    練習で書いたミニ版のコードが、実際のコードのどの部分に対応しているかを確認できます。
+    慣れてきたら、実際のファイルをエディタで開いて見比べてみてください。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 0. その前に — 最低限のJavaScript文法（もう書いたことがあれば読み飛ばしてOK）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    Lab 1以降では「変数」「関数」「オブジェクト」「クラス」というJavaScriptの基本部品が
+    何の説明もなく出てきます。ここではその5つの部品だけを、料理でいう「材料」のように
+    ひとつずつ確認します。<strong>意味が分かる部品は読み飛ばして構いません。</strong>
+  </p>
+
+  <div class="try">
+    <h4>手を動かす ①: 変数 — 値を入れておく「箱」</h4>
+    <pre><code>
+// let と const は、どちらも「箱に名前をつけて値を入れる」ための書き方
+let count = 1;      // let = あとで中身を入れ替える予定がある箱
+const name = '太郎'; // const = 中身を入れ替えない箱（このアプリのコードはほぼ全部これ）
+
+console.log(count); // 箱の中身を確認する
+console.log(name);
+
+count = 2;           // letの箱は中身を入れ替えられる
+console.log(count);
+
+// name = '次郎';    // ← これはエラーになる。constの箱は入れ替え不可
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">1
+太郎
+2</div>
+  </div>
+
+  <div class="try">
+    <h4>手を動かす ②: 関数 — 「処理のかたまり」に名前をつける</h4>
+    <pre><code>
+// 書き方1: 昔からある普通の関数
+function greet(personName) {
+  console.log('こんにちは、' + personName + 'さん');
+}
+greet('花子');
+
+// 書き方2: アロー関数（矢印 => を使う）。書き方が違うだけで、やることは関数と同じ
+const greet2 = (personName) => {
+  console.log('やあ、' + personName);
+};
+greet2('花子');
+
+// 中身が1行だけなら {} と return を省略できる、というだけの略記もよく出てくる
+const double = (x) => x * 2;
+console.log(double(5));
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">こんにちは、花子さん
+やあ、花子
+10</div>
+  </div>
+
+  <div class="point">
+    このアプリのコードで頻出する <code>() =&gt; { ... }</code> や <code>() =&gt; ui.render()</code>
+    のような書き方は、すべて「アロー関数」です。<strong>「これは処理のかたまりだ」</strong>とだけ
+    分かれば、最初は中身を全部読めなくても大丈夫です。
+  </div>
+
+  <div class="try">
+    <h4>手を動かす ③: オブジェクトと配列 — 複数の値をまとめる</h4>
+    <pre><code>
+// オブジェクト {} : 「名前:値」のペアをまとめたもの
+const link = {
+  title: 'Googleサイト',
+  url: 'https://google.com',
+  tags: ['検索', 'よく使う']  // ← これは配列（後述）
+};
+console.log(link.title); // ドット記法で中身を取り出す
+console.log(link.url);
+
+// 配列 [] : 値を順番に並べたもの
+const fruits = ['りんご', 'みかん', 'ぶどう'];
+console.log(fruits[0]); // 配列は0番目から数える
+console.log(fruits.length); // 要素の数
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">Googleサイト
+https://google.com
+りんご
+3</div>
+  </div>
+
+  <div class="try">
+    <h4>手を動かす ④-a: まず class を使わずに書いてみる（面倒さを体感する）</h4>
+    <p>
+      <code>class</code> をいきなり理解しようとせず、まず「<code>class</code> が無いと何が面倒か」を
+      体感するところから始めます。同じ形のオブジェクトを2つ、コピペで作ってみます。
+    </p>
+    <pre><code>
+const taro = {
+  name: '太郎',
+  hello: function () {
+    console.log('私は' + taro.name + 'です'); // "taro"という名前を自分で書く必要がある
+  }
+};
+
+const hanako = {
+  name: '花子',
+  hello: function () {
+    console.log('私は' + hanako.name + 'です'); // ここも"hanako"と書く。コピペ元と変え忘れやすい
+  }
+};
+
+taro.hello();
+hanako.hello();
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">私は太郎です
+私は花子です</div>
+  </div>
+
+  <div class="try">
+    <h4>手を動かす ④-a': 「なぜ <code>taro.name</code> と書く必要があるのか」を実験する</h4>
+    <p>
+      当然の疑問として「<code>hello</code> は <code>name</code> と同じオブジェクトの中に
+      書いてあるんだから、わざわざ <code>taro.name</code> と書かずに、ただの
+      <code>name</code> で通じるのでは？」と思うはずです。実際に試してみましょう。
+    </p>
+    <pre><code>
+const taro3 = {
+  name: '太郎',
+  hello: function () {
+    console.log('私は' + name + 'です'); // わざと taro3.name ではなく name だけを書く
+  }
+};
+
+taro3.hello();
+    </code></pre>
+    <p>実行結果イメージ（ブラウザのコンソールで実行した場合）：</p>
+    <div class="output">私はです</div>
+  </div>
+
+  <div class="warning">
+    <strong>「太郎」が消えました。</strong> しかもエラーにすらなりません。理由はこうです：
+    オブジェクトを <code>{ }</code> で書いても、JavaScriptは「この中に書いた関数からは、
+    兄弟キーの値がそのまま見える」というルールを用意していません。<code>hello</code> の中の
+    ただの <code>name</code> は、<code>taro3</code> の中の <code>name</code> とは<strong>無関係の、
+    どこか別の場所にある <code>name</code> という変数</strong>を探しに行きます。<br><br>
+    たまたまブラウザには <code>window.name</code>（タブ名を覚えておくための、空文字の変数）が
+    最初から存在するため、探した先でそれが見つかり、エラーにならずに空文字 <code>''</code> が
+    使われてしまいます。<strong>「たまたま動くが、値は空っぽ」という一番怖いバグの形</strong>です。<br><br>
+    つまり <code>hello</code> の中から「このオブジェクト自身が持っている <code>name</code>」を取るには、
+    <strong>そのオブジェクト自身を、名前で明示的に指定する</strong>しかありません。
+    それが <code>taro3.name</code> のように書く理由です。
+  </div>
+
+  <div class="try">
+    <h4>手を動かす ④-a'': そもそも「見える/見えない」を決めているのは何か</h4>
+    <p>
+      「動いた（動かなかった）のは分かったけど、なんで？」に答えるには、もう1段深く見る必要があります。
+      JavaScriptが「その変数が見えるかどうか」を決める基準は、たった1つです：
+      <strong>そのコードが、どの関数（または <code>{ }</code> ブロック）の中に、実際に書かれているか</strong>。
+      これだけです。オブジェクトの中かどうかは、実は関係ありません。見比べてみましょう。
+    </p>
+    <pre><code>
+// ケースA: 関数の中に、さらに関数を書く（入れ子）
+function outer() {
+  let message = 'outerの変数';
+  function inner() {
+    console.log(message); // innerは outer の { } の"内側に書かれている"ので見える
+  }
+  inner();
+}
+outer();
+
+// ケースB: オブジェクトの中に、関数を"値として"入れる
+const obj = {
+  message: 'objの中のmessage',
+  inner: function () {
+    console.log(message); // このinnerは obj の"内側に書かれている"わけではない。
+                           // objの1つのキーの"値"として、この関数が置かれているだけ
+  }
+};
+obj.inner();
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">outerの変数
+Uncaught ReferenceError: message is not defined</div>
+  </div>
+
+  <div class="diagram-box">
+    <p class="diagram-caption">🖼 図で見る: 何が「見える/見えない」を決めているか</p>
+    <pre class="mermaid">
+flowchart TB
+  subgraph CaseA["ケースA: 関数の入れ子（＝スコープ）"]
+    A1["outer関数<br/>message = 'outerの変数'"]
+    A2["inner関数<br/>（outerの内側に文字として書かれている）"]
+    A3["結果：message が見える ✅"]
+    A1 --> A2 --> A3
+  end
+
+  subgraph CaseB["ケースB: オブジェクトの中の関数（＝データ）"]
+    B1["objオブジェクト<br/>message: 'objの中のmessage'"]
+    B2["inner関数<br/>（objの値の1つとして置かれているだけ。objの内側には書かれていない）"]
+    B3["結果：message が見えない ❌"]
+    B1 --> B2 --> B3
+  end
+    </pre>
+    <p style="font-size:0.85em;color:#666;margin-top:4px;">
+      同じ「関数の中に関数がある」ように見えても、A（関数の入れ子）とB（オブジェクトの値）では
+      矢印の意味が違います。Aは本当に内側に書かれているので下まで見えるが、Bは
+      「objの隣に置かれているだけ」で内側に書かれてはいないので、途中で切れています。
+    </p>
+  </div>
+
+  <div class="warning">
+    <strong>ここが核心です。</strong> ケースAとケースBは見た目がよく似ていますが、
+    <code>{ }</code>の意味が全く違います。<br><br>
+    ケースAの<code>{ }</code>は「関数の中身」を囲む<code>{ }</code>です。<code>inner</code>という関数は、
+    <code>outer</code>という関数の<code>{ }</code>の<strong>内側に文字として書かれている</strong>ので、
+    <code>outer</code>の<code>message</code>が見えます（これを「スコープ」と呼びます。
+    「コードの見た目の入れ子構造」だけで決まる、という点が重要です）。<br><br>
+    ケースBの<code>{ }</code>は「オブジェクトのデータ」を囲む<code>{ }</code>です。
+    <code>inner: function() {...}</code>という書き方は、たまたま見た目が<code>obj</code>のそばにありますが、
+    「この関数がどこに書かれているか」というスコープの意味では、
+    <code>obj</code>の外（スクリプトの一番外側）に書かれているのと<strong>まったく同じ扱い</strong>です。
+    だから<code>obj</code>の<code>message</code>は見えません。<br><br>
+    つまり<code>{ }</code>には、<strong>「関数の中身を囲み、スコープを作る{ }」</strong>と
+    <strong>「ただのデータをまとめるだけの、スコープを作らない{ }」</strong>の2種類があり、
+    見た目が同じなので混同しやすいだけで、役割は無関係です。
+    ④-aで<code>taro.name</code>と書かないと通じなかったのは、まさにこれが理由でした。
+  </div>
+
+  <div class="point">
+    では「オブジェクトに紐づいた関数（メソッド）が、後から自分の持ち主を知りたい」場合は
+    どうすればいいのでしょうか。スコープの仕組みでは解決できないので、JavaScriptは
+    <strong>「呼び出され方に応じて中身が変わる、専用の特別な言葉」</strong>を別に用意しました。
+    それが次の <code>this</code> です。
+  </div>
+
+  <div class="try">
+    <h4>手を動かす ④-b: <code>this</code> = 「今の自分自身」を指す言葉</h4>
+    <pre><code>
+const taro2 = {
+  name: '太郎',
+  hello: function () {
+    console.log('私は' + this.name + 'です'); // "taro2"と書く代わりに this と書く
+  }
+};
+
+taro2.hello(); // taro2.hello() として呼ばれたので、このthisは taro2 自身になる
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">私は太郎です</div>
+  </div>
+
+  <div class="diagram-box">
+    <p class="diagram-caption">🖼 図で見る: this は「呼び出し方」で中身が変わる</p>
+    <pre class="mermaid">
+flowchart LR
+  H["共通のhello関数<br/>console.log(this.name)"]
+  T["taro2オブジェクト<br/>name: '太郎'"] -->|"taro2.hello() で呼ぶ<br/>→ this は taro2 になる"| H
+  Y["hanako2オブジェクト<br/>name: '花子'"] -->|"hanako2.hello() で呼ぶ<br/>→ this は hanako2 になる"| H
+    </pre>
+    <p style="font-size:0.85em;color:#666;margin-top:4px;">
+      スコープ（④-a''）は「コードがどこに書かれているか」だけで決まり、実行のたびに変わることは
+      ありませんでした。<code>this</code> はその逆で、<strong>同じ1つの関数でも、
+      「ドットの前が誰か」によって毎回中身が変わります。</strong>この「書かれた場所」ではなく
+      「呼ばれ方」で決まる、という点がスコープとの一番の違いです。
+    </p>
+  </div>
+
+  <div class="point">
+    <code>this</code> は「今そのメソッドを呼び出したオブジェクト自身」に自動的に置き換わる特別な言葉です。
+    これのおかげで、④-aのように<strong>名前を直書きしてコピペミスする心配がなくなります</strong>。
+    「<code>this</code> = 呼び出し方によって中身が変わる箱」とだけ、まず覚えてください。
+  </div>
+
+  <div class="try">
+    <h4>手を動かす ④-c: class = 「たい焼きの型」、constructor = 「型に生地を流し込む作業」</h4>
+    <p>
+      ④-aでは「同じ形のオブジェクトを作る」のを手作業（コピペ）でやっていました。
+      <code>class</code> は、この「同じ形のオブジェクトを作る作業」そのものを自動化する道具です。
+      たい焼きに例えると：<code>class</code> は<strong>「型」</strong>、<code>constructor</code> は
+      <strong>「型に生地(データ)を流し込む作業」</strong>、<code>new</code> は
+      <strong>「型を1回使って、たい焼きを1個作る」</strong>ことに対応します。
+    </p>
+    <pre><code>
+class Taiyaki {                 // ← "型"を1つ定義する（これから何個でも同じ形で作れる）
+  constructor(filling) {        // ← new した瞬間に、その1個分だけ実行される
+    this.filling = filling;     // ← 「今作っているこのたい焼き」に、中身の味を覚えさせる
+  }
+  taste() {                     // ← 完成したたい焼きが持っている「動作」
+    console.log(this.filling + '味のたい焼きです');
+  }
+}
+
+const taiyaki1 = new Taiyaki('あんこ');     // 型(Taiyaki)を使って1個目を作る
+const taiyaki2 = new Taiyaki('カスタード'); // 同じ型を使って2個目を作る。中身だけ違う
+
+taiyaki1.taste();
+taiyaki2.taste();
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">あんこ味のたい焼きです
+カスタード味のたい焼きです</div>
+  </div>
+
+  <div class="diagram-box">
+    <p class="diagram-caption">🖼 図で見る: 1つの型から、いくつも実物を作る</p>
+    <pre class="mermaid">
+flowchart LR
+  C["class Taiyaki<br/>（型。1回書けばよい）"] -->|"new Taiyaki('あんこ')"| I1["taiyaki1<br/>filling: 'あんこ'"]
+  C -->|"new Taiyaki('カスタード')"| I2["taiyaki2<br/>filling: 'カスタード'"]
+    </pre>
+    <p style="font-size:0.85em;color:#666;margin-top:4px;">
+      ④-aでは <code>taro</code> と <code>hanako</code> を1つずつ手書き（コピペ）していました。
+      <code>class</code> を使うと「型」を1回書くだけで、<code>new</code> するたびに
+      中身（<code>filling</code>）だけ違う実物をいくつでも作れます。コピペでの書き間違えも起きません。
+    </p>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    ④-aで「コピペで名前を書き間違えるかも」と心配した問題は、
+    <code>class</code>（型を1つ書けば何個でも作れる）と <code>this</code>（自分自身を指す）を
+    組み合わせることで消えています。<br><br>
+    このアプリの <code>DataManager</code> や <code>UI</code> も、まさにこの
+    <code>class</code> の形で書かれています。<code>new DataManager(...)</code> は
+    「<code>Taiyaki</code>の型からたい焼きを1個作ったのと同じように、
+    <code>DataManager</code>という型から、実際に使う1つの実物を作る」という意味です。
+  </div>
+
+  <div class="refcode">
+    ここまでの5つの部品（変数・関数・アロー関数・オブジェクト/配列・class）が分かれば、
+    Lab 1 に進む準備は完了です。分からない単語が出てきたら、いつでもこのLab 0に戻ってきてください。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 1. モジュール同士を「電話番号を教える」ようにつなぐ（DI・コールバック）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    「DI（依存性注入）」と聞くと難しそうですが、やっていることは
+    「Aさんが必要な道具を、Aさん自身に作らせず、外の人が渡してあげる」というだけのことです。
+    「コールバック」は「用事が済んだら電話して」と、実行してほしい関数を先に渡しておくことです。
+  </p>
+
+  <div class="try">
+    <h4>手を動かす</h4>
+    <pre><code>
+// lab1.js（ブラウザのコンソールに貼り付け）
+
+// ❌ もしこう書いたら、Notifier は「保存する」という具体的な処理まで自分で知る必要がある
+class BadNotifier {
+  save() {
+    console.log('データベースに保存しました'); // 保存方法をNotifierが決めてしまっている
+  }
+}
+
+// ✅ 「保存が終わったら呼んでね」という関数(コールバック)を外から受け取るだけにする
+class Notifier {
+  constructor(onSaved) {
+    this.onSaved = onSaved; // "電話番号"を受け取って覚えておくだけ
+  }
+  save() {
+    console.log('保存処理をした（つもり）...');
+    this.onSaved(); // 用事が済んだので電話をかける
+  }
+}
+
+// 「保存できたら何をするか」は呼び出す側が自由に決められる
+const notifier = new Notifier(() => {
+  console.log('画面に「保存しました！」と表示する処理をここに書く');
+});
+notifier.save();
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">保存処理をした（つもり）...
+画面に「保存しました！」と表示する処理をここに書く</div>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    <code>Notifier</code> クラスは「画面に何を表示するか」を一切知らずに済んでいます。
+    これにより <code>Notifier</code> は保存の仕組みだけに専念でき、表示方法を後から変えても
+    <code>Notifier</code> 自体を書き直す必要がありません。この「知らなくていいことを増やす」考え方は、
+    どんな言語・どんな規模のコードでも使える最重要の設計原則の1つです。
+  </div>
+
+  <div class="try">
+    <h4>発展：試してみよう</h4>
+    <ul>
+      <li><code>onSaved</code> を呼ぶ前に、わざと1秒待つ（<code>setTimeout</code>を使う）ように変えてみましょう。
+        呼び出し側のコードは1文字も変えずに動くはずです。</li>
+    </ul>
+  </div>
+
+  <div class="refcode">
+    本物のコードではここ: <code>js/app.js</code> の <code>onDirtyCallback</code>
+    （58〜68行目あたり）と、それを受け取る <code>js/dataManager.js</code> の
+    <code>markAsDirty()</code>（70〜75行目）。<br>
+    上級編は「技術ポイント①②: DI・コールバックによるモジュール間通信」に対応。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 2. コピーを「文字列に変換して戻す」ことで完全に切り離す（ディープクローン）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    JavaScriptの配列やオブジェクトを別の変数に代入しても、実は「同じ実体」を指しているだけで、
+    コピーではありません（これを「参照」と呼びます）。うっかり書き換えてしまう事故を防ぐには、
+    完全に独立した「別の実体」を作る必要があります。
+  </p>
+
+  <div class="try">
+    <h4>手を動かす</h4>
+    <pre><code>
+// lab2.js
+
+const original = { title: '元のデータ', tags: ['work'] };
+
+// ❌ これはコピーではない。同じ実体を指す別の名前がついただけ
+const notACopy = original;
+notACopy.title = '書き換えられた！';
+console.log('original.title:', original.title); // ここも変わってしまう
+
+// ✅ 文字列化して読み直すことで、完全に別の実体を作る
+const original2 = { title: '元のデータ', tags: ['work'] };
+const realCopy = JSON.parse(JSON.stringify(original2));
+realCopy.title = '安全に書き換えた';
+console.log('original2.title:', original2.title); // こちらは変わらない
+console.log('realCopy.title:', realCopy.title);
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">original.title: 書き換えられた！
+original2.title: 元のデータ
+realCopy.title: 安全に書き換えた</div>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    「データを管理するクラス」を作るとき、外部に渡したコピーをうっかり誰かが書き換えても、
+    管理しているクラス内部の「正しいデータ」は絶対に影響を受けない、と保証できます。
+    バグの原因調査で「なぜかデータが勝手に変わっている」という現象の多くは、この参照の混同が原因です。
+  </div>
+
+  <div class="try">
+    <h4>発展：試してみよう</h4>
+    <ul>
+      <li><code>original.tags.push('new-tag')</code> を試し、<code>notACopy.tags</code> と
+        <code>realCopy.tags</code> がそれぞれどうなるか確認してみましょう。</li>
+    </ul>
+  </div>
+
+  <div class="refcode">
+    本物のコードではここ: <code>js/dataManager.js</code> の <code>getData()</code>（54〜56行目）。
+    外部に渡す配列を毎回この方法でコピーしています。<br>
+    上級編は「技術ポイント③: ディープクローンでカプセル化する」に対応。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 3. ブラウザに「ファイルとして保存させる」（Blob）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    JavaScriptはセキュリティ上、あなたのPCのファイルに直接書き込むことができません。
+    その代わりに「これはファイルの中身です」というデータ（<code>Blob</code>）を作り、
+    ブラウザに「ダウンロードしてください」とお願いする、という回り道をします。
+  </p>
+
+  <div class="try">
+    <h4>手を動かす</h4>
+    <pre><code>
+// lab3.html として保存して、ブラウザで開いてから実行するか、
+// コンソールに貼り付けて実行してください（ダウンロードが1つ発生します）
+
+function saveAsFile(text, filename) {
+  const blob = new Blob([text], { type: 'text/plain' }); // メモリ上に「仮想ファイル」を作る
+  const url = URL.createObjectURL(blob);                 // その仮想ファイルへの一時URLを発行
+
+  const a = document.createElement('a'); // リンクタグを一時的に作る
+  a.href = url;
+  a.download = filename;                 // download属性があると「開く」ではなく「保存」になる
+  document.body.appendChild(a);
+  a.click();                             // JSでクリックを"自動実行"させる
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);              // 一時URLを解放してメモリを片付ける
+}
+
+saveAsFile('こんにちは、これは保存されたファイルです。', 'hello.txt');
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">（コンソールに出力はないが、hello.txt のダウンロードが始まる）</div>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    サーバーもデータベースも無いWebページから「保存」機能を提供する、唯一と言っていい標準手段です。
+    設定ファイルのエクスポート・CSV出力・レポート生成など、あらゆる「ブラウザだけでファイルを作る」
+    場面で応用できます。
+  </div>
+
+  <div class="try">
+    <h4>発展：試してみよう</h4>
+    <ul>
+      <li><code>type: 'text/plain'</code> を <code>type: 'application/json'</code> に変え、
+        <code>text</code> の内容を <code>JSON.stringify({hello: 'world'})</code> にして、
+        JSONファイルとして保存されることを確認してみましょう。</li>
+    </ul>
+  </div>
+
+  <div class="refcode">
+    本物のコードではここ: <code>js/dataManager.js</code> の <code>save()</code>（287〜302行目）。
+    まさに同じ手順で <code>data.json</code> をダウンロードさせています。<br>
+    上級編は「技術ポイント④: Blob + createObjectURL によるファイル保存」に対応。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 4. 「次に開いたときも覚えている」を作る（localStorage）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    ブラウザには <code>localStorage</code> という、ページを閉じても消えない小さな保管庫が
+    標準で用意されています。「文字列のキーと文字列の値」のペアしか保存できない点に注意が必要です。
+  </p>
+
+  <div class="try">
+    <h4>手を動かす</h4>
+    <pre><code>
+// lab4.js（コンソールに貼り付け。1回目と2回目で結果が変わることを確認する）
+
+const KEY = 'myFavoriteColor';
+
+function applyTheme() {
+  const saved = localStorage.getItem(KEY); // 前回保存した値を読む（無ければ null）
+  const color = saved || 'blue';           // 無ければデフォルト値を使う
+  console.log('現在のテーマ色:', color);
+  return color;
+}
+
+function setTheme(color) {
+  localStorage.setItem(KEY, color); // 文字列として保存する
+  console.log('保存しました:', color);
+}
+
+applyTheme();       // 1回目は「blue」（デフォルト）のはず
+setTheme('green');  // 保存する
+applyTheme();       // もう一度読むと「green」になっているはず
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">現在のテーマ色: blue
+保存しました: green
+現在のテーマ色: green</div>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    ユーザーが選んだ設定（ダークモード・表示順序・入力履歴など）を「次に開いたときも覚えている」
+    ようにする、最も手軽な永続化手段です。サーバーを介さないので、個人利用の設定保存にぴったりです。
+  </div>
+
+  <div class="try">
+    <h4>発展：試してみよう</h4>
+    <ul>
+      <li><code>localStorage.getItem(KEY)</code> の呼び出しを <code>try { ... } catch (e) { return 'blue'; }</code>
+        で囲んでみましょう。実際のコードも「プライベートブラウジングなどで例外が出ても表示だけは
+        継続する」ためにこの囲みを入れています。</li>
+    </ul>
+  </div>
+
+  <div class="refcode">
+    本物のコードではここ: <code>js/themeManager.js</code> の <code>toggle()</code>（44〜53行目）と、
+    <code>index.html</code> 冒頭のインラインスクリプト（8〜19行目、CSS読み込み前にテーマを確定させる工夫）。<br>
+    上級編は「技術ポイント⑥: CSS変数 + data-theme属性 + FOUC対策」に対応。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 5. 「内容が変わったか」を自分の手で判定する（簡易ハッシュ）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    2つの長い文章が「まったく同じか」を毎回全文比較するのは大変です。かわりに、
+    文章から短い「指紋」のような数字（ハッシュ値）を作り、その指紋同士を比較すれば
+    高速に「変わったかどうか」が分かります。
+  </p>
+
+  <div class="try">
+    <h4>手を動かす</h4>
+    <pre><code>
+// lab5.js
+
+// djb2という有名な軽量ハッシュ関数（暗号用途ではなく「指紋」用）
+function djb2(str) {
+  let h = 5381;
+  for (let i = 0; i < str.length; i++) {
+    h = (((h << 5) + h) + str.charCodeAt(i)) >>> 0; // >>>0 は「符号なし32bit整数にする」おまじない
+  }
+  return h >>> 0;
+}
+
+const textA = 'こんにちは';
+const textB = 'こんにちは';
+const textC = 'さようなら';
+
+console.log('A の指紋:', djb2(textA));
+console.log('B の指紋:', djb2(textB), '← Aと同じ文章なので同じ指紋になる');
+console.log('C の指紋:', djb2(textC), '← 違う文章なので違う指紋になる');
+
+// 「内容が変わったら版番号を上げる」の最小版
+function bumpVersionIfChanged(oldHash, newText, currentVersion) {
+  const newHash = djb2(newText);
+  if (newHash === oldHash) {
+    return { changed: false, version: currentVersion, hash: oldHash };
+  }
+  return { changed: true, version: currentVersion + 1, hash: newHash };
+}
+
+let state = { version: 1, hash: djb2('最初の内容') };
+console.log(bumpVersionIfChanged(state.hash, '最初の内容', state.version));   // 変わっていない
+console.log(bumpVersionIfChanged(state.hash, '編集後の内容', state.version)); // 変わった→version+1
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">A の指紋: 1234567890
+B の指紋: 1234567890 ← Aと同じ文章なので同じ指紋になる
+C の指紋: 987654321 ← 違う文章なので違う指紋になる
+{ changed: false, version: 1, hash: ... }
+{ changed: true, version: 2, hash: ... }</div>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    「内容が変わったら版番号を上げる」「配布後に改変されていないか検知する」といった機能は、
+    すべて「今の指紋」と「前回の指紋」を比較するだけの単純な仕組みで実現できます。
+    このアプリの作業フロー版管理・改変検知は、まさにこの考え方を土台にしています。
+  </div>
+
+  <div class="try">
+    <h4>発展：試してみよう</h4>
+    <ul>
+      <li><code>djb2('a')</code> と <code>djb2('b')</code> のように、1文字だけ変えて
+        指紋がどれくらい変わるか試してみましょう。「暗号用途ではない」理由（衝突しやすさ）を
+        体感するのが目的です。</li>
+    </ul>
+  </div>
+
+  <div class="refcode">
+    本物のコードではここ: <code>js/workflowVersion.js</code> の <code>djb2()</code>（14〜20行目）と
+    <code>bumpRevIfContentChanged()</code>（120〜135行目）。<br>
+    上級編は「技術ポイント⑦: 純粋関数として分離した内容ハッシュと版管理」に対応。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 6. JSを書かずに使える「モーダル」と「開閉」（&lt;dialog&gt;・&lt;details&gt;）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    「ポップアップウィンドウ」や「クリックで開閉するメニュー」は、JSで作らなくても
+    HTML標準のタグだけで動きます。これを知らないと、車輪の再発明（すでにあるものを
+    苦労してもう一度作ること）をしてしまいがちです。
+  </p>
+
+  <div class="try">
+    <h4>手を動かす</h4>
+    <pre><code>
+&lt;!-- lab6.html として保存してブラウザで開く --&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+
+  &lt;!-- details/summary: JS無しで開閉するアコーディオン --&gt;
+  &lt;details&gt;
+    &lt;summary&gt;クリックして開く/閉じる&lt;/summary&gt;
+    &lt;p&gt;ここが開閉される中身です。JavaScriptは1行も書いていません。&lt;/p&gt;
+  &lt;/details&gt;
+
+  &lt;!-- dialog: JS無しでは開かないが、閉じる仕組みは標準機能 --&gt;
+  &lt;dialog id="myDialog"&gt;
+    &lt;p&gt;これはモーダルです&lt;/p&gt;
+    &lt;button onclick="document.getElementById('myDialog').close()"&gt;閉じる&lt;/button&gt;
+  &lt;/dialog&gt;
+  &lt;button onclick="document.getElementById('myDialog').showModal()"&gt;モーダルを開く&lt;/button&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">（ブラウザで開くと、クリックで開閉するアコーディオンと、
+背景が暗転してフォーカスが移る本物のモーダルが動く）</div>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    <code>showModal()</code>を呼ぶだけで、背景を暗くする処理・キーボード操作でのフォーカス制御・
+    Escキーで閉じる動作が自動的に手に入ります。これを自作すると何十行もかかる上、
+    アクセシビリティ（キーボードだけで操作したい人への配慮）の細かい対応が漏れがちです。
+  </div>
+
+  <div class="try">
+    <h4>発展：試してみよう</h4>
+    <ul>
+      <li><code>&lt;details&gt;</code> タグに <code>ontoggle="console.log(this.open)"</code> を追加し、
+        開閉するたびにコンソールに <code>true</code>/<code>false</code> が出ることを確認してみましょう。
+        実際のコードもこの <code>toggle</code> イベントを使って開閉状態を記憶しています。</li>
+    </ul>
+  </div>
+
+  <div class="refcode">
+    本物のコードではここ: <code>js/ui.js</code> の <code>_buildWorkflowCard()</code>
+    （1164〜1210行目）。<code>&lt;details&gt;</code> の <code>toggle</code> イベントで
+    開閉状態を <code>expandedWorkflowIds</code> に記憶しています。<br>
+    上級編は「技術ポイント⑨: 外部ライブラリなしの&lt;dialog&gt;・&lt;details&gt;・ドラッグ&ドロップ」に対応。
+  </div>
+</div>
+
+<div class="box">
+  <h2>Lab 7. マウスで並び替える（ドラッグ&ドロップの最小構成）</h2>
+  <p>
+    <strong>これは何？</strong><br>
+    ライブラリを使わずマウスで要素を並び替える機能は、4つのイベント
+    （<code>dragstart</code> / <code>dragover</code> / <code>drop</code> / <code>dragend</code>）の
+    組み合わせだけで作れます。最初は少し複雑に見えますが、役割はそれぞれ単純です。
+  </p>
+
+  <div class="try">
+    <h4>手を動かす</h4>
+    <pre><code>
+&lt;!-- lab7.html として保存してブラウザで開く。3つの箱をドラッグで入れ替えられる --&gt;
+&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;body&gt;
+  &lt;div id="list" style="display:flex; gap:8px;"&gt;
+    &lt;div class="item" draggable="true" style="padding:20px;background:#eef;"&gt;A&lt;/div&gt;
+    &lt;div class="item" draggable="true" style="padding:20px;background:#efe;"&gt;B&lt;/div&gt;
+    &lt;div class="item" draggable="true" style="padding:20px;background:#fee;"&gt;C&lt;/div&gt;
+  &lt;/div&gt;
+  &lt;script&gt;
+    let dragging = null;
+    document.querySelectorAll('.item').forEach(item => {
+      item.addEventListener('dragstart', () => { dragging = item; }); // 「今どれを持っているか」を覚える
+      item.addEventListener('dragover', e => {
+        e.preventDefault(); // これを書かないと drop が発火しない（ブラウザの初期動作がドロップ禁止のため）
+        if (dragging && dragging !== item) {
+          item.parentNode.insertBefore(dragging, item); // 持っている要素を、今カーソルがある位置の前に移す
+        }
+      });
+      item.addEventListener('dragend', () => { dragging = null; }); // 持ち物を手放す
+    });
+  &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;
+    </code></pre>
+    <p>実行結果イメージ：</p>
+    <div class="output">（A/B/Cの箱をドラッグすると、順番が入れ替わる）</div>
+  </div>
+
+  <div class="point">
+    <strong>なぜ大事？</strong><br>
+    ドラッグ&ドロップ用のライブラリを入れなくても、この4イベントの役割
+    「①持ち始めた ②今どこにいる ③離した ④持つのをやめた」を覚えておけば、
+    ほとんどの並び替えUIは自作できます。
+  </div>
+
+  <div class="warning">
+    <strong>ハマりどころ</strong>: <code>dragover</code> で <code>e.preventDefault()</code> を
+    書き忘れると、<code>drop</code>イベントが一切発生しません（ブラウザの初期動作は
+    「ドロップ禁止」だからです）。動かないときは、まずここを確認してください。
+  </div>
+
+  <div class="try">
+    <h4>発展：試してみよう</h4>
+    <ul>
+      <li>並び替えた後の順番を <code>localStorage</code> に保存し、ページを再読み込みしても
+        順番が復元されるようにしてみましょう（Lab 4 の知識と組み合わせます）。</li>
+    </ul>
+  </div>
+
+  <div class="refcode">
+    本物のコードではここ: <code>js/ui.js</code> の <code>_initViewBtnOrder()</code>
+    （152〜188行目）。表示切替ボタンの並び替え＋<code>localStorage</code>への保存を、
+    まさにこの4イベントで実装しています。<br>
+    上級編は「技術ポイント⑨: 外部ライブラリなしの&lt;dialog&gt;・&lt;details&gt;・ドラッグ&ドロップ」に対応。
+  </div>
+</div>
+
+<div class="box">
+  <h2>ここまでのまとめと次のステップ</h2>
+  <table>
+    <tr><th>Lab</th><th>体験したこと</th><th>上級編の対応</th></tr>
+    <tr><td>0</td><td>変数・関数・オブジェクト/配列・classの最低限の文法</td><td>（前提知識。技術ポイント全体の土台）</td></tr>
+    <tr><td>1</td><td>コールバックでモジュールをつなぐ（DI）</td><td>技術ポイント①②</td></tr>
+    <tr><td>2</td><td>ディープクローンで安全なコピーを作る</td><td>技術ポイント③</td></tr>
+    <tr><td>3</td><td>Blobでファイルとして保存させる</td><td>技術ポイント④</td></tr>
+    <tr><td>4</td><td>localStorageで設定を覚えさせる</td><td>技術ポイント⑥</td></tr>
+    <tr><td>5</td><td>簡易ハッシュで「変わったか」を判定する</td><td>技術ポイント⑦</td></tr>
+    <tr><td>6</td><td>&lt;dialog&gt;/&lt;details&gt;を標準機能で使う</td><td>技術ポイント⑨</td></tr>
+    <tr><td>7</td><td>ドラッグ&ドロップの最小構成</td><td>技術ポイント⑨</td></tr>
+  </table>
+
+  <div class="point">
+    ここまでのLabは、すべて実際のコードから「考え方だけ」を取り出した縮小版です。
+    次にやってほしいことは2つ：
+    <ol>
+      <li>上級編 <a href="portal_site_tech.html">portal_site_tech.html</a> を開き、
+        各Labの「本物のコードではここ」に書かれた本物の関数を読んでみる</li>
+      <li>実際の <code>portal_site</code> のコードをエディタで開き、Labで書いたミニ版と見比べてみる</li>
+    </ol>
+    ミニ版で「なぜこう書くか」が分かった状態で本物を読むと、
+    最初に読んだときよりずっと理解しやすくなっているはずです。
+    なお、上級編には Lab化していない技術ポイント（配布用HTMLの自己完結生成、Jestでの検証テクニックなど）
+    もあります。これらはより実践寄りの内容なので、Lab 1〜7 に慣れてから読むのがおすすめです。
+  </div>
+</div>
+
+</body>
+</html>
